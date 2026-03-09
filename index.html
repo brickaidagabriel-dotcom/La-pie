@@ -3,111 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Master Notes</title>
+    <title>JJB Vault</title>
     <style>
         :root {
-            --bg: #000000;
-            --card: #1c1c1e;
-            --text: #ffffff;
-            --accent: #0a84ff;
-            --border-test: #ff9f0a; /* Orange */
-            --border-future: #30d158; /* Vert */
-            --border-already: #64d2ff; /* Turquoise */
+            --bg: #000000; --card: #1c1c1e; --text: #ffffff; --accent: #0a84ff;
+            --on-test: #ff9f0a; --future: #30d158; --already: #64d2ff;
         }
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            padding-bottom: 80px;
-        }
-        .header {
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, system-ui; margin: 0; padding-bottom: 90px; user-select: none; }
+        .header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: var(--card); sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
         .container { padding: 15px; }
-        .menu-item {
-            background: var(--card);
-            margin-bottom: 10px;
-            padding: 20px;
-            border-radius: 12px;
-            font-size: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        
+        /* Style des dossiers et techniques */
+        .item { 
+            background: var(--card); margin-bottom: 10px; padding: 16px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: transform 0.1s; position: relative; overflow: hidden;
         }
-        .nav-bar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 70px;
-            background: var(--card);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid #333;
-        }
-        .btn-home { font-size: 24px; background: none; border: none; color: white; }
+        .item:active { transform: scale(0.98); background: #2c2c2e; }
+        
+        /* Bordures de statut */
+        .status-on_test { border-left: 5px solid var(--on-test); }
+        .status-future { border-left: 5px solid var(--future); }
+        .status-already { border-left: 5px solid var(--already); }
+
+        /* Navigation & Boutons */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 75px; background: var(--card); display: flex; justify-content: center; align-items: center; border-top: 1px solid #333; }
+        .btn-add { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin-bottom: 15px; width: 100%; }
+        
+        /* Modale / Popup */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; }
+        .modal-content { background:var(--card); padding:20px; border-radius:15px; width:80%; }
+        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:white; padding:10px; margin:10px 0; border-radius:8px; box-sizing: border-box;}
+        
+        .breadcrumb { font-size: 12px; color: var(--accent); margin-bottom: 10px; }
+        .note-text { font-size: 14px; color: #ccc; margin-top: 10px; white-space: pre-wrap; line-height: 1.4; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2 id="view-title">JJB Notes</h2>
-        <button id="btn-settings" style="background:none; border:none; color:var(--accent);">⚙️</button>
+<div class="header">
+    <div id="header-left">
+        <div class="breadcrumb" id="path-display">Accueil</div>
+        <h2 id="view-title" style="margin:0">JJB Vault</h2>
     </div>
+    <button onclick="showSettings()" style="background:none; border:none; font-size:20px;">⚙️</button>
+</div>
 
-    <div id="app-content" class="container">
+<div id="app-content" class="container"></div>
+
+<nav class="nav-bar">
+    <button onclick="goHome()" style="background:none; border:none; font-size:30px;">🏠</button>
+</nav>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title">Ajouter</h3>
+        <input type="text" id="input-name" placeholder="Nom (ex: Half Guard)">
+        <div id="tech-only-fields">
+            <select id="select-status">
+                <option value="">Pas de tag</option>
+                <option value="on_test">On Test (Orange)</option>
+                <option value="future">Future Test (Vert)</option>
+                <option value="already">Already Test (Turquoise)</option>
+            </select>
+            <textarea id="input-note" placeholder="Description de la technique..." rows="4"></textarea>
         </div>
+        <label><input type="checkbox" id="is-final" onchange="toggleFields()"> Technique finale (avec notes)</label>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="closeModal()" style="flex:1; padding:10px; background:#444; border:none; color:white; border-radius:8px;">Annuler</button>
+            <button onclick="saveItem()" style="flex:1; padding:10px; background:var(--accent); border:none; color:white; border-radius:8px;">Sauver</button>
+        </div>
+    </div>
+</div>
 
-    <nav class="nav-bar">
-        <button class="btn-home" onclick="location.reload()">🏠</button>
-    </nav>
+<script>
+    // STRUCTURE INITIALE
+    let db = JSON.parse(localStorage.getItem('jjb_vault_db')) || {
+        currentPath: [],
+        journalier: [],
+        data: {
+            "Grappling": { type: "folder", children: { "Top": { type: "folder", children: {} } } },
+            "Wrestling": { type: "folder", children: {} }
+        }
+    };
 
-    <script>
-        // La structure initiale que tu m'as donnée
-        const initialData = {
-            "Data": {
-                "Grappling": {
-                    "Top": { "Pin": ["Mount", "Side Control"], "Passing": ["Half Guard Pass", "Outside Pass"] },
-                    "Bottom": ["Closed Guard", "Half Guard", "Pin Escape"]
-                },
-                "Wrestling": {
-                    "Single Leg": ["Attack", "Defense"],
-                    "Double Leg": ["Attack", "Defense"]
-                }
-            },
-            "Journalier": {}
-        };
+    function saveDB() { localStorage.setItem('jjb_vault_db', JSON.stringify(db)); }
 
-        // On vérifie si on a déjà des données dans le téléphone
-        let myData = JSON.parse(localStorage.getItem('jjb_notes')) || initialData;
+    function goHome() {
+        db.currentPath = [];
+        render();
+    }
 
-        function renderHome() {
-            document.getElementById('view-title').innerText = "Accueil";
-            const content = document.getElementById('app-content');
-            content.innerHTML = `
-                <div class="menu-item" onclick="renderCategory('Journalier')">📂 Journalier <span>></span></div>
-                <div class="menu-item" onclick="renderCategory('Data')">📊 Data <span>></span></div>
-            `;
+    function render() {
+        const content = document.getElementById('app-content');
+        const pathDisplay = document.getElementById('path-display');
+        const title = document.getElementById('view-title');
+        content.innerHTML = "";
+
+        if (db.currentPath.length === 0) {
+            title.innerText = "JJB Vault";
+            pathDisplay.innerText = "Accueil";
+            content.innerHTML += `<div class="item" onclick="openJournalier()">📂 Journalier <span>></span></div>`;
+            content.innerHTML += `<div class="item" onclick="enterFolder(['data'])">📊 Data <span>></span></div>`;
+            return;
         }
 
-        function renderCategory(key) {
-            document.getElementById('view-title').innerText = key;
-            // Logique de navigation simplifiée pour le premier test
-            const content = document.getElementById('app-content');
-            content.innerHTML = `<p style="color:gray">Contenu de ${key} en cours de chargement...</p>`;
-            // On ajoutera la suite du JS à l'étape suivante
+        if (db.currentPath[0] === 'journalier') {
+            renderJournalier();
+            return;
         }
 
-        renderHome();
-    </script>
+        // Navigation dans Data
+        let current = db;
+        db.currentPath.forEach(p => current = current[p] || current.children[p]);
+        
+        pathDisplay.innerText = db.currentPath.join(' > ');
+        title.innerText = db.currentPath[db.currentPath.length-1];
+
+        content.innerHTML += `<button class="btn-add" onclick="openModal()">+ Ajouter une catégorie/technique</button>`;
+
+        const entries = current.children || {};
+        Object.keys(entries).forEach(key => {
+            const item = entries[key];
+            const div = document.createElement('div');
+            div.className = `item ${item.status ? 'status-'+item.status : ''}`;
+            
+            // Logique de clic vs appui long
+            let timer;
+            div.ontouchstart = () => timer = setTimeout(() => confirmDelete(key), 800);
+            div.ontouchend = () => clearTimeout(timer);
+            
+            div.onclick = () => {
+                if(item.type === 'folder') enterFolder([...db.currentPath, 'children', key]);
+                else showTech(key, item);
+            };
+
+            div.innerHTML = `<div>
+                <strong>${key}</strong>
+                ${item.type === 'tech' ? '<div class="note-text">'+(item.note.substring(0,40))+'...</div>' : ''}
+            </div>
+            <button onclick="addToJournalier('${key}'); event.stopPropagation();" style="background:none; border:none; color:var(--accent);">⭐</button>`;
+            content.appendChild(div);
+        });
+    }
+
+    function enterFolder(path) { db.currentPath = path; render(); }
+
+    function openModal() { document.getElementById('modal').style.display = 'flex'; toggleFields(); }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function toggleFields() {
+        document.getElementById('tech-only-fields').style.display = document.getElementById('is-final').checked ? 'block' : 'none';
+    }
+
+    function saveItem() {
+        const name = document.getElementById('input-name').value;
+        const isTech = document.getElementById('is-final').checked;
+        if(!name) return;
+
+        let current = db;
+        db.currentPath.forEach(p => current = current[p] || current.children[p]);
+        
+        current.children[name] = isTech ? {
+            type: 'tech',
+            status: document.getElementById('select-status').value,
+            note: document.getElementById('input-note').value
+        } : { type: 'folder', children: {} };
+
+        saveDB(); closeModal(); render();
+    }
+
+    function confirmDelete(key) {
+        if(confirm(`Supprimer "${key}" et tout son contenu ?`)) {
+            let current = db;
+            db.currentPath.forEach(p => current = current[p] || current.children[p]);
+            delete current.children[key];
+            saveDB(); render();
+        }
+    }
+
+    function addToJournalier(key) {
+        if(!db.journalier.includes(key)) {
+            db.journalier.push({name: key, path: [...db.currentPath]});
+            saveDB();
+            alert("Ajouté aux raccourcis Journalier !");
+        }
+    }
+
+    function openJournalier() { db.currentPath = ['journalier']; render(); }
+
+    function renderJournalier() {
+        document.getElementById('view-title').innerText = "Journalier";
+        const content = document.getElementById('app-content');
+        content.innerHTML = "<p style='font-size:12px; color:gray;'>Tes raccourcis rapides :</p>";
+        
+        db.journalier.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = "item";
+            div.innerHTML = `<span>${item.name}</span> <button onclick="db.journalier.splice(${index},1); saveDB(); render(); event.stopPropagation();" style="background:none; border:none; color:red;">Retirer</button>`;
+            div.onclick = () => enterFolder([...item.path]);
+            content.appendChild(div);
+        });
+    }
+
+    function showSettings() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", "jjb_backup.json");
+        dlAnchorElem.click();
+    }
+
+    render();
+</script>
 </body>
 </html>
