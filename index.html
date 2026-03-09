@@ -3,36 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V6</title>
+    <title>JJB Vault V7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
-        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; }
+        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff; --on-test: #ff9f0a; --future: #30d158; --already: #64d2ff; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        
+        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: relative; }
+        .version-tag { position: absolute; top: 5px; left: 10px; font-size: 10px; color: var(--turquoise); opacity: 0.7; font-weight: bold; }
+        
         .container { padding: 15px; }
         .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
+        /* Items & Swipe */
         .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: none; }
         .item-main { background: var(--card); padding: 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
         .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         
         .swiped .item-main { transform: translateX(-195px); }
+        .swiped.triple .item-main { transform: translateX(-195px); }
         .swiped.double .item-main { transform: translateX(-130px); }
         .swiped .item-actions { transform: translateX(0); }
 
+        /* Statuts Couleurs */
+        .status-on_test { border-left: 5px solid var(--on-test); }
+        .status-future { border-left: 5px solid var(--future); }
+        .status-already { border-left: 5px solid var(--already); }
+
+        /* Modale */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
-        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); box-shadow: 0 0 20px rgba(0,242,255,0.2); }
-        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; margin:10px 0; border-radius:10px; font-size: 16px; -webkit-appearance: none; }
+        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
+        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; margin:10px 0; border-radius:10px; font-size: 16px; }
         
-        /* Animation Drag */
-        .sortable-ghost { opacity: 0.3; background: var(--turquoise) !important; }
+        .sortable-ghost { opacity: 0.1; background: var(--turquoise) !important; }
+        .sortable-drag { background: #444 !important; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px;">VAULT V6</div>
+    <span class="version-tag">VERSION V7</span>
+    <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px; margin-top: 5px;">ACCUEIL</div>
     <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
 </div>
 
@@ -55,9 +67,9 @@
             <textarea id="input-note" placeholder="Notes techniques..." rows="5"></textarea>
         </div>
         <label style="display:flex; align-items:center; gap:10px; margin:15px 0; font-size:14px; color:#aaa;">
-            <input type="checkbox" id="is-final" onchange="toggleTechFields(this.checked)" style="width:20px; margin:0;"> Technique finale (Notes)
+            <input type="checkbox" id="is-final" onchange="toggleTechFields(this.checked)" style="width:20px; margin:0;"> Technique finale
         </label>
-        <div style="display:flex; gap:12px; margin-top:10px;">
+        <div style="display:flex; gap:12px;">
             <button onclick="closeModal()" style="flex:1; padding:14px; background:#333; color:#fff; border:none; border-radius:12px;">Annuler</button>
             <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); color:#000; border:none; border-radius:12px; font-weight:bold;">Sauver</button>
         </div>
@@ -65,7 +77,7 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v6')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v7')) || {
         journalier: [],
         data: { order: ["Grappling", "Wrestling"], children: { 
             "Grappling": { type: "folder", children: {}, order: [] }, 
@@ -75,7 +87,7 @@
     let currentPath = [];
     let editingKey = null;
 
-    function save() { localStorage.setItem('jjb_vault_v6', JSON.stringify(db)); render(); }
+    function save() { localStorage.setItem('jjb_vault_v7', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; editingKey = null; }
     function toggleTechFields(show) { document.getElementById('tech-fields').style.display = show ? 'block' : 'none'; }
@@ -110,24 +122,35 @@
 
         itemsToRender.forEach((keyOrObj, index) => {
             const key = isJournalier ? keyOrObj.name : keyOrObj;
-            const item = isJournalier ? keyOrObj : current.children[key];
+            let item;
+            if(isJournalier) {
+                let target = db;
+                keyOrObj.path.forEach(p => target = target[p]);
+                item = target.children[key];
+            } else {
+                item = current.children[key];
+            }
             if(!item) return;
 
             const wrap = document.createElement('div');
-            wrap.className = "item-wrapper";
+            const isFav = db.journalier.some(f => f.name === key);
+            wrap.className = `item-wrapper ${item.status ? 'status-'+item.status : ''}`;
             wrap.dataset.id = isJournalier ? index : key;
 
-            const isFav = db.journalier.some(f => f.name === key);
-            
             wrap.innerHTML = `
                 <div class="item-actions">
-                    ${!isJournalier ? `<button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${key}')">${isFav?'🚫':'⭐'}</button>` : ''}
+                    <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${key}')">${isFav?'🚫':'⭐'}</button>
                     <button class="action-btn" style="background:var(--edit)" onclick="editItem('${key}', ${isJournalier})">✏️</button>
                     <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${key}', ${index}, ${isJournalier})">🗑️</button>
                 </div>
-                <div class="item-main"><strong>${key}</strong><span>〉</span></div>`;
+                <div class="item-main">
+                    <div style="display:flex; flex-direction:column;">
+                        <strong>${key}</strong>
+                        ${item.type === 'tech' ? `<span style="font-size:11px; color:#aaa;">Note: ${item.note.substring(0,25)}...</span>` : ''}
+                    </div>
+                    <span>〉</span>
+                </div>`;
 
-            // Swipe logic
             let startX;
             wrap.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
             wrap.addEventListener('touchend', e => {
@@ -137,18 +160,21 @@
             });
 
             wrap.querySelector('.item-main').onclick = () => {
-                if(isJournalier) { currentPath = [...item.path]; render(); }
+                if(isJournalier) { currentPath = [...keyOrObj.path]; render(); }
                 else if(item.type === 'folder') { currentPath.push('children', key); render(); }
-                else alert(item.note || "Aucune note.");
+                else alert(item.note);
             };
             list.appendChild(wrap);
         });
 
-        // Drag & Drop SANS BARRES
+        // DRAG & DROP OPTIMISÉ POUR IPHONE
         new Sortable(list, {
             animation: 150,
-            delay: 400, // Appui long pour déplacer
+            delay: 400,
             delayOnTouchOnly: true,
+            touchStartThreshold: 5,
+            forceFallback: true, // Crucial pour iOS
+            fallbackClass: "sortable-drag",
             onEnd: function() {
                 const newOrder = Array.from(list.children).map(el => el.dataset.id);
                 if(isJournalier) {
@@ -165,6 +191,7 @@
         editingKey = null;
         document.getElementById('modal-title').innerText = "Ajouter";
         document.getElementById('input-name').value = "";
+        document.getElementById('input-note').value = "";
         document.getElementById('is-final').checked = false;
         toggleTechFields(false);
         document.getElementById('modal').style.display = 'flex';
@@ -173,18 +200,13 @@
     function editItem(key, fromJournalier) {
         let item;
         let pathForEdit = [...currentPath];
-        
         if(fromJournalier) {
             const fav = db.journalier.find(f => f.name === key);
             pathForEdit = fav.path;
-            let target = db;
-            pathForEdit.forEach(p => target = target[p]);
-            item = target.children[key];
-        } else {
-            let target = db;
-            currentPath.forEach(p => target = target[p]);
-            item = target.children[key];
         }
+        let target = db;
+        pathForEdit.forEach(p => target = target[p]);
+        item = target.children[key];
 
         editingKey = { name: key, path: pathForEdit };
         document.getElementById('modal-title').innerText = "Modifier";
@@ -210,22 +232,19 @@
         if(editingKey && editingKey.name !== name) {
             delete current.children[editingKey.name];
             current.order = current.order.filter(k => k !== editingKey.name);
-            // Update Journalier name
             db.journalier.forEach(f => { if(f.name === editingKey.name) f.name = name; });
         }
 
         current.children[name] = isTech ? { 
-            type: 'tech', 
-            status: document.getElementById('select-status').value,
-            note: document.getElementById('input-note').value 
-        } : { type: 'folder', children: {}, order: (current.children[name] ? current.children[name].order : []) };
+            type: 'tech', status: document.getElementById('select-status').value, note: document.getElementById('input-note').value 
+        } : { type: 'folder', children: {}, order: (current.children[name]?.order || []) };
         
         if(!current.order.includes(name)) current.order.push(name);
         save(); closeModal();
     }
 
     function deleteItem(key, index, fromJournalier) {
-        if(!confirm("Supprimer définitivement ?")) return;
+        if(!confirm("Supprimer ?")) return;
         if(fromJournalier) {
             db.journalier.splice(index, 1);
         } else {
@@ -240,11 +259,8 @@
 
     function toggleFav(key) {
         const idx = db.journalier.findIndex(f => f.name === key);
-        if(idx > -1) {
-            db.journalier.splice(idx, 1);
-        } else {
-            db.journalier.push({name: key, path: [...currentPath]});
-        }
+        if(idx > -1) db.journalier.splice(idx, 1);
+        else db.journalier.push({name: key, path: [...currentPath]});
         save();
     }
 
@@ -252,3 +268,4 @@
 </script>
 </body>
 </html>
+
