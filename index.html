@@ -3,33 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault TURQUOISE</title>
+    <title>JJB Vault V5</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        :root { 
-            --bg: #000; --card: #1c1c1e; --text: #fff; 
-            --turquoise: #00f2ff; /* TA NOUVELLE COULEUR */
-            --danger: #ff453a; 
-        }
+        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; --danger: #ff453a; --edit: #5e5ce6; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; }
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; }
         .container { padding: 15px; }
+        .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        /* LE BOUTON TURQUOISE */
-        .btn-add { 
-            background: var(--turquoise); color: #000; border: none; padding: 15px; 
-            border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; 
-            font-size: 16px; text-transform: uppercase;
-        }
+        /* Items & Swipe */
+        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; display: flex; align-items: center; }
+        .drag-handle { padding: 0 15px; color: #555; font-size: 20px; cursor: grab; z-index: 5; background: var(--card); height: 60px; display: flex; align-items: center; }
+        .item-main { background: var(--card); padding: 18px 15px; flex: 1; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s; }
+        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
+        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; }
         
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; }
-        .item-main { background: var(--card); padding: 18px; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s; }
-        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; }
-        .action-btn { width: 70px; border: none; color: #fff; font-size: 18px; }
-        
-        .swiped .item-main { transform: translateX(-140px); }
-        .swiped.triple .item-main { transform: translateX(-210px); }
+        .swiped .item-main { transform: translateX(-200px); }
         .swiped .item-actions { transform: translateX(0); }
 
+        /* Modal */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:20px; border-radius:15px; width:85%; border: 1px solid var(--turquoise); }
         input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:12px; margin:10px 0; border-radius:8px; font-size: 16px; }
@@ -38,7 +31,7 @@
 <body>
 
 <div class="header">
-    <div id="path-display" style="font-size:10px; color:var(--turquoise);">MODE TURQUOISE ACTIVE</div>
+    <div id="path-display" style="font-size:10px; color:var(--turquoise);">V5 - DRAG & EDIT</div>
     <h2 id="view-title" style="margin:0">JJB Vault</h2>
 </div>
 
@@ -50,7 +43,7 @@
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 style="color:var(--turquoise)">Nouveau</h3>
+        <h3 id="modal-title" style="color:var(--turquoise)">Nouveau</h3>
         <input type="text" id="input-name" placeholder="Nom">
         <div id="tech-fields" style="display:none;">
             <select id="select-status">
@@ -59,7 +52,7 @@
             </select>
             <textarea id="input-note" placeholder="Notes..."></textarea>
         </div>
-        <label style="display:block; margin:10px 0;"><input type="checkbox" id="is-final" onchange="document.getElementById('tech-fields').style.display=this.checked?'block':'none'"> Technique finale</label>
+        <label style="display:block; margin:10px 0;"><input type="checkbox" id="is-final" onchange="toggleTechFields(this.checked)"> Technique finale</label>
         <div style="display:flex; gap:10px;">
             <button onclick="closeModal()" style="flex:1; padding:10px; background:#444; color:#fff; border-radius:8px;">Annuler</button>
             <button onclick="saveItem()" style="flex:1; padding:10px; background:var(--turquoise); color:#000; border-radius:8px; font-weight:bold;">Sauver</button>
@@ -68,8 +61,7 @@
 </div>
 
 <script>
-    // Utilisation d'une nouvelle clé de base de données pour forcer le nettoyage
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v4')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v5')) || {
         journalier: [],
         data: { order: ["Grappling", "Wrestling"], children: { 
             "Grappling": { type: "folder", children: {}, order: [] }, 
@@ -77,10 +69,12 @@
         } }
     };
     let currentPath = [];
+    let editingKey = null;
 
-    function save() { localStorage.setItem('jjb_vault_v4', JSON.stringify(db)); render(); }
+    function save() { localStorage.setItem('jjb_vault_v5', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; editingKey = null; }
+    function toggleTechFields(show) { document.getElementById('tech-fields').style.display = show ? 'block' : 'none'; }
 
     function render() {
         const content = document.getElementById('app-content');
@@ -96,27 +90,33 @@
         let current = db;
         currentPath.forEach(p => current = current[p]);
 
-        content.innerHTML = `<button class="btn-add" onclick="document.getElementById('modal').style.display='flex'">+ Ajouter</button><div id="list"></div>`;
-        const listContainer = document.getElementById('list');
+        const isJournalier = currentPath[0] === 'journalier';
+        content.innerHTML = isJournalier ? '' : `<button class="btn-add" onclick="openAddModal()">+ Ajouter</button>`;
+        
+        const listContainer = document.createElement('div');
+        listContainer.id = "sortable-list";
+        content.appendChild(listContainer);
 
-        const order = current.order || Object.keys(current.children || {});
+        const order = isJournalier ? db.journalier.map((_, i) => i) : (current.order || Object.keys(current.children || {}));
 
         order.forEach((key, index) => {
-            const item = currentPath[0] === 'journalier' ? db.journalier[index] : current.children[key];
+            const item = isJournalier ? db.journalier[index] : current.children[key];
             if(!item) return;
+            const displayName = isJournalier ? item.name : key;
 
             const wrap = document.createElement('div');
             wrap.className = "item-wrapper";
-            if(currentPath[0] === 'data') wrap.classList.add('triple');
+            wrap.dataset.id = key;
             
             wrap.innerHTML = `
+                <div class="drag-handle">≡</div>
                 <div class="item-actions">
-                    ${currentPath[0]==='data' ? `<button class="action-btn" style="background:#0a84ff" onclick="addFav('${key}')">⭐</button>` : ''}
-                    <button class="action-btn" style="background:#ff453a" onclick="deleteItem('${key}', ${index})">🗑️</button>
+                    ${!isJournalier ? `<button class="action-btn" style="background:var(--accent)" onclick="addFav('${key}')">⭐</button>` : ''}
+                    ${!isJournalier ? `<button class="action-btn" style="background:var(--edit)" onclick="editItem('${key}')">✏️</button>` : ''}
+                    <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${key}', ${index})">🗑️</button>
                 </div>
-                <div class="item-main"><strong>${key || item.name}</strong><span>〉</span></div>`;
+                <div class="item-main"><strong>${displayName}</strong><span>〉</span></div>`;
 
-            // Swipe
             let startX;
             wrap.addEventListener('touchstart', e => startX = e.touches[0].clientX);
             wrap.addEventListener('touchend', e => {
@@ -126,54 +126,97 @@
             });
 
             wrap.querySelector('.item-main').onclick = () => {
-                if(currentPath[0] === 'journalier') { currentPath = [...item.path]; render(); }
+                if(isJournalier) { currentPath = [...item.path]; render(); }
                 else if(item.type === 'folder') { currentPath.push('children', key); render(); }
                 else alert(item.note || "Pas de note");
             };
             listContainer.appendChild(wrap);
         });
+
+        new Sortable(listContainer, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function() {
+                const newOrder = Array.from(listContainer.children).map(el => el.dataset.id);
+                if(isJournalier) {
+                    const temp = newOrder.map(idx => db.journalier[idx]);
+                    db.journalier = temp;
+                } else {
+                    current.order = newOrder;
+                }
+                save();
+            }
+        });
+    }
+
+    function openAddModal() {
+        editingKey = null;
+        document.getElementById('modal-title').innerText = "Nouveau";
+        document.getElementById('input-name').value = "";
+        document.getElementById('input-note').value = "";
+        document.getElementById('is-final').checked = false;
+        toggleTechFields(false);
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function editItem(key) {
+        let current = db;
+        currentPath.forEach(p => current = current[p]);
+        const item = current.children[key];
+        editingKey = key;
+        document.getElementById('modal-title').innerText = "Modifier";
+        document.getElementById('input-name').value = key;
+        document.getElementById('is-final').checked = (item.type === 'tech');
+        toggleTechFields(item.type === 'tech');
+        if(item.type === 'tech') {
+            document.getElementById('input-note').value = item.note || "";
+            document.getElementById('select-status').value = item.status || "on_test";
+        }
+        document.getElementById('modal').style.display = 'flex';
     }
 
     function saveItem() {
-        const nameInput = document.getElementById('input-name');
-        const name = nameInput.value.trim();
+        const name = document.getElementById('input-name').value.trim();
         const isTech = document.getElementById('is-final').checked;
         if(!name) return;
 
         let current = db;
         currentPath.forEach(p => current = current[p]);
         
-        if(!current.children) current.children = {};
-        if(!current.order) current.order = [];
+        if(editingKey && editingKey !== name) {
+            delete current.children[editingKey];
+            current.order = current.order.filter(k => k !== editingKey);
+        }
 
         current.children[name] = isTech ? { 
             type: 'tech', 
+            status: document.getElementById('select-status').value,
             note: document.getElementById('input-note').value 
         } : { type: 'folder', children: {}, order: [] };
         
         if(!current.order.includes(name)) current.order.push(name);
-
-        nameInput.value = "";
-        document.getElementById('input-note').value = "";
         save(); closeModal();
     }
 
     function deleteItem(key, index) {
         if(!confirm("Supprimer ?")) return;
-        let current = db;
-        currentPath.forEach(p => current = current[p]);
         if(currentPath[0] === 'journalier') {
             db.journalier.splice(index, 1);
         } else {
+            let current = db;
+            currentPath.forEach(p => current = current[p]);
             delete current.children[key];
             current.order = current.order.filter(k => k !== key);
+            db.journalier = db.journalier.filter(f => f.name !== key);
         }
         save();
     }
 
     function addFav(key) {
-        db.journalier.push({name: key, path: [...currentPath]});
-        save(); alert("Ajouté !");
+        if(!db.journalier.find(f => f.name === key)) {
+            db.journalier.push({name: key, path: [...currentPath]});
+            save();
+        }
     }
 
     render();
