@@ -3,20 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Notre App</title>
+    <title>JJB Master Notes</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-align: center; background-color: #f2f2f7; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); width: 80%; }
-        h1 { color: #1c1c1e; font-size: 24px; }
-        button { background-color: #007aff; color: white; border: none; padding: 15px 25px; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 20px; width: 100%; }
-        button:active { background-color: #0056b3; transform: scale(0.98); }
+        :root {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --text: #ffffff;
+            --accent: #0a84ff;
+            --border-test: #ff9f0a; /* Orange */
+            --border-future: #30d158; /* Vert */
+            --border-already: #64d2ff; /* Turquoise */
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding-bottom: 80px;
+        }
+        .header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .container { padding: 15px; }
+        .menu-item {
+            background: var(--card);
+            margin-bottom: 10px;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 70px;
+            background: var(--card);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #333;
+        }
+        .btn-home { font-size: 24px; background: none; border: none; color: white; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>🚀 C'est en ligne !</h1>
-        <p>L'application de notre groupe fonctionne.</p>
-        <button onclick="alert('Bravo ! Ton app est officiellement sur ton iPhone !')">Tester le bouton</button>
+
+    <div class="header">
+        <h2 id="view-title">JJB Notes</h2>
+        <button id="btn-settings" style="background:none; border:none; color:var(--accent);">⚙️</button>
     </div>
+
+    <div id="app-content" class="container">
+        </div>
+
+    <nav class="nav-bar">
+        <button class="btn-home" onclick="location.reload()">🏠</button>
+    </nav>
+
+    <script>
+        // La structure initiale que tu m'as donnée
+        const initialData = {
+            "Data": {
+                "Grappling": {
+                    "Top": { "Pin": ["Mount", "Side Control"], "Passing": ["Half Guard Pass", "Outside Pass"] },
+                    "Bottom": ["Closed Guard", "Half Guard", "Pin Escape"]
+                },
+                "Wrestling": {
+                    "Single Leg": ["Attack", "Defense"],
+                    "Double Leg": ["Attack", "Defense"]
+                }
+            },
+            "Journalier": {}
+        };
+
+        // On vérifie si on a déjà des données dans le téléphone
+        let myData = JSON.parse(localStorage.getItem('jjb_notes')) || initialData;
+
+        function renderHome() {
+            document.getElementById('view-title').innerText = "Accueil";
+            const content = document.getElementById('app-content');
+            content.innerHTML = `
+                <div class="menu-item" onclick="renderCategory('Journalier')">📂 Journalier <span>></span></div>
+                <div class="menu-item" onclick="renderCategory('Data')">📊 Data <span>></span></div>
+            `;
+        }
+
+        function renderCategory(key) {
+            document.getElementById('view-title').innerText = key;
+            // Logique de navigation simplifiée pour le premier test
+            const content = document.getElementById('app-content');
+            content.innerHTML = `<p style="color:gray">Contenu de ${key} en cours de chargement...</p>`;
+            // On ajoutera la suite du JS à l'étape suivante
+        }
+
+        renderHome();
+    </script>
 </body>
 </html>
