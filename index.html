@@ -3,249 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <title>JJB Vault PRO</title>
     <style>
-        :root {
-            --bg: #000000; --card: #1c1c1e; --text: #ffffff; --accent: #0a84ff;
-            --on-test: #ff9f0a; --future: #30d158; --already: #64d2ff; --danger: #ff453a;
-        }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, system-ui; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
+        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #0a84ff; --danger: #ff453a; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; }
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; }
         .container { padding: 15px; }
-        .btn-add { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; margin-bottom: 20px; font-size: 16px; }
-
-        /* Item & Swipe */
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: initial; }
-        .item-main { 
-            background: var(--card); padding: 18px; position: relative; z-index: 2;
-            display: flex; justify-content: space-between; align-items: center;
-            transition: transform 0.3s ease;
-        }
-        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s ease; }
-        .action-btn { width: 70px; display: flex; justify-content: center; align-items: center; color: white; border: none; }
+        .btn-add { background: var(--accent); color: #fff; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        .swiped .item-main { transform: translateX(-210px); }
-        .swiped.double .item-main { transform: translateX(-140px); }
+        /* Liste et Items */
+        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; }
+        .item-main { background: var(--card); padding: 18px; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s; }
+        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; }
+        .action-btn { width: 70px; border: none; color: #fff; font-size: 18px; }
+        
+        .swiped .item-main { transform: translateX(-140px); }
+        .swiped.triple .item-main { transform: translateX(-210px); }
         .swiped .item-actions { transform: translateX(0); }
 
-        /* Drag & Drop Style */
-        .sortable-ghost { opacity: 0.4; background: var(--accent) !important; }
-        .sortable-drag { background: #444 !important; }
-
-        .status-on_test { border-left: 5px solid var(--on-test); }
-        .status-future { border-left: 5px solid var(--future); }
-        .status-already { border-left: 5px solid var(--already); }
-
+        /* Modale */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:20px; border-radius:15px; width:85%; }
-        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:white; padding:12px; margin:10px 0; border-radius:8px; box-sizing: border-box; font-size: 16px; }
+        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:12px; margin:10px 0; border-radius:8px; font-size: 16px; }
+        
+        /* Drag effect */
+        .dragging { opacity: 0.5; transform: scale(0.95); }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div id="path-display" style="font-size:11px; color:var(--accent);">ACCUEIL</div>
+    <div id="path-display" style="font-size:10px; color:var(--accent);">ACCUEIL</div>
     <h2 id="view-title" style="margin:0">JJB Vault</h2>
 </div>
 
 <div id="app-content" class="container"></div>
 
-<nav style="position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
-    <button onclick="goHome()" style="background:none; border:none; font-size:30px; color:white;">🏠</button>
+<nav style="position:fixed; bottom:0; width:100%; height:70px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333;">
+    <button onclick="goHome()" style="background:none; border:none; font-size:30px;">🏠</button>
 </nav>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-title">Nouveau</h3>
+        <h3>Nouveau</h3>
         <input type="text" id="input-name" placeholder="Nom">
         <div id="tech-fields" style="display:none;">
             <select id="select-status">
                 <option value="on_test">🟡 ON TEST</option>
                 <option value="future">🟢 FUTURE TEST</option>
-                <option value="already">🔵 ALREADY TEST</option>
             </select>
-            <textarea id="input-note" placeholder="Notes..." rows="4"></textarea>
+            <textarea id="input-note" placeholder="Notes..."></textarea>
         </div>
-        <label style="display:block; margin:10px 0; font-size:14px;">
-            <input type="checkbox" id="is-final" onchange="document.getElementById('tech-fields').style.display = this.checked ? 'block' : 'none'"> Technique finale
-        </label>
+        <label style="display:block; margin:10px 0;"><input type="checkbox" id="is-final" onchange="document.getElementById('tech-fields').style.display=this.checked?'block':'none'"> Technique finale</label>
         <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:12px; background:#444; border:none; color:white; border-radius:10px;">Annuler</button>
-            <button onclick="saveItem()" style="flex:1; padding:12px; background:var(--accent); border:none; color:white; border-radius:10px;">Sauver</button>
+            <button onclick="closeModal()" style="flex:1; padding:10px; background:#444; color:#fff; border-radius:8px;">Annuler</button>
+            <button onclick="saveItem()" style="flex:1; padding:10px; background:var(--accent); color:#fff; border-radius:8px;">Sauver</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_db')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_db_v3')) || {
         journalier: [],
         data: { order: ["Grappling", "Wrestling"], children: { "Grappling": { type: "folder", children: {}, order: [] }, "Wrestling": { type: "folder", children: {}, order: [] } } }
     };
     let currentPath = [];
-    let editingKey = null;
 
-    function saveToDisk() { localStorage.setItem('jjb_vault_db', JSON.stringify(db)); }
+    function save() { localStorage.setItem('jjb_db_v3', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; editingKey = null; }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function render() {
         const content = document.getElementById('app-content');
-        const pathDisplay = document.getElementById('path-display');
-        const title = document.getElementById('view-title');
         content.innerHTML = "";
-
+        
         if (currentPath.length === 0) {
-            title.innerText = "JJB Vault";
-            pathDisplay.innerText = "ACCUEIL";
-            content.innerHTML = `
-                <div class="item-wrapper"><div class="item-main" onclick="openJournalier()">📂 Journalier</div></div>
-                <div class="item-wrapper"><div class="item-main" onclick="enterFolder(['data'])">📊 Data</div></div>`;
+            content.innerHTML = `<div class="item-wrapper"><div class="item-main" onclick="currentPath=['journalier'];render()">📂 Journalier</div></div>
+                                 <div class="item-wrapper"><div class="item-main" onclick="currentPath=['data'];render()">📊 Data</div></div>`;
             return;
         }
 
-        if (currentPath[0] === 'journalier') {
-            title.innerText = "Journalier";
-            pathDisplay.innerText = "ACCÈS RAPIDE";
-            const list = document.createElement('div');
-            db.journalier.forEach((fav, idx) => {
-                const item = createItem(fav.name, () => goToPath(fav.path), [
-                    { icon: '🚫', color: 'var(--danger)', onclick: () => { db.journalier.splice(idx,1); saveToDisk(); render(); } }
-                ]);
-                item.classList.add('double');
-                list.appendChild(item);
-            });
-            content.appendChild(list);
-            initSortable(list, (newOrder) => { db.journalier = newOrder.map(n => db.journalier.find(f => f.name === n)); saveToDisk(); });
-            return;
-        }
+        content.innerHTML = `<button class="btn-add" onclick="document.getElementById('modal').style.display='flex'">+ Ajouter</button><div id="list"></div>`;
+        const listContainer = document.getElementById('list');
 
         let current = db;
-        currentPath.forEach(p => { current = current[p]; });
-        title.innerText = currentPath[currentPath.length-1] === "children" ? currentPath[currentPath.length-2] : currentPath[currentPath.length-1];
-        
-        content.innerHTML = `<button class="btn-add" onclick="openModal()">+ Ajouter</button>`;
-        const list = document.createElement('div');
-        
-        const order = current.order || [];
-        order.forEach(key => {
-            const obj = current.children[key];
-            if(!obj) return;
-            const item = createItem(key, () => {
-                if(obj.type === 'folder') { currentPath.push('children', key); render(); }
-                else { alert(obj.note || "Pas de note."); }
-            }, [
-                { icon: '⭐', color: 'var(--accent)', onclick: () => addFav(key) },
-                { icon: '✏️', color: '#5e5ce6', onclick: () => editItem(key) },
-                { icon: '🗑️', color: 'var(--danger)', onclick: (e, btn) => confirmDelete(btn, key) }
-            ], obj.status);
-            list.appendChild(item);
-        });
-        content.appendChild(list);
-        initSortable(list, (newOrder) => { current.order = newOrder; saveToDisk(); });
-    }
+        currentPath.forEach(p => current = current[p]);
+        const order = current.order || Object.keys(current.children || {});
 
-    function createItem(name, onclick, actions, status) {
-        const wrapper = document.createElement('div');
-        wrapper.className = "item-wrapper";
-        wrapper.dataset.id = name;
-        
-        let actionBtns = actions.map(a => `<button class="action-btn" style="background:${a.color}">${a.icon}</button>`).join('');
-        wrapper.innerHTML = `<div class="item-actions">${actionBtns}</div>
-                             <div class="item-main ${status ? 'status-'+status : ''}"><strong>${name}</strong><span>〉</span></div>`;
+        order.forEach((key, index) => {
+            const item = current.children ? current.children[key] : db.journalier[index];
+            if(!item && currentPath[0] !== 'journalier') return;
 
-        const btns = wrapper.querySelectorAll('.action-btn');
-        actions.forEach((a, i) => { btns[i].onclick = (e) => { e.stopPropagation(); a.onclick(e, btns[i]); } });
+            const wrap = document.createElement('div');
+            wrap.className = "item-wrapper";
+            if(currentPath[0] === 'data') wrap.classList.add('triple');
+            
+            wrap.innerHTML = `
+                <div class="item-actions">
+                    ${currentPath[0]==='data' ? `<button class="action-btn" style="background:#0a84ff" onclick="addFav('${key}')">⭐</button>` : ''}
+                    <button class="action-btn" style="background:#ff453a" onclick="deleteItem('${key}', ${index})">🗑️</button>
+                </div>
+                <div class="item-main" draggable="true"><strong>${key || item.name}</strong><span>〉</span></div>`;
 
-        let startX;
-        wrapper.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-        wrapper.addEventListener('touchmove', e => {
-            let diff = startX - e.touches[0].clientX;
-            if (diff > 50) wrapper.classList.add('swiped');
-            if (diff < -50) wrapper.classList.remove('swiped');
-        });
-        wrapper.querySelector('.item-main').onclick = onclick;
-        return wrapper;
-    }
+            // Swipe Logic
+            let startX;
+            wrap.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+            wrap.addEventListener('touchend', e => {
+                let diff = startX - e.changedTouches[0].clientX;
+                if(diff > 50) wrap.classList.add('swiped');
+                else if(diff < -50) wrap.classList.remove('swiped');
+            });
 
-    function initSortable(el, onUpdate) {
-        new Sortable(el, {
-            animation: 150,
-            delay: 500, // Appui long de 500ms pour déplacer
-            delayOnTouchOnly: true,
-            ghostClass: 'sortable-ghost',
-            onEnd: () => {
-                const newOrder = Array.from(el.children).map(item => item.dataset.id);
-                onUpdate(newOrder);
-            }
+            wrap.querySelector('.item-main').onclick = () => {
+                if(currentPath[0] === 'journalier') { currentPath = [...item.path]; render(); }
+                else if(item.type === 'folder') { currentPath.push('children', key); render(); }
+                else alert(item.note);
+            };
+            listContainer.appendChild(wrap);
         });
     }
 
     function saveItem() {
-        const name = document.getElementById('input-name').value.trim();
+        const name = document.getElementById('input-name').value;
         const isTech = document.getElementById('is-final').checked;
         if(!name) return;
-
         let current = db;
-        currentPath.forEach(p => { current = current[p]; });
-        
+        currentPath.forEach(p => current = current[p]);
         if(!current.children) current.children = {};
         if(!current.order) current.order = [];
-
-        if(editingKey) {
-            delete current.children[editingKey];
-            const idx = current.order.indexOf(editingKey);
-            if(idx > -1) current.order.splice(idx, 1);
-        }
-
-        current.children[name] = isTech ? {
-            type: 'tech', status: document.getElementById('select-status').value, note: document.getElementById('input-note').value
-        } : { type: 'folder', children: {}, order: [] };
-        
-        if(!current.order.includes(name)) current.order.push(name);
-
-        saveToDisk(); closeModal(); render();
+        current.children[name] = isTech ? { type:'tech', note: document.getElementById('input-note').value } : { type:'folder', children:{}, order:[] };
+        current.order.push(name);
+        document.getElementById('input-name').value = "";
+        save(); closeModal();
     }
 
-    function confirmDelete(btn, key) {
-        if (btn.innerText === "🗑️") { btn.innerText = "Sûr ?"; setTimeout(() => btn.innerText = "🗑️", 2000); }
-        else {
-            let current = db;
-            currentPath.forEach(p => { current = current[p]; });
-            delete current.children[key];
-            current.order = current.order.filter(o => o !== key);
-            db.journalier = db.journalier.filter(f => f.name !== key);
-            saveToDisk(); render();
-        }
-    }
-
-    function editItem(key) {
+    function deleteItem(key, index) {
+        if(!confirm("Supprimer ?")) return;
         let current = db;
-        currentPath.forEach(p => { current = current[p]; });
-        const obj = current.children[key];
-        editingKey = key;
-        document.getElementById('input-name').value = key;
-        document.getElementById('is-final').checked = (obj.type === 'tech');
-        document.getElementById('tech-fields').style.display = (obj.type === 'tech') ? 'block' : 'none';
-        if(obj.type === 'tech') {
-            document.getElementById('select-status').value = obj.status;
-            document.getElementById('input-note').value = obj.note;
+        currentPath.forEach(p => current = current[p]);
+        if(currentPath[0] === 'journalier') db.journalier.splice(index, 1);
+        else {
+            delete current.children[key];
+            current.order = current.order.filter(k => k !== key);
         }
-        document.getElementById('modal').style.display = 'flex';
+        save();
     }
 
-    function addFav(name) {
-        if(!db.journalier.find(f => f.name === name)) {
-            db.journalier.push({name: name, path: [...currentPath]});
-            saveToDisk();
-        }
-        render();
+    function addFav(key) {
+        db.journalier.push({name: key, path: [...currentPath]});
+        save(); alert("Ajouté !");
     }
 
-    function enterFolder(path) { currentPath = path; render(); }
-    function goToPath(path) { currentPath = path; render(); }
-    function openJournalier() { currentPath = ['journalier']; render(); }
-    
     render();
 </script>
 </body>
