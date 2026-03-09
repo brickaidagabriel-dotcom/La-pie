@@ -3,65 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V5</title>
+    <title>JJB Vault V6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; --danger: #ff453a; --edit: #5e5ce6; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; }
+        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; }
         .container { padding: 15px; }
         .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        /* Items & Swipe */
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; display: flex; align-items: center; }
-        .drag-handle { padding: 0 15px; color: #555; font-size: 20px; cursor: grab; z-index: 5; background: var(--card); height: 60px; display: flex; align-items: center; }
-        .item-main { background: var(--card); padding: 18px 15px; flex: 1; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s; }
+        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: none; }
+        .item-main { background: var(--card); padding: 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
-        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; }
+        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         
-        .swiped .item-main { transform: translateX(-200px); }
+        .swiped .item-main { transform: translateX(-195px); }
+        .swiped.double .item-main { transform: translateX(-130px); }
         .swiped .item-actions { transform: translateX(0); }
 
-        /* Modal */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
-        .modal-content { background:var(--card); padding:20px; border-radius:15px; width:85%; border: 1px solid var(--turquoise); }
-        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:12px; margin:10px 0; border-radius:8px; font-size: 16px; }
+        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); box-shadow: 0 0 20px rgba(0,242,255,0.2); }
+        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; margin:10px 0; border-radius:10px; font-size: 16px; -webkit-appearance: none; }
+        
+        /* Animation Drag */
+        .sortable-ghost { opacity: 0.3; background: var(--turquoise) !important; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div id="path-display" style="font-size:10px; color:var(--turquoise);">V5 - DRAG & EDIT</div>
-    <h2 id="view-title" style="margin:0">JJB Vault</h2>
+    <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px;">VAULT V6</div>
+    <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
 </div>
 
 <div id="app-content" class="container"></div>
 
-<nav style="position:fixed; bottom:0; width:100%; height:70px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
-    <button onclick="goHome()" style="background:none; border:none; font-size:30px; color:white;">🏠</button>
+<nav style="position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
+    <button onclick="goHome()" style="background:none; border:none; font-size:32px; color:white;">🏠</button>
 </nav>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-title" style="color:var(--turquoise)">Nouveau</h3>
+        <h3 id="modal-title" style="color:var(--turquoise); margin-top:0;">Édition</h3>
         <input type="text" id="input-name" placeholder="Nom">
         <div id="tech-fields" style="display:none;">
             <select id="select-status">
                 <option value="on_test">🟡 ON TEST</option>
                 <option value="future">🟢 FUTURE TEST</option>
+                <option value="already">🔵 ALREADY TEST</option>
             </select>
-            <textarea id="input-note" placeholder="Notes..."></textarea>
+            <textarea id="input-note" placeholder="Notes techniques..." rows="5"></textarea>
         </div>
-        <label style="display:block; margin:10px 0;"><input type="checkbox" id="is-final" onchange="toggleTechFields(this.checked)"> Technique finale</label>
-        <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:10px; background:#444; color:#fff; border-radius:8px;">Annuler</button>
-            <button onclick="saveItem()" style="flex:1; padding:10px; background:var(--turquoise); color:#000; border-radius:8px; font-weight:bold;">Sauver</button>
+        <label style="display:flex; align-items:center; gap:10px; margin:15px 0; font-size:14px; color:#aaa;">
+            <input type="checkbox" id="is-final" onchange="toggleTechFields(this.checked)" style="width:20px; margin:0;"> Technique finale (Notes)
+        </label>
+        <div style="display:flex; gap:12px; margin-top:10px;">
+            <button onclick="closeModal()" style="flex:1; padding:14px; background:#333; color:#fff; border:none; border-radius:12px;">Annuler</button>
+            <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); color:#000; border:none; border-radius:12px; font-weight:bold;">Sauver</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v5')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v6')) || {
         journalier: [],
         data: { order: ["Grappling", "Wrestling"], children: { 
             "Grappling": { type: "folder", children: {}, order: [] }, 
@@ -71,7 +75,7 @@
     let currentPath = [];
     let editingKey = null;
 
-    function save() { localStorage.setItem('jjb_vault_v5', JSON.stringify(db)); render(); }
+    function save() { localStorage.setItem('jjb_vault_v6', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; editingKey = null; }
     function toggleTechFields(show) { document.getElementById('tech-fields').style.display = show ? 'block' : 'none'; }
@@ -79,8 +83,11 @@
     function render() {
         const content = document.getElementById('app-content');
         content.innerHTML = "";
+        const isJournalier = currentPath[0] === 'journalier';
         
         if (currentPath.length === 0) {
+            document.getElementById('view-title').innerText = "JJB Vault";
+            document.getElementById('path-display').innerText = "ACCUEIL";
             content.innerHTML = `
                 <div class="item-wrapper"><div class="item-main" onclick="currentPath=['journalier'];render()">📂 Journalier</div></div>
                 <div class="item-wrapper"><div class="item-main" onclick="currentPath=['data'];render()">📊 Data</div></div>`;
@@ -88,59 +95,64 @@
         }
 
         let current = db;
-        currentPath.forEach(p => current = current[p]);
+        if(!isJournalier) currentPath.forEach(p => current = current[p]);
 
-        const isJournalier = currentPath[0] === 'journalier';
-        content.innerHTML = isJournalier ? '' : `<button class="btn-add" onclick="openAddModal()">+ Ajouter</button>`;
+        document.getElementById('view-title').innerText = isJournalier ? "Journalier" : (currentPath[currentPath.length-1] === "children" ? currentPath[currentPath.length-2] : currentPath[currentPath.length-1]);
+        document.getElementById('path-display').innerText = isJournalier ? "ACCÈS RAPIDE" : currentPath.filter(p => p !== "children" && p !== "data").join(" > ").toUpperCase();
+
+        if(!isJournalier) content.innerHTML = `<button class="btn-add" onclick="openAddModal()">+ AJOUTER</button>`;
         
-        const listContainer = document.createElement('div');
-        listContainer.id = "sortable-list";
-        content.appendChild(listContainer);
+        const list = document.createElement('div');
+        list.id = "sortable-list";
+        content.appendChild(list);
 
-        const order = isJournalier ? db.journalier.map((_, i) => i) : (current.order || Object.keys(current.children || {}));
+        const itemsToRender = isJournalier ? db.journalier : (current.order || []);
 
-        order.forEach((key, index) => {
-            const item = isJournalier ? db.journalier[index] : current.children[key];
+        itemsToRender.forEach((keyOrObj, index) => {
+            const key = isJournalier ? keyOrObj.name : keyOrObj;
+            const item = isJournalier ? keyOrObj : current.children[key];
             if(!item) return;
-            const displayName = isJournalier ? item.name : key;
 
             const wrap = document.createElement('div');
             wrap.className = "item-wrapper";
-            wrap.dataset.id = key;
+            wrap.dataset.id = isJournalier ? index : key;
+
+            const isFav = db.journalier.some(f => f.name === key);
             
             wrap.innerHTML = `
-                <div class="drag-handle">≡</div>
                 <div class="item-actions">
-                    ${!isJournalier ? `<button class="action-btn" style="background:var(--accent)" onclick="addFav('${key}')">⭐</button>` : ''}
-                    ${!isJournalier ? `<button class="action-btn" style="background:var(--edit)" onclick="editItem('${key}')">✏️</button>` : ''}
-                    <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${key}', ${index})">🗑️</button>
+                    ${!isJournalier ? `<button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${key}')">${isFav?'🚫':'⭐'}</button>` : ''}
+                    <button class="action-btn" style="background:var(--edit)" onclick="editItem('${key}', ${isJournalier})">✏️</button>
+                    <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${key}', ${index}, ${isJournalier})">🗑️</button>
                 </div>
-                <div class="item-main"><strong>${displayName}</strong><span>〉</span></div>`;
+                <div class="item-main"><strong>${key}</strong><span>〉</span></div>`;
 
+            // Swipe logic
             let startX;
-            wrap.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+            wrap.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
             wrap.addEventListener('touchend', e => {
                 let diff = startX - e.changedTouches[0].clientX;
-                if(diff > 50) wrap.classList.add('swiped');
-                else if(diff < -50) wrap.classList.remove('swiped');
+                if(diff > 60) wrap.classList.add('swiped');
+                else if(diff < -60) wrap.classList.remove('swiped');
             });
 
             wrap.querySelector('.item-main').onclick = () => {
                 if(isJournalier) { currentPath = [...item.path]; render(); }
                 else if(item.type === 'folder') { currentPath.push('children', key); render(); }
-                else alert(item.note || "Pas de note");
+                else alert(item.note || "Aucune note.");
             };
-            listContainer.appendChild(wrap);
+            list.appendChild(wrap);
         });
 
-        new Sortable(listContainer, {
-            handle: '.drag-handle',
+        // Drag & Drop SANS BARRES
+        new Sortable(list, {
             animation: 150,
+            delay: 400, // Appui long pour déplacer
+            delayOnTouchOnly: true,
             onEnd: function() {
-                const newOrder = Array.from(listContainer.children).map(el => el.dataset.id);
+                const newOrder = Array.from(list.children).map(el => el.dataset.id);
                 if(isJournalier) {
-                    const temp = newOrder.map(idx => db.journalier[idx]);
-                    db.journalier = temp;
+                    db.journalier = newOrder.map(idx => db.journalier[idx]);
                 } else {
                     current.order = newOrder;
                 }
@@ -151,19 +163,30 @@
 
     function openAddModal() {
         editingKey = null;
-        document.getElementById('modal-title').innerText = "Nouveau";
+        document.getElementById('modal-title').innerText = "Ajouter";
         document.getElementById('input-name').value = "";
-        document.getElementById('input-note').value = "";
         document.getElementById('is-final').checked = false;
         toggleTechFields(false);
         document.getElementById('modal').style.display = 'flex';
     }
 
-    function editItem(key) {
-        let current = db;
-        currentPath.forEach(p => current = current[p]);
-        const item = current.children[key];
-        editingKey = key;
+    function editItem(key, fromJournalier) {
+        let item;
+        let pathForEdit = [...currentPath];
+        
+        if(fromJournalier) {
+            const fav = db.journalier.find(f => f.name === key);
+            pathForEdit = fav.path;
+            let target = db;
+            pathForEdit.forEach(p => target = target[p]);
+            item = target.children[key];
+        } else {
+            let target = db;
+            currentPath.forEach(p => target = target[p]);
+            item = target.children[key];
+        }
+
+        editingKey = { name: key, path: pathForEdit };
         document.getElementById('modal-title').innerText = "Modifier";
         document.getElementById('input-name').value = key;
         document.getElementById('is-final').checked = (item.type === 'tech');
@@ -180,27 +203,30 @@
         const isTech = document.getElementById('is-final').checked;
         if(!name) return;
 
+        let path = editingKey ? editingKey.path : currentPath;
         let current = db;
-        currentPath.forEach(p => current = current[p]);
-        
-        if(editingKey && editingKey !== name) {
-            delete current.children[editingKey];
-            current.order = current.order.filter(k => k !== editingKey);
+        path.forEach(p => current = current[p]);
+
+        if(editingKey && editingKey.name !== name) {
+            delete current.children[editingKey.name];
+            current.order = current.order.filter(k => k !== editingKey.name);
+            // Update Journalier name
+            db.journalier.forEach(f => { if(f.name === editingKey.name) f.name = name; });
         }
 
         current.children[name] = isTech ? { 
             type: 'tech', 
             status: document.getElementById('select-status').value,
             note: document.getElementById('input-note').value 
-        } : { type: 'folder', children: {}, order: [] };
+        } : { type: 'folder', children: {}, order: (current.children[name] ? current.children[name].order : []) };
         
         if(!current.order.includes(name)) current.order.push(name);
         save(); closeModal();
     }
 
-    function deleteItem(key, index) {
-        if(!confirm("Supprimer ?")) return;
-        if(currentPath[0] === 'journalier') {
+    function deleteItem(key, index, fromJournalier) {
+        if(!confirm("Supprimer définitivement ?")) return;
+        if(fromJournalier) {
             db.journalier.splice(index, 1);
         } else {
             let current = db;
@@ -212,11 +238,14 @@
         save();
     }
 
-    function addFav(key) {
-        if(!db.journalier.find(f => f.name === key)) {
+    function toggleFav(key) {
+        const idx = db.journalier.findIndex(f => f.name === key);
+        if(idx > -1) {
+            db.journalier.splice(idx, 1);
+        } else {
             db.journalier.push({name: key, path: [...currentPath]});
-            save();
         }
+        save();
     }
 
     render();
