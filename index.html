@@ -3,15 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault PRO</title>
+    <title>JJB Vault TURQUOISE</title>
     <style>
-        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #0a84ff; --danger: #ff453a; }
+        :root { 
+            --bg: #000; --card: #1c1c1e; --text: #fff; 
+            --turquoise: #00f2ff; /* TA NOUVELLE COULEUR */
+            --danger: #ff453a; 
+        }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; }
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; }
         .container { padding: 15px; }
-        .btn-add { background: var(--accent); color: #fff; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        /* Liste et Items */
+        /* LE BOUTON TURQUOISE */
+        .btn-add { 
+            background: var(--turquoise); color: #000; border: none; padding: 15px; 
+            border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; 
+            font-size: 16px; text-transform: uppercase;
+        }
+        
         .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; }
         .item-main { background: var(--card); padding: 18px; position: relative; z-index: 2; display: flex; justify-content: space-between; transition: transform 0.3s; }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; }
@@ -21,31 +30,27 @@
         .swiped.triple .item-main { transform: translateX(-210px); }
         .swiped .item-actions { transform: translateX(0); }
 
-        /* Modale */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center; }
-        .modal-content { background:var(--card); padding:20px; border-radius:15px; width:85%; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
+        .modal-content { background:var(--card); padding:20px; border-radius:15px; width:85%; border: 1px solid var(--turquoise); }
         input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:12px; margin:10px 0; border-radius:8px; font-size: 16px; }
-        
-        /* Drag effect */
-        .dragging { opacity: 0.5; transform: scale(0.95); }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div id="path-display" style="font-size:10px; color:var(--accent);">ACCUEIL</div>
+    <div id="path-display" style="font-size:10px; color:var(--turquoise);">MODE TURQUOISE ACTIVE</div>
     <h2 id="view-title" style="margin:0">JJB Vault</h2>
 </div>
 
 <div id="app-content" class="container"></div>
 
-<nav style="position:fixed; bottom:0; width:100%; height:70px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333;">
-    <button onclick="goHome()" style="background:none; border:none; font-size:30px;">🏠</button>
+<nav style="position:fixed; bottom:0; width:100%; height:70px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
+    <button onclick="goHome()" style="background:none; border:none; font-size:30px; color:white;">🏠</button>
 </nav>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3>Nouveau</h3>
+        <h3 style="color:var(--turquoise)">Nouveau</h3>
         <input type="text" id="input-name" placeholder="Nom">
         <div id="tech-fields" style="display:none;">
             <select id="select-status">
@@ -57,19 +62,23 @@
         <label style="display:block; margin:10px 0;"><input type="checkbox" id="is-final" onchange="document.getElementById('tech-fields').style.display=this.checked?'block':'none'"> Technique finale</label>
         <div style="display:flex; gap:10px;">
             <button onclick="closeModal()" style="flex:1; padding:10px; background:#444; color:#fff; border-radius:8px;">Annuler</button>
-            <button onclick="saveItem()" style="flex:1; padding:10px; background:var(--accent); color:#fff; border-radius:8px;">Sauver</button>
+            <button onclick="saveItem()" style="flex:1; padding:10px; background:var(--turquoise); color:#000; border-radius:8px; font-weight:bold;">Sauver</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_db_v3')) || {
+    // Utilisation d'une nouvelle clé de base de données pour forcer le nettoyage
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v4')) || {
         journalier: [],
-        data: { order: ["Grappling", "Wrestling"], children: { "Grappling": { type: "folder", children: {}, order: [] }, "Wrestling": { type: "folder", children: {}, order: [] } } }
+        data: { order: ["Grappling", "Wrestling"], children: { 
+            "Grappling": { type: "folder", children: {}, order: [] }, 
+            "Wrestling": { type: "folder", children: {}, order: [] } 
+        } }
     };
     let currentPath = [];
 
-    function save() { localStorage.setItem('jjb_db_v3', JSON.stringify(db)); render(); }
+    function save() { localStorage.setItem('jjb_vault_v4', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
@@ -78,21 +87,23 @@
         content.innerHTML = "";
         
         if (currentPath.length === 0) {
-            content.innerHTML = `<div class="item-wrapper"><div class="item-main" onclick="currentPath=['journalier'];render()">📂 Journalier</div></div>
-                                 <div class="item-wrapper"><div class="item-main" onclick="currentPath=['data'];render()">📊 Data</div></div>`;
+            content.innerHTML = `
+                <div class="item-wrapper"><div class="item-main" onclick="currentPath=['journalier'];render()">📂 Journalier</div></div>
+                <div class="item-wrapper"><div class="item-main" onclick="currentPath=['data'];render()">📊 Data</div></div>`;
             return;
         }
+
+        let current = db;
+        currentPath.forEach(p => current = current[p]);
 
         content.innerHTML = `<button class="btn-add" onclick="document.getElementById('modal').style.display='flex'">+ Ajouter</button><div id="list"></div>`;
         const listContainer = document.getElementById('list');
 
-        let current = db;
-        currentPath.forEach(p => current = current[p]);
         const order = current.order || Object.keys(current.children || {});
 
         order.forEach((key, index) => {
-            const item = current.children ? current.children[key] : db.journalier[index];
-            if(!item && currentPath[0] !== 'journalier') return;
+            const item = currentPath[0] === 'journalier' ? db.journalier[index] : current.children[key];
+            if(!item) return;
 
             const wrap = document.createElement('div');
             wrap.className = "item-wrapper";
@@ -103,9 +114,9 @@
                     ${currentPath[0]==='data' ? `<button class="action-btn" style="background:#0a84ff" onclick="addFav('${key}')">⭐</button>` : ''}
                     <button class="action-btn" style="background:#ff453a" onclick="deleteItem('${key}', ${index})">🗑️</button>
                 </div>
-                <div class="item-main" draggable="true"><strong>${key || item.name}</strong><span>〉</span></div>`;
+                <div class="item-main"><strong>${key || item.name}</strong><span>〉</span></div>`;
 
-            // Swipe Logic
+            // Swipe
             let startX;
             wrap.addEventListener('touchstart', e => startX = e.touches[0].clientX);
             wrap.addEventListener('touchend', e => {
@@ -117,23 +128,33 @@
             wrap.querySelector('.item-main').onclick = () => {
                 if(currentPath[0] === 'journalier') { currentPath = [...item.path]; render(); }
                 else if(item.type === 'folder') { currentPath.push('children', key); render(); }
-                else alert(item.note);
+                else alert(item.note || "Pas de note");
             };
             listContainer.appendChild(wrap);
         });
     }
 
     function saveItem() {
-        const name = document.getElementById('input-name').value;
+        const nameInput = document.getElementById('input-name');
+        const name = nameInput.value.trim();
         const isTech = document.getElementById('is-final').checked;
         if(!name) return;
+
         let current = db;
         currentPath.forEach(p => current = current[p]);
+        
         if(!current.children) current.children = {};
         if(!current.order) current.order = [];
-        current.children[name] = isTech ? { type:'tech', note: document.getElementById('input-note').value } : { type:'folder', children:{}, order:[] };
-        current.order.push(name);
-        document.getElementById('input-name').value = "";
+
+        current.children[name] = isTech ? { 
+            type: 'tech', 
+            note: document.getElementById('input-note').value 
+        } : { type: 'folder', children: {}, order: [] };
+        
+        if(!current.order.includes(name)) current.order.push(name);
+
+        nameInput.value = "";
+        document.getElementById('input-note').value = "";
         save(); closeModal();
     }
 
@@ -141,8 +162,9 @@
         if(!confirm("Supprimer ?")) return;
         let current = db;
         currentPath.forEach(p => current = current[p]);
-        if(currentPath[0] === 'journalier') db.journalier.splice(index, 1);
-        else {
+        if(currentPath[0] === 'journalier') {
+            db.journalier.splice(index, 1);
+        } else {
             delete current.children[key];
             current.order = current.order.filter(k => k !== key);
         }
