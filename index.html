@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V17 - Multi-Media</title>
+    <title>JJB Vault V18 - Fix</title>
     <style>
         :root { 
             --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; 
@@ -12,54 +12,42 @@
         * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; height: 100vh; overflow: hidden; }
         
-        /* Layout Standard */
-        .header { padding: 15px 20px; background: var(--card); border-bottom: 1px solid #333; }
+        .header { padding: 15px 20px; background: var(--card); border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
         .back-btn { color: var(--turquoise); font-weight: bold; border: none; background: none; font-size: 16px; cursor: pointer; }
-        .container { padding: 15px; overflow-y: auto; height: calc(100vh - 150px); }
+        .container { padding: 15px; overflow-y: auto; height: calc(100vh - 140px); }
 
-        /* Items */
-        .item-wrapper { background: var(--card); margin-bottom: 8px; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; border-left: 4px solid transparent; }
+        .item-wrapper { background: var(--card); margin-bottom: 10px; padding: 22px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid transparent; }
         .status-on_test { border-left-color: var(--on-test); }
         .status-already { border-left-color: var(--already); }
         .status-future { border-left-color: var(--future); }
 
-        /* Split Screen Editor */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
         .tabs { display: flex; gap: 5px; padding: 10px; background: #111; }
         .tab { flex: 1; padding: 12px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.3; color: #000; }
         .tab.active { opacity: 1; outline: 2px solid #fff; }
 
         .editor-split { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-        
-        /* Zone Texte */
         .text-zone { flex: 1; position: relative; border-bottom: 2px solid #333; }
-        #note-display { position: absolute; top:0; left:0; width:100%; height:100%; padding:20px; font-size:17px; pointer-events:none; white-space:pre-wrap; color: #fff; z-index: 1; }
+        #note-display { position: absolute; top:0; left:0; width:100%; height:100%; padding:20px; font-size:17px; pointer-events:none; white-space:pre-wrap; z-index: 1; }
         #note-textarea { width:100%; height:100%; background:transparent; border:none; color:transparent; caret-color:white; padding:20px; font-size:17px; resize:none; outline:none; z-index: 2; position: relative; -webkit-user-select: text; user-select: text; }
 
-        /* Zone Vidéo */
-        .video-zone { flex: 1; background: #000; position: relative; overflow: hidden; }
-        .video-container { width: 100%; height: 100%; padding: 10px; transition: transform 0.3s ease; position: relative; z-index: 10; background: #000; }
-        .video-delete-bg { position: absolute; right: 0; top: 0; width: 100%; height: 100%; background: var(--danger); display: flex; align-items: center; justify-content: flex-end; padding-right: 30px; font-weight: bold; z-index: 1; }
-        
+        .video-zone { flex: 1; background: #000; position: relative; overflow: hidden; padding: 10px; }
         .video-placeholder { border: 2px dashed #444; border-radius: 15px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; }
         iframe { width: 100%; height: 100%; border-radius: 10px; border: none; }
         
-        .swiped-video { transform: translateX(-100px); }
-
-        /* Modals */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:5000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:90%; border: 1px solid var(--turquoise); }
         input { width: 100%; padding: 12px; margin: 10px 0; background: #2c2c2e; border: 1px solid #444; color: #fff; border-radius: 8px; -webkit-user-select: text; }
         
-        .wiki-link { color: var(--turquoise); text-decoration: underline; pointer-events: auto; }
+        .wiki-link { color: var(--turquoise); text-decoration: underline; pointer-events: auto; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="main-view">
-    <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
+    <div class="header">
         <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility:hidden">〈 Retour</button>
-        <span id="path-display" style="font-size:10px; color:var(--turquoise);">ACCUEIL</span>
+        <span id="path-display" style="font-size:10px; color:var(--turquoise); font-weight:bold;">ACCUEIL</span>
         <div style="width:40px;"></div>
     </div>
     <div class="container" id="app-content"></div>
@@ -69,7 +57,7 @@
 </div>
 
 <div id="note-editor">
-    <div class="header" style="display:flex; justify-content:space-between;">
+    <div class="header">
         <button onclick="closeEditor()" class="back-btn">〈 Fermer</button>
         <strong id="editor-title">Note</strong>
         <div style="width:40px;"></div>
@@ -84,38 +72,58 @@
             <div id="note-display"></div>
             <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
         </div>
-        <div class="video-zone" id="video-zone">
-            <div class="video-delete-bg">SUPPRIMER</div>
-            <div class="video-container" id="video-container">
-                </div>
-        </div>
+        <div class="video-zone" id="video-area">
+            </div>
     </div>
 </div>
 
 <div id="import-modal" class="modal">
     <div class="modal-content">
-        <h3 style="margin-top:0">Importer une ressource</h3>
-        <p style="font-size:12px; color:#aaa;">YouTube, Shorts, TikTok, Instagram</p>
-        <input type="text" id="inp-url" placeholder="Coller le lien ici">
+        <h3 style="margin:0; color:var(--turquoise);">Importer</h3>
+        <input type="text" id="inp-url" placeholder="Lien YouTube, TikTok, Insta...">
         <div id="time-wrap" style="display:none">
-            <input type="text" id="inp-time" placeholder="Timecode (ex: 2:10 à 3:00)">
+            <input type="text" id="inp-time" placeholder="Timecode (ex: 1:05 à 2:30)">
         </div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button onclick="closeImport()" style="flex:1; padding:12px; border:none; border-radius:8px;">Annuler</button>
-            <button onclick="confirmImport()" style="flex:1; padding:12px; border:none; border-radius:8px; background:var(--turquoise); font-weight:bold;">Importer</button>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="closeImport()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#333; color:#fff;">Annuler</button>
+            <button onclick="confirmImport()" style="flex:1; padding:12px; border:none; border-radius:8px; background:var(--turquoise); font-weight:bold;">OK</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v17')) || { journalier:[], data:{ order:[], children:{} } };
+    // STRUCTURE INITIALE COMPLÈTE
+    const initialDB = {
+        journalier: [],
+        data: { 
+            order: ["Grappling", "Wrestling"], 
+            children: { 
+                "Grappling": { type: "folder", order: ["Top", "Bottom"], children: {
+                    "Top": { type: "folder", order: ["Pin"], children: {
+                        "Pin": { type: "folder", order: ["Mount"], children: { 
+                            "Mount": {type:"folder", order:["Underhook Control"], children:{
+                                "Underhook Control": {
+                                    type: "tech", status: "on_test", notes: { on_test: "essayez de grimper avec votre main comme une araignée pour passer en chest wrap", already: "prendre le poignet et le plaquer au sol", future: "" }, videos: {}
+                                }
+                            }}
+                        }}
+                    }},
+                    "Bottom": { type: "folder", order: [], children: {} }
+                }},
+                "Wrestling": { type: "folder", order: ["Underhook"], children: {
+                    "Underhook": { type: "folder", order: ["Attack"], children: { "Attack":{type:"folder", children:{}, order:[]} } }
+                }}
+            } 
+        }
+    };
+
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v18')) || initialDB;
     let currentPath = [];
     let activeItem = null;
     let currentStatus = 'on_test';
     let startX = 0;
 
-    // --- NAVIGATION ---
-    function save() { localStorage.setItem('jjb_vault_v17', JSON.stringify(db)); render(); }
+    function save() { localStorage.setItem('jjb_vault_v18', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1]==='children') currentPath.pop(); render(); }
 
@@ -124,6 +132,7 @@
         content.innerHTML = "";
         const isHome = currentPath.length === 0;
         document.getElementById('btn-back').style.visibility = isHome ? "hidden" : "visible";
+        document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p => p !== "children").join(" > ").toUpperCase();
 
         if(isHome) {
             renderItem(content, "Journalier", () => {currentPath=['journalier']; render();});
@@ -132,7 +141,7 @@
         }
 
         let curr = db; currentPath.forEach(p => curr = curr[p]);
-        if(curr.order) {
+        if(curr && curr.order) {
             curr.order.forEach(key => {
                 const item = curr.children[key];
                 renderItem(content, key, () => {
@@ -151,14 +160,12 @@
         parent.appendChild(div);
     }
 
-    // --- EDITOR ---
     function openEditor(key, path) {
         let parent = db; path.forEach(p => parent = parent[p]);
         activeItem = parent.children[key];
         document.getElementById('editor-title').innerText = key;
         document.getElementById('note-editor').style.display = 'flex';
         switchTab(activeItem.status || 'on_test');
-        setupSwipeDelete();
     }
 
     function switchTab(status) {
@@ -166,42 +173,44 @@
         activeItem.status = status;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-'+status).classList.add('active');
-        
         const text = (activeItem.notes && activeItem.notes[status]) ? activeItem.notes[status] : "";
         document.getElementById('note-textarea').value = text;
         updateWiki(text);
         renderVideo();
     }
 
-    function handleInput() {
-        if(!activeItem.notes) activeItem.notes = {};
-        activeItem.notes[currentStatus] = document.getElementById('note-textarea').value;
-        updateWiki(activeItem.notes[currentStatus]);
-        localStorage.setItem('jjb_vault_v17', JSON.stringify(db));
-    }
-
     function renderVideo() {
-        const container = document.getElementById('video-container');
+        const area = document.getElementById('video-area');
         const videoData = (activeItem.videos && activeItem.videos[currentStatus]) ? activeItem.videos[currentStatus] : null;
 
         if(!videoData) {
-            container.innerHTML = `<div class="video-placeholder" onclick="openImport()"><span>➕</span><p>Ajouter une vidéo pour cet onglet</p></div>`;
+            area.innerHTML = `<div class="video-placeholder" onclick="openImport()"><span>➕</span><p>Ajouter une vidéo (${currentStatus})</p></div>`;
         } else {
             let embed = "";
             if(videoData.url.includes("youtube.com") || videoData.url.includes("youtu.be")) {
                 const id = extractYT(videoData.url);
                 embed = `<iframe src="https://www.youtube.com/embed/${id}"></iframe>`;
             } else {
-                embed = `<div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#111; border-radius:10px; border:1px solid var(--turquoise);">
-                            <p style="font-size:24px;">📱</p>
-                            <button onclick="window.open('${videoData.url}')" style="background:var(--turquoise); border:none; padding:10px 20px; border-radius:20px; font-weight:bold;">Ouvrir la Vidéo</button>
+                embed = `<div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#111; border-radius:12px; border:1px solid var(--turquoise);">
+                            <p style="font-size:30px; margin:0;">📱</p>
+                            <button onclick="window.open('${videoData.url}')" style="margin-top:10px; background:var(--turquoise); border:none; padding:12px 20px; border-radius:20px; font-weight:bold;">Ouvrir la vidéo</button>
                          </div>`;
             }
-            container.innerHTML = embed + (videoData.time ? `<div style="color:var(--turquoise); font-size:11px; margin-top:5px;">⏱ ${videoData.time}</div>` : "");
+            area.innerHTML = embed + (videoData.time ? `<div style="color:var(--turquoise); font-size:12px; margin-top:8px; text-align:center; font-weight:bold;">⏱ ${videoData.time}</div>` : "");
+            
+            // Swipe pour supprimer
+            area.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+            area.addEventListener('touchend', e => {
+                if(startX - e.changedTouches[0].clientX > 100) {
+                    if(confirm("Supprimer la vidéo de cet onglet ?")) {
+                        delete activeItem.videos[currentStatus];
+                        save(); renderVideo();
+                    }
+                }
+            });
         }
     }
 
-    // --- VIDEO ACTIONS ---
     function openImport() {
         document.getElementById('import-modal').style.display = 'flex';
         document.getElementById('inp-url').oninput = (e) => {
@@ -209,38 +218,29 @@
             document.getElementById('time-wrap').style.display = isYT ? 'block' : 'none';
         };
     }
-    function closeImport() { document.getElementById('import-modal').style.display = 'none'; }
-    
     function confirmImport() {
         const url = document.getElementById('inp-url').value;
         const time = document.getElementById('inp-time').value;
-        if(!activeItem.videos) activeItem.videos = {};
-        activeItem.videos[currentStatus] = { url, time };
-        save();
-        renderVideo();
+        if(url) {
+            if(!activeItem.videos) activeItem.videos = {};
+            activeItem.videos[currentStatus] = { url, time };
+            save(); renderVideo();
+        }
         closeImport();
     }
-
-    function setupSwipeDelete() {
-        const el = document.getElementById('video-container');
-        el.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-        el.addEventListener('touchend', e => {
-            const diff = startX - e.changedTouches[0].clientX;
-            if(diff > 80 && activeItem.videos && activeItem.videos[currentStatus]) {
-                if(confirm("Supprimer la vidéo de cet onglet ?")) {
-                    delete activeItem.videos[currentStatus];
-                    save();
-                    renderVideo();
-                }
-            }
-        });
-    }
+    function closeImport() { document.getElementById('import-modal').style.display = 'none'; }
 
     function extractYT(url) {
         const reg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
         const m = url.match(reg); return (m&&m[2].length==11)?m[2]:"";
     }
 
+    function handleInput() {
+        if(!activeItem.notes) activeItem.notes = {};
+        activeItem.notes[currentStatus] = document.getElementById('note-textarea').value;
+        updateWiki(activeItem.notes[currentStatus]);
+        localStorage.setItem('jjb_vault_v18', JSON.stringify(db));
+    }
     function updateWiki(t) { document.getElementById('note-display').innerText = t; }
     function syncScroll() { document.getElementById('note-display').scrollTop = document.getElementById('note-textarea').scrollTop; }
     function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
