@@ -172,10 +172,10 @@ border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;font-
 .t-on.act{color:#6dbb8a;border-color:#6dbb8a;}
 .t-al.act{color:#c47a5a;border-color:#c47a5a;}
 .t-fu.act{color:#7aaec8;border-color:#7aaec8;}
-.fbody{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.fbody{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
 
 /* NOTE AREA */
-.narea{flex:1;position:relative;min-height:0;border-bottom:1px solid #302e2c;}
+.narea{flex:0 0 50%;position:relative;min-height:0;border-bottom:1px solid #302e2c;overflow:hidden;}
 .ntarea{position:absolute;inset:0;background:#111110;border:none;color:#e8e0d0;
 font-family:inherit;font-size:15px;padding:16px;resize:none;outline:none;
 line-height:1.9;caret-color:#c8a96e;
@@ -189,7 +189,7 @@ overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:2;display:none;}
 text-underline-offset:3px;cursor:pointer;}
 
 /* VIDEO */
-.vsec{flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid #302e2c;}
+.vsec{flex:0 0 50%;display:flex;flex-direction:column;border-top:1px solid #302e2c;min-height:0;overflow:hidden;}
 .vhdr{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;
 border-bottom:1px solid #302e2c;background:#1a1917;flex-shrink:0;}
 .vhdr-t{font-size:12px;font-weight:700;color:#a09880;letter-spacing:1.5px;}
@@ -281,6 +281,7 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
 <div id="gt">
   <button class="bbk" id="tbk" onclick="topBack()">‹</button>
   <div id="tt"></div>
+  <button class="bic" id="tbtn-carnet" style="display:none;font-size:18px;" onclick="SFX.click();toggleFinalCarnet()" title="Carnet">📋</button>
   <button class="bic" onclick="SFX.click();openSettings()">⚙</button>
 </div>
 <div id="gh"><button class="btn bhm" onclick="SFX.back();goHome()">⌂  Pièce principale</button></div>
@@ -600,6 +601,9 @@ function setTopbar(id){
   const isHome=id==='home';
   document.getElementById('gt').classList.toggle('on',!isHome);
   document.getElementById('gh').classList.toggle('on',!isHome);
+  // carnet button only on final screen
+  const cb=document.getElementById('tbtn-carnet');
+  if(cb)cb.style.display=(id==='final')?'':'none';
   if(isHome)return;
   const titles={carnet:'Carnet',settings:'Réglages'};
   if(id==='final'){document.getElementById('tt').textContent=fn(curFinalId)?.name||'Technique';}
@@ -609,9 +613,20 @@ function setTopbar(id){
   } else {
     document.getElementById('tt').textContent=titles[id]||id;
   }
-  // back button always visible when there's history, hidden only on biblio root with no history
   const hasHistory=historyStack.length>0;
   document.getElementById('tbk').style.visibility=hasHistory?'visible':'hidden';
+}
+function updCarnetBtn(){
+  const cb=document.getElementById('tbtn-carnet');if(!cb||!curFinalId)return;
+  const inC=nd(curFinalId).inCarnet;
+  cb.style.opacity=inC?'1':'0.4';
+  cb.title=inC?'Retirer du Carnet':'Ajouter au Carnet';
+}
+function toggleFinalCarnet(){
+  if(!curFinalId)return;
+  const ndata=nd(curFinalId);
+  ndata.inCarnet=!ndata.inCarnet;
+  saveS();renderCarnet();renderBiblio();updCarnetBtn();
 }
 
 function scr(id){
@@ -1001,6 +1016,7 @@ function openFinal(id,origin){
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
   document.getElementById('tab-'+mode).classList.add('act');
   renderVids();
+  updCarnetBtn();
   scr('final');
 }
 
@@ -1335,112 +1351,133 @@ function mmResize(){
   mmCtx.setTransform(dpr,0,0,dpr,0,0);
 }
 
+/* ══ MIND MAP LAYOUT (horizontal tree, left→right) ══ */
+// Node size constants
+const MM_NW_BASE=14; // font size for depth>1
+const MM_NW_ROOT=15; // font size for depth 1
+const MM_PAD_X=28;   // horizontal padding in node box
+const MM_PAD_Y=16;   // vertical padding in node box
+const MM_GAP_X=90;   // horizontal gap between depth levels
+const MM_GAP_Y=14;   // minimum vertical gap between sibling nodes
+
+// Measure a node's box size
+function mmNodeSize(node,depth){
+  if(!mmCtx)return{w:100,h:30};
+  const fs=depth===1?MM_NW_ROOT:MM_NW_BASE;
+  mmCtx.font=`${depth===1?700:600} ${fs}px -apple-system,BlinkMacSystemFont,sans-serif`;
+  const tw=mmCtx.measureText(node.name).width;
+  return{w:tw+MM_PAD_X, h:fs+MM_PAD_Y};
+}
+
+// Compute subtree height (total vertical space needed)
+function mmSubtreeH(node,depth){
+  const sz=mmNodeSize(node,depth);
+  const kids=node.children||[];
+  if(!kids.length)return sz.h+MM_GAP_Y;
+  const childH=kids.reduce((s,c)=>s+mmSubtreeH(c,depth+1),0);
+  return Math.max(sz.h+MM_GAP_Y, childH);
+}
+
+// Assign x,y positions recursively
+// cx = left edge of this node column, cy = top of available vertical space for this subtree
+function mmAssignPos(node,depth,cx,cy,color,parent){
+  const sz=mmNodeSize(node,depth);
+  const totalH=mmSubtreeH(node,depth);
+  // center this node vertically in its subtree
+  const ny=cy+totalH/2-sz.h/2;
+  const nx=cx;
+  const c=node.isFinal?'#c8a96e':color;
+  const nn={id:node.id,x:nx+sz.w/2,y:ny+sz.h/2,node,depth,color:c,isFinal:node.isFinal,
+            hitX:nx,hitY:ny,hitW:sz.w,hitH:sz.h};
+  mmNodes.push(nn);
+  if(parent){
+    const mx=(parent.x+sz.w/2+nn.x)/2, my=(parent.y+nn.y)/2;
+    mmEdges.push({x1:parent.x,y1:parent.y,x2:nn.x,y2:nn.y,
+                  color,midX:mx,midY:my,parentId:parent.node?parent.node.id:'root',childId:node.id,
+                  ex1:parent.hitX+parent.hitW, ey1:parent.y,
+                  ex2:nn.hitX, ey2:nn.y});
+  }
+  const kids=node.children||[];
+  let kcy=cy;
+  kids.forEach(kid=>{
+    const kh=mmSubtreeH(kid,depth+1);
+    mmAssignPos(kid,depth+1,cx+sz.w+MM_GAP_X,kcy,color,nn);
+    kcy+=kh;
+  });
+  return nn;
+}
+
 function mmLayout(){
   mmNodes=[];mmEdges=[];
   mmTx=0;mmTy=0;mmScale=1;
-  const pw=window.innerWidth;
-  const ph=window.innerHeight;
-  const cx=pw/2,cy=ph/2;
   const rootKids=S.tree.children||[];
-  const rk_count=rootKids.length||1;
+  // First pass: measure total height needed
+  const topPad=60;
+  let totalH=rootKids.reduce((s,rk)=>s+mmSubtreeH(rk,1),0)+(rootKids.length-1)*MM_GAP_Y*0.5;
+  const startY=topPad;
+  const startX=40;
+  let cy=startY;
   rootKids.forEach((rk,ri)=>{
-    const angle=(2*Math.PI*ri/rk_count)-Math.PI/2;
-    const r1=Math.min(pw,ph)*0.3;
-    const rx=cx+r1*Math.cos(angle);
-    const ry=cy+r1*Math.sin(angle);
     const color=MM_COLORS[ri%MM_COLORS.length];
-    mmNodes.push({id:rk.id,x:rx,y:ry,node:rk,depth:1,color});
-    mmEdges.push({x1:cx,y1:cy,x2:rx,y2:ry,color,midX:(cx+rx)/2,midY:(cy+ry)/2,parentId:'root',childId:rk.id});
-    mmLayoutChildren(rk,rx,ry,angle,r1*0.68,2,color);
+    const h=mmSubtreeH(rk,1);
+    mmAssignPos(rk,1,startX,cy,color,null);
+    cy+=h+MM_GAP_Y*0.5;
   });
 }
 
-function mmLayoutChildren(parent,px,py,baseAngle,radius,depth,color){
-  const kids=parent.children||[];if(!kids.length)return;
-  const maxSpread=depth<=2?Math.PI*0.85:Math.PI*0.7;
-  const spread=Math.min(maxSpread,Math.PI/(depth*0.5));
-  const step=kids.length>1?spread/(kids.length-1):0;
-  const startAngle=baseAngle-(spread/2);
-  kids.forEach((child,ci)=>{
-    const angle=kids.length===1?baseAngle:startAngle+step*ci;
-    const r=Math.max(radius,70);
-    const cx2=px+r*Math.cos(angle);
-    const cy2=py+r*Math.sin(angle);
-    const c=child.isFinal?'#c8a96e':color;
-    mmNodes.push({id:child.id,x:cx2,y:cy2,node:child,depth,color:c,isFinal:child.isFinal});
-    mmEdges.push({x1:px,y1:py,x2:cx2,y2:cy2,color,midX:(px+cx2)/2,midY:(py+cy2)/2,parentId:parent.id,childId:child.id});
-    mmLayoutChildren(child,cx2,cy2,angle,r*0.72,depth+1,color);
-  });
-}
-
-const MM_PLUS_R=10; // radius of + button on edge midpoint
+const MM_PLUS_R=9;
 
 function mmDraw(){
   if(!mmCtx||!mmCanvas)return;
   const pw=window.innerWidth,ph=window.innerHeight;
   mmCtx.clearRect(0,0,pw,ph);
   mmCtx.save();
-  // apply pan+zoom centered on screen center
   mmCtx.translate(pw/2+mmTx,ph/2+mmTy);
   mmCtx.scale(mmScale,mmScale);
   mmCtx.translate(-pw/2,-ph/2);
 
-  // draw edges + mid-point + buttons
+  // Draw bezier edges from right edge of parent to left edge of child
   mmEdges.forEach(e=>{
-    if(e.parentId==='root')return; // skip root→rk edges (drawn as lines below)
+    const x1=e.ex1!==undefined?e.ex1:e.x1;
+    const y1=e.ey1!==undefined?e.ey1:e.y1;
+    const x2=e.ex2!==undefined?e.ex2:e.x2;
+    const y2=e.ey2!==undefined?e.ey2:e.y2;
+    const cpx=x1+(x2-x1)*0.5;
     mmCtx.beginPath();
-    mmCtx.moveTo(e.x1,e.y1);
-    // curved line
-    const dx=e.x2-e.x1,dy=e.y2-e.y1;
-    const cpx=e.x1+dx*0.5-dy*0.08,cpy=e.y1+dy*0.5+dx*0.08;
-    mmCtx.quadraticCurveTo(cpx,cpy,e.x2,e.y2);
+    mmCtx.moveTo(x1,y1);
+    mmCtx.bezierCurveTo(cpx,y1,cpx,y2,x2,y2);
     mmCtx.strokeStyle=e.color+'66';
     mmCtx.lineWidth=1.5/mmScale;
     mmCtx.stroke();
-    // + button circle at midpoint
+    // + button at midpoint
+    const mx=e.midX,my=e.midY;
+    const pr=MM_PLUS_R/mmScale;
+    mmCtx.beginPath();mmCtx.arc(mx,my,pr,0,Math.PI*2);
+    mmCtx.fillStyle='#1a1917';mmCtx.fill();
+    mmCtx.strokeStyle=e.color+'99';mmCtx.lineWidth=1/mmScale;mmCtx.stroke();
+    const ps=pr*0.55;
     mmCtx.beginPath();
-    mmCtx.arc(e.midX,e.midY,MM_PLUS_R/mmScale,0,Math.PI*2);
-    mmCtx.fillStyle='#222120';
-    mmCtx.fill();
-    mmCtx.strokeStyle=e.color+'99';
-    mmCtx.lineWidth=1/mmScale;
-    mmCtx.stroke();
-    // + sign
-    const pr=MM_PLUS_R/mmScale,ps=pr*0.55;
-    mmCtx.beginPath();
-    mmCtx.moveTo(e.midX-ps,e.midY);mmCtx.lineTo(e.midX+ps,e.midY);
-    mmCtx.moveTo(e.midX,e.midY-ps);mmCtx.lineTo(e.midX,e.midY+ps);
+    mmCtx.moveTo(mx-ps,my);mmCtx.lineTo(mx+ps,my);
+    mmCtx.moveTo(mx,my-ps);mmCtx.lineTo(mx,my+ps);
     mmCtx.strokeStyle=e.color;mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
   });
-  // root-level edges (straight lines to root kids)
-  mmEdges.forEach(e=>{
-    if(e.parentId!=='root')return;
-    mmCtx.beginPath();mmCtx.moveTo(e.x1,e.y1);mmCtx.lineTo(e.x2,e.y2);
-    mmCtx.strokeStyle=e.color+'44';mmCtx.lineWidth=2/mmScale;mmCtx.stroke();
-  });
 
-  // draw nodes
+  // Draw nodes
   mmNodes.forEach(n=>{
-    const label=n.node.name;
-    const fs=n.depth===1?14:12;
+    const fs=n.depth===1?MM_NW_ROOT:MM_NW_BASE;
     mmCtx.font=`${n.depth===1?700:600} ${fs}px -apple-system,BlinkMacSystemFont,sans-serif`;
-    const tw=mmCtx.measureText(label).width;
-    const nw=tw+22,nh=fs+18;
-    const nx=n.x-nw/2,ny=n.y-nh/2;
+    const nx=n.hitX,ny=n.hitY,nw=n.hitW,nh=n.hitH;
+    if(n.depth===1){mmCtx.shadowColor='rgba(0,0,0,.5)';mmCtx.shadowBlur=8/mmScale;}
     mmCtx.fillStyle=n.isFinal?'#201a0c':(n.depth===1?'#2c2b29':'#222120');
     mmCtx.beginPath();mmCtx.roundRect(nx,ny,nw,nh,7);mmCtx.fill();
-    mmCtx.strokeStyle=n.isFinal?'#c8a96e':(n.depth===1?n.color:n.color+'77');
-    mmCtx.lineWidth=(n.depth===1?1.5:1)/mmScale;mmCtx.stroke();
-    mmCtx.fillStyle=n.isFinal?'#c8a96e':'#e8e0d0';
+    mmCtx.shadowBlur=0;
+    mmCtx.strokeStyle=n.isFinal?'#c8a96e':(n.depth===1?n.color:n.color+'88');
+    mmCtx.lineWidth=(n.depth===1?1.5:1)/mmScale;
+    mmCtx.beginPath();mmCtx.roundRect(nx,ny,nw,nh,7);mmCtx.stroke();
+    mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
-    mmCtx.fillText(label,n.x,n.y);
-    // store hit box (world coords)
-    n.hitX=nx;n.hitY=ny;n.hitW=nw;n.hitH=nh;
+    mmCtx.fillText(n.node.name,n.x,n.y);
   });
-  // center dot
-  const pw2=pw,ph2=ph;
-  mmCtx.beginPath();mmCtx.arc(pw2/2,ph2/2,5,0,Math.PI*2);
-  mmCtx.fillStyle='#c8a96e22';mmCtx.fill();
   mmCtx.restore();
 }
 
