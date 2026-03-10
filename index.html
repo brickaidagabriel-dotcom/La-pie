@@ -150,7 +150,7 @@ caret-color:#c8a96e;-webkit-user-select:text!important;user-select:text!importan
 .spath{font-size:12px;color:#7aaec8;margin-top:4px;}
 
 /* MIND MAP */
-#sh-mindmap{overflow:hidden;position:relative;}
+#sh-mindmap{padding:0!important;overflow:hidden;position:relative;}
 .mm-node{position:absolute;background:#222120;border:1px solid #302e2c;border-radius:10px;
 padding:8px 14px;font-size:13px;font-weight:600;color:#e8e0d0;cursor:pointer;
 white-space:nowrap;transform:translate(-50%,-50%);transition:background .1s;
@@ -297,8 +297,8 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
     <button class="hm-panel hp-c" onclick="SFX.click();goCarnet()">
       <div class="hp-lbl" style="color:#c8a96e">CARNET</div>
     </button>
-    <button class="hm-panel hp-b" onclick="SFX.click();goBiblio()">
-      <div class="hp-lbl" style="color:#6dbb8a">BIBLIOTHÈQUE</div>
+    <button class="hm-panel hp-b" id="home-btn-b" onclick="SFX.click();homeBtnB()">
+      <div class="hp-lbl" id="home-lbl-b" style="color:#6dbb8a">BIBLIOTHÈQUE</div>
     </button>
   </div>
   <div class="hm-bot">
@@ -356,18 +356,22 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
   <div class="slist">
     <div class="scard"><div class="slbl">🔊  Son</div><div class="trow"><div class="sdesc">Effets sonores</div><div class="tog on" id="stog" onclick="toggleSnd()"></div></div></div>
     <div class="scard">
-      <div class="slbl">🧠  Mode cognitif</div>
-      <div class="sdesc">Aucun effet pour l'instant.</div>
-      <div class="trow" style="margin-top:8px">
-        <div style="font-size:14px;color:#e8e0d0">Mode autistique</div>
-        <div class="tog" id="tog-autistic" onclick="this.classList.toggle('on')"></div>
+      <div class="slbl">🧠  Mode</div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button id="btn-mode-orig" onclick="setMode('original')"
+          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #c8a96e;background:#211c12;color:#c8a96e;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
+          Original
+        </button>
+        <button id="btn-mode-aut" onclick="setMode('autistique')"
+          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #302e2c;background:#222120;color:#a09880;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
+          Autistique
+        </button>
       </div>
     </div>
     <div class="scard">
       <div class="slbl">🗺  Mode d'affichage</div>
-      <div class="sdesc">Basculer entre vue bibliothèque et mind map.</div>
       <div class="trow" style="margin-top:8px">
-        <div style="font-size:14px;color:#e8e0d0">Mode carte (mind map)</div>
+        <div style="font-size:14px;color:#e8e0d0">Mode carte</div>
         <div class="tog" id="tog-map" onclick="toggleMapMode()"></div>
       </div>
     </div>
@@ -430,13 +434,10 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
   <div class="mbox">
     <div class="mhdr"><span>Ajouter une vidéo</span><button class="mhdr-x" onclick="closeM('mav')">×</button></div>
     <div class="mbody">
-      <div class="yt-note">ℹ️ YouTube fonctionne sur GitHub Pages. Instagram/TikTok s'ouvre dans le navigateur si l'embed est bloqué.</div>
       <div class="mfield"><div class="mlbl">Type</div>
         <div class="vtbtns" style="margin-top:6px">
-          <button class="vtbtn sel" id="vt-v" onclick="selVT('video')">🎬 YouTube</button>
-          <button class="vtbtn" id="vt-ig" onclick="selVT('instagram')">📷 Instagram</button>
-          <button class="vtbtn" id="vt-tk" onclick="selVT('tiktok')">🎵 TikTok</button>
-          <button class="vtbtn" id="vt-s" onclick="selVT('short')">🔗 Autre lien</button>
+          <button class="vtbtn sel" id="vt-long" onclick="selVT('long')">▶ Long</button>
+          <button class="vtbtn" id="vt-court" onclick="selVT('court')">⚡ Court</button>
         </div>
       </div>
       <div class="mfield"><div class="mlbl">URL</div><input class="min" id="vurl" type="url" placeholder="https://youtube.com/watch?v=..." style="margin-top:6px"></div>
@@ -943,7 +944,7 @@ function confirmRN(){
 }
 let delId=null;
 function confirmDel(id){delId=id;const n=fn(id);showConfirm('Supprimer ?',`Supprimer "${n?.name}" ? Irréversible.`,doDel);}
-function doDel(){const p=fp(delId);if(!p)return;p.children=p.children.filter(c=>c.id!==delId);delete S.notes[delId];saveS();renderBiblio();renderCarnet();closeM('mc');}
+function doDel(){const p=fp(delId);if(!p)return;p.children=p.children.filter(c=>c.id!==delId);delete S.notes[delId];saveS();renderBiblio();renderCarnet();mmMaybeRefresh();closeM('mc');}
 
 /* ══ SEARCH ══ */
 function doSearch(){
@@ -1123,31 +1124,30 @@ document.addEventListener('click',e=>{if(!e.target.closest('.ltp')&&!e.target.cl
 let cvt='video',tch_=0,tcm_=0,tcs_=0;
 function selVT(t){
   cvt=t;
-  ['video','instagram','tiktok','short'].forEach(k=>{
-    const el=document.getElementById('vt-'+{video:'v',instagram:'ig',tiktok:'tk',short:'s'}[k]);
-    if(el)el.classList.toggle('sel',k===t);
-  });
-  document.getElementById('tcsec').style.display=t==='video'?'flex':'none';
+  document.getElementById('vt-long').classList.toggle('sel',t==='long');
+  document.getElementById('vt-court').classList.toggle('sel',t==='court');
+  document.getElementById('tcsec').style.display=t==='long'?'flex':'none';
 }
 function aTC(u,d){if(u==='h'){tch_=Math.max(0,Math.min(23,tch_+d));document.getElementById('tch').textContent=String(tch_).padStart(2,'0');}if(u==='m'){tcm_=Math.max(0,Math.min(59,tcm_+d));document.getElementById('tcm').textContent=String(tcm_).padStart(2,'0');}if(u==='s'){tcs_=Math.max(0,Math.min(59,tcs_+d));document.getElementById('tcs').textContent=String(tcs_).padStart(2,'0');}}
-function openAddVid(){cvt='video';tch_=0;tcm_=0;tcs_=0;['tch','tcm','tcs'].forEach(i=>document.getElementById(i).textContent='00');document.getElementById('vurl').value='';selVT('video');openM('mav');}
+function openAddVid(){cvt='long';tch_=0;tcm_=0;tcs_=0;['tch','tcm','tcs'].forEach(i=>document.getElementById(i).textContent='00');document.getElementById('vurl').value='';selVT('long');openM('mav');}
+function getYTId(url){try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('?')[0];if(u.hostname.includes('youtube.com'))return u.searchParams.get('v');}catch(e){}const m=url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);return m?m[1]:null;}
 function getYTId(url){try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('?')[0];if(u.hostname.includes('youtube.com'))return u.searchParams.get('v');}catch(e){}const m=url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);return m?m[1]:null;}
 function getIGPostId(url){const m=url.match(/instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/);return m?m[1]:null;}
 function getTTId(url){const m=url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);return m?m[1]:null;}
+function getDMId(url){const m=url.match(/dailymotion\.com\/video\/([A-Za-z0-9]+)/)||url.match(/dai\.ly\/([A-Za-z0-9]+)/);return m?m[1]:null;}
 function confirmAV(){
   const url=document.getElementById('vurl').value.trim();if(!url||!curFinalId)return;
   const ndata=nd(curFinalId),mode=ndata.mode||'on',sec=tch_*3600+tcm_*60+tcs_;
-  if(cvt==='video'){
-    const ytId=getYTId(url);if(!ytId){alert('Lien YouTube invalide.');return;}
-    ndata.videos[mode].push({type:'youtube',ytId,sec,url});
-  } else if(cvt==='instagram'){
-    const igId=getIGPostId(url);
-    ndata.videos[mode].push({type:'instagram',igId,url});
-  } else if(cvt==='tiktok'){
-    const ttId=getTTId(url);
-    ndata.videos[mode].push({type:'tiktok',ttId,url});
+  if(cvt==='long'){
+    const ytId=getYTId(url);
+    if(ytId){ndata.videos[mode].push({type:'youtube',ytId,sec,url});}
+    else{const dmId=getDMId(url);if(dmId){ndata.videos[mode].push({type:'dailymotion',dmId,sec,url});}
+    else{ndata.videos[mode].push({type:'long',sec,url});}}
   } else {
-    ndata.videos[mode].push({type:'short',url});
+    const igId=getIGPostId(url);
+    if(igId){ndata.videos[mode].push({type:'instagram',igId,url});}
+    else{const ttId=getTTId(url);if(ttId){ndata.videos[mode].push({type:'tiktok',ttId,url});}
+    else{ndata.videos[mode].push({type:'court',url});}}
   }
   saveS();renderVids();closeM('mav');
 }
@@ -1161,8 +1161,8 @@ function renderVids(){
     const item=document.createElement('div');item.className='vitem';
     const hdr=document.createElement('div');hdr.className='vihdr';
     const lbl=document.createElement('div');lbl.className='vlbl';
-    const typeLabel={youtube:'▶ YouTube',instagram:'📷 Instagram',tiktok:'🎵 TikTok',short:'🔗 Lien'};
-    lbl.textContent=typeLabel[v.type]||'🔗 Lien';
+    const typeLbls={youtube:'▶ YouTube',dailymotion:'▶ Dailymotion',long:'▶ Vidéo',instagram:'📷 Instagram',tiktok:'🎵 TikTok',court:'⚡ Court',short:'⚡ Court'};
+    lbl.textContent=typeLbls[v.type]||'🔗 Lien';
     const del=document.createElement('button');del.className='btn bsm brd';del.style.padding='8px 12px';del.textContent='🗑';del.onclick=()=>{SFX.del();confirmDelVid(i);};
     hdr.appendChild(lbl);hdr.appendChild(del);item.appendChild(hdr);
     if(v.type==='youtube'){
@@ -1171,29 +1171,49 @@ function renderVids(){
       iframe.src=`https://www.youtube-nocookie.com/embed/${v.ytId}?start=${v.sec||0}&rel=0&playsinline=1&modestbranding=1`;
       iframe.setAttribute('allowfullscreen','');iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');iframe.setAttribute('loading','lazy');
       wr.appendChild(iframe);item.appendChild(wr);
+    } else if(v.type==='dailymotion'){
+      const wr=document.createElement('div');wr.className='viframe';
+      const iframe=document.createElement('iframe');
+      iframe.src=`https://www.dailymotion.com/embed/video/${v.dmId}?start=${v.sec||0}&ui-logo=0`;
+      iframe.setAttribute('allowfullscreen','');iframe.setAttribute('allow','autoplay');iframe.setAttribute('loading','lazy');
+      wr.appendChild(iframe);item.appendChild(wr);
+    } else if(v.type==='long'){
+      // Generic long video — try iframe embed
+      const wr=document.createElement('div');wr.className='viframe';
+      const iframe=document.createElement('iframe');
+      iframe.src=v.url;iframe.setAttribute('allowfullscreen','');iframe.setAttribute('loading','lazy');
+      wr.appendChild(iframe);item.appendChild(wr);
     } else if(v.type==='instagram'){
-      // Instagram blocks direct iframe on most hosts — try blockquote embed then fallback link
-      const igWrap=document.createElement('div');igWrap.style.cssText='padding:12px 14px;display:flex;flex-direction:column;gap:8px;';
-      const igNote=document.createElement('div');igNote.style.cssText='font-size:12px;color:#a09880;';igNote.textContent='Instagram ne permet pas l\'embed direct. Ouvre dans le navigateur :';
-      const igLink=document.createElement('a');igLink.href=v.url;igLink.target='_blank';igLink.rel='noopener';
-      igLink.style.cssText='color:#7aaec8;font-size:13px;word-break:break-all;-webkit-user-select:text!important;user-select:text!important;';
-      igLink.textContent=v.url;
-      igWrap.appendChild(igNote);igWrap.appendChild(igLink);item.appendChild(igWrap);
-    } else if(v.type==='tiktok'){
-      // TikTok allows iframe embed via their oEmbed endpoint
-      if(v.ttId){
+      // Try Instagram embed — wrap in iframe pointing to /embed/
+      if(v.igId){
         const wr=document.createElement('div');wr.className='viframe';
         const iframe=document.createElement('iframe');
+        iframe.src=`https://www.instagram.com/p/${v.igId}/embed/`;
+        iframe.setAttribute('allowfullscreen','');iframe.setAttribute('loading','lazy');
+        iframe.setAttribute('scrolling','no');iframe.setAttribute('frameborder','0');
+        // fallback if blocked: show link below
+        iframe.onerror=()=>{wr.innerHTML='';const lw=document.createElement('div');lw.className='shlink';lw.innerHTML=`<span>📷</span><a href="${v.url}" target="_blank" rel="noopener" style="-webkit-user-select:text!important;user-select:text!important;">${v.url}</a>`;wr.appendChild(lw);};
+        wr.appendChild(iframe);item.appendChild(wr);
+      } else {
+        const lw=document.createElement('div');lw.className='shlink';
+        lw.innerHTML=`<span>📷</span><a href="${v.url}" target="_blank" rel="noopener" style="-webkit-user-select:text!important;user-select:text!important;">${v.url}</a>`;item.appendChild(lw);
+      }
+    } else if(v.type==='tiktok'){
+      if(v.ttId){
+        const wr=document.createElement('div');wr.style.cssText='position:relative;width:100%;padding-top:177%;background:#000;';
+        const iframe=document.createElement('iframe');
         iframe.src=`https://www.tiktok.com/embed/v2/${v.ttId}`;
-        iframe.setAttribute('allowfullscreen','');iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');iframe.setAttribute('loading','lazy');
+        iframe.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:none;';
+        iframe.setAttribute('allowfullscreen','');iframe.setAttribute('allow','autoplay;clipboard-write;encrypted-media;picture-in-picture;');iframe.setAttribute('loading','lazy');
         wr.appendChild(iframe);item.appendChild(wr);
       } else {
         const lw=document.createElement('div');lw.className='shlink';
         lw.innerHTML=`<span>🎵</span><a href="${v.url}" target="_blank" rel="noopener" style="-webkit-user-select:text!important;user-select:text!important;">${v.url}</a>`;item.appendChild(lw);
       }
     } else {
+      // court generic or old 'short'
       const lw=document.createElement('div');lw.className='shlink';
-      lw.innerHTML=`<span>🔗</span><a href="${v.url}" target="_blank" rel="noopener" style="-webkit-user-select:text!important;user-select:text!important;">${v.url}</a>`;item.appendChild(lw);
+      lw.innerHTML=`<span>⚡</span><a href="${v.url}" target="_blank" rel="noopener" style="-webkit-user-select:text!important;user-select:text!important;">${v.url}</a>`;item.appendChild(lw);
     }
     list.appendChild(item);
   });
@@ -1231,26 +1251,41 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
     this.arcTo(x,y,x+r,y,r);this.closePath();return this;
   };
 }
+
+let S_mode='original'; // 'original' | 'autistique' — no effect yet
+function setMode(m){
+  S_mode=m;
+  const bo=document.getElementById('btn-mode-orig');
+  const ba=document.getElementById('btn-mode-aut');
+  if(!bo||!ba)return;
+  const on='border:1px solid #c8a96e;background:#211c12;color:#c8a96e;';
+  const off='border:1px solid #302e2c;background:#222120;color:#a09880;';
+  bo.style.cssText=`flex:1;padding:12px 8px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;${m==='original'?on:off}`;
+  ba.style.cssText=`flex:1;padding:12px 8px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;${m==='autistique'?on:off}`;
+}
+
+let S_mapMode=false;
 function toggleMapMode(){
   const tog=document.getElementById('tog-map');
-  const on=tog.classList.toggle('on');
-  if(on){
-    // go to mindmap instead of biblio
-    pushHistory(document.querySelector('.screen.active')?.id?.replace('sh-','')||'home');
-    mmOpen();
-  }
+  S_mapMode=tog.classList.toggle('on');
+  // update home button label
+  const lbl=document.getElementById('home-lbl-b');
+  if(lbl)lbl.textContent=S_mapMode?'MIND MAP':'BIBLIOTHÈQUE';
+}
+function homeBtnB(){
+  if(S_mapMode){pushHistory('home');mmOpen();}
+  else{goBiblio();}
 }
 
 /* ══ MIND MAP ══ */
 // Shared tree with biblio — all ops mutate S.tree directly
 let mmTx=0,mmTy=0,mmScale=1;
-let mmDragging=false,mmPinching=false;
+let mmPinching=false;
 let mmDragStart={x:0,y:0,tx:0,ty:0};
 let mmPinchDist=0;
-let mmNodes=[];  // {id, x, y, w, h, node, depth}
-let mmEdges=[];  // {x1,y1,x2,y2}
+let mmNodes=[];   // {id, x, y, w, h, node, depth, color}
+let mmEdges=[];   // {x1,y1,x2,y2,color,midX,midY,parentId,childId}
 let mmCanvas=null,mmCtx=null;
-let mmW=0,mmH=0;
 const MM_COLORS=['#c8a96e','#c47a5a','#7aaec8','#6dbb8a','#b09ee0','#a09880'];
 
 function mmOpen(){
@@ -1259,109 +1294,139 @@ function mmOpen(){
   document.getElementById('tbk').style.visibility='visible';
   mmCanvas=document.getElementById('mm-canvas');
   mmCtx=mmCanvas.getContext('2d');
+  mmResize();
   mmLayout();
   mmDraw();
   mmAttachEvents();
 }
 
-function mmLayout(){
-  mmNodes=[];mmEdges=[];
-  const pw=window.innerWidth,ph=window.innerHeight;
-  mmW=pw;mmH=ph;
-  mmCanvas.width=pw*window.devicePixelRatio;
-  mmCanvas.height=ph*window.devicePixelRatio;
-  mmCanvas.style.width=pw+'px';mmCanvas.style.height=ph+'px';
-  mmCtx.scale(window.devicePixelRatio,window.devicePixelRatio);
-  // radial layout from center
-  const cx=pw/2,cy=ph/2;
-  const root=S.tree;
-  // place root children in a circle, then their children recursively
-  const rootKids=root.children||[];
-  const rk_count=rootKids.length;
-  rootKids.forEach((rk,ri)=>{
-    const angle=(2*Math.PI*ri/rk_count)-Math.PI/2;
-    const r1=Math.min(pw,ph)*0.28;
-    const rx=cx+r1*Math.cos(angle);
-    const ry=cy+r1*Math.sin(angle);
-    mmNodes.push({id:rk.id,x:rx,y:ry,node:rk,depth:1,color:MM_COLORS[ri%MM_COLORS.length]});
-    mmEdges.push({x1:cx,y1:cy,x2:rx,y2:ry,color:MM_COLORS[ri%MM_COLORS.length]});
-    mmLayoutChildren(rk,rx,ry,angle,r1*0.72,2,ri,MM_COLORS[ri%MM_COLORS.length]);
-  });
-  // center node (root label invisible, just acts as origin)
-  mmTx=0;mmTy=0;mmScale=1;
+function mmResize(){
+  // Set canvas resolution to fill the screen correctly
+  const pw=mmCanvas.parentElement.clientWidth||window.innerWidth;
+  const ph=mmCanvas.parentElement.clientHeight||window.innerHeight;
+  const dpr=window.devicePixelRatio||1;
+  mmCanvas.width=pw*dpr;
+  mmCanvas.height=ph*dpr;
+  mmCanvas.style.width=pw+'px';
+  mmCanvas.style.height=ph+'px';
+  mmCtx.setTransform(dpr,0,0,dpr,0,0);
 }
 
-function mmLayoutChildren(parent,px,py,baseAngle,radius,depth,colorIdx,color){
+function mmLayout(){
+  mmNodes=[];mmEdges=[];
+  mmTx=0;mmTy=0;mmScale=1;
+  const pw=mmCanvas.clientWidth||window.innerWidth;
+  const ph=mmCanvas.clientHeight||window.innerHeight;
+  const cx=pw/2,cy=ph/2;
+  const rootKids=S.tree.children||[];
+  const rk_count=rootKids.length||1;
+  rootKids.forEach((rk,ri)=>{
+    const angle=(2*Math.PI*ri/rk_count)-Math.PI/2;
+    const r1=Math.min(pw,ph)*0.3;
+    const rx=cx+r1*Math.cos(angle);
+    const ry=cy+r1*Math.sin(angle);
+    const color=MM_COLORS[ri%MM_COLORS.length];
+    mmNodes.push({id:rk.id,x:rx,y:ry,node:rk,depth:1,color});
+    mmEdges.push({x1:cx,y1:cy,x2:rx,y2:ry,color,midX:(cx+rx)/2,midY:(cy+ry)/2,parentId:'root',childId:rk.id});
+    mmLayoutChildren(rk,rx,ry,angle,r1*0.68,2,color);
+  });
+}
+
+function mmLayoutChildren(parent,px,py,baseAngle,radius,depth,color){
   const kids=parent.children||[];if(!kids.length)return;
-  const spread=Math.min(Math.PI*0.9,Math.PI/(depth*0.6));
-  const step=spread/(Math.max(kids.length-1,1));
+  const maxSpread=depth<=2?Math.PI*0.85:Math.PI*0.7;
+  const spread=Math.min(maxSpread,Math.PI/(depth*0.5));
+  const step=kids.length>1?spread/(kids.length-1):0;
   const startAngle=baseAngle-(spread/2);
   kids.forEach((child,ci)=>{
     const angle=kids.length===1?baseAngle:startAngle+step*ci;
-    const r=Math.max(radius*0.75,80);
+    const r=Math.max(radius,70);
     const cx2=px+r*Math.cos(angle);
     const cy2=py+r*Math.sin(angle);
     const c=child.isFinal?'#c8a96e':color;
     mmNodes.push({id:child.id,x:cx2,y:cy2,node:child,depth,color:c,isFinal:child.isFinal});
-    mmEdges.push({x1:px,y1:py,x2:cx2,y2:cy2,color});
-    mmLayoutChildren(child,cx2,cy2,angle,r*0.75,depth+1,colorIdx,color);
+    mmEdges.push({x1:px,y1:py,x2:cx2,y2:cy2,color,midX:(px+cx2)/2,midY:(py+cy2)/2,parentId:parent.id,childId:child.id});
+    mmLayoutChildren(child,cx2,cy2,angle,r*0.72,depth+1,color);
   });
 }
 
+const MM_PLUS_R=10; // radius of + button on edge midpoint
+
 function mmDraw(){
-  if(!mmCtx)return;
-  const pw=mmCanvas.offsetWidth,ph=mmCanvas.offsetHeight;
+  if(!mmCtx||!mmCanvas)return;
+  const pw=mmCanvas.clientWidth,ph=mmCanvas.clientHeight;
   mmCtx.clearRect(0,0,pw,ph);
   mmCtx.save();
+  // apply pan+zoom centered on screen center
   mmCtx.translate(pw/2+mmTx,ph/2+mmTy);
   mmCtx.scale(mmScale,mmScale);
   mmCtx.translate(-pw/2,-ph/2);
-  // draw edges
+
+  // draw edges + mid-point + buttons
   mmEdges.forEach(e=>{
+    if(e.parentId==='root')return; // skip root→rk edges (drawn as lines below)
     mmCtx.beginPath();
     mmCtx.moveTo(e.x1,e.y1);
-    mmCtx.lineTo(e.x2,e.y2);
-    mmCtx.strokeStyle=e.color+'55';
-    mmCtx.lineWidth=1.5;
+    // curved line
+    const dx=e.x2-e.x1,dy=e.y2-e.y1;
+    const cpx=e.x1+dx*0.5-dy*0.08,cpy=e.y1+dy*0.5+dx*0.08;
+    mmCtx.quadraticCurveTo(cpx,cpy,e.x2,e.y2);
+    mmCtx.strokeStyle=e.color+'66';
+    mmCtx.lineWidth=1.5/mmScale;
     mmCtx.stroke();
+    // + button circle at midpoint
+    mmCtx.beginPath();
+    mmCtx.arc(e.midX,e.midY,MM_PLUS_R/mmScale,0,Math.PI*2);
+    mmCtx.fillStyle='#222120';
+    mmCtx.fill();
+    mmCtx.strokeStyle=e.color+'99';
+    mmCtx.lineWidth=1/mmScale;
+    mmCtx.stroke();
+    // + sign
+    const pr=MM_PLUS_R/mmScale,ps=pr*0.55;
+    mmCtx.beginPath();
+    mmCtx.moveTo(e.midX-ps,e.midY);mmCtx.lineTo(e.midX+ps,e.midY);
+    mmCtx.moveTo(e.midX,e.midY-ps);mmCtx.lineTo(e.midX,e.midY+ps);
+    mmCtx.strokeStyle=e.color;mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
   });
+  // root-level edges (straight lines to root kids)
+  mmEdges.forEach(e=>{
+    if(e.parentId!=='root')return;
+    mmCtx.beginPath();mmCtx.moveTo(e.x1,e.y1);mmCtx.lineTo(e.x2,e.y2);
+    mmCtx.strokeStyle=e.color+'44';mmCtx.lineWidth=2/mmScale;mmCtx.stroke();
+  });
+
   // draw nodes
   mmNodes.forEach(n=>{
     const label=n.node.name;
     const fs=n.depth===1?14:12;
     mmCtx.font=`${n.depth===1?700:600} ${fs}px -apple-system,BlinkMacSystemFont,sans-serif`;
     const tw=mmCtx.measureText(label).width;
-    const nw=tw+20,nh=fs+16;
+    const nw=tw+22,nh=fs+18;
     const nx=n.x-nw/2,ny=n.y-nh/2;
-    // bg
-    mmCtx.fillStyle=n.isFinal?'#201a0c':'#222120';
-    mmCtx.beginPath();
-    mmCtx.roundRect(nx,ny,nw,nh,7);
-    mmCtx.fill();
-    // border
-    mmCtx.strokeStyle=n.isFinal?'#c8a96e':n.color+'99';
-    mmCtx.lineWidth=n.depth===1?1.5:1;
-    mmCtx.stroke();
-    // text
+    mmCtx.fillStyle=n.isFinal?'#201a0c':(n.depth===1?'#2c2b29':'#222120');
+    mmCtx.beginPath();mmCtx.roundRect(nx,ny,nw,nh,7);mmCtx.fill();
+    mmCtx.strokeStyle=n.isFinal?'#c8a96e':(n.depth===1?n.color:n.color+'77');
+    mmCtx.lineWidth=(n.depth===1?1.5:1)/mmScale;mmCtx.stroke();
     mmCtx.fillStyle=n.isFinal?'#c8a96e':'#e8e0d0';
-    mmCtx.textAlign='center';
-    mmCtx.textBaseline='middle';
+    mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(label,n.x,n.y);
-    // store hit box
+    // store hit box (world coords)
     n.hitX=nx;n.hitY=ny;n.hitW=nw;n.hitH=nh;
   });
-  // draw center dot
-  mmCtx.beginPath();mmCtx.arc(pw/2,ph/2,6,0,Math.PI*2);mmCtx.fillStyle='#c8a96e33';mmCtx.fill();
+  // center dot
+  const pw2=pw,ph2=ph;
+  mmCtx.beginPath();mmCtx.arc(pw2/2,ph2/2,5,0,Math.PI*2);
+  mmCtx.fillStyle='#c8a96e22';mmCtx.fill();
   mmCtx.restore();
 }
 
 function mmScreenToWorld(sx,sy){
-  const pw=mmCanvas.offsetWidth,ph=mmCanvas.offsetHeight;
-  return{x:(sx-(pw/2+mmTx))/mmScale+pw/2, y:(sy-(ph/2+mmTy))/mmScale+ph/2};
+  const pw=mmCanvas.clientWidth,ph=mmCanvas.clientHeight;
+  return{x:(sx-(pw/2+mmTx))/mmScale+pw/2,y:(sy-(ph/2+mmTy))/mmScale+ph/2};
 }
 
-function mmHitTest(wx,wy){
-  // reverse order so top nodes checked first
+function mmHitTestNode(wx,wy){
   for(let i=mmNodes.length-1;i>=0;i--){
     const n=mmNodes[i];
     if(wx>=n.hitX&&wx<=n.hitX+n.hitW&&wy>=n.hitY&&wy<=n.hitY+n.hitH)return n;
@@ -1369,21 +1434,33 @@ function mmHitTest(wx,wy){
   return null;
 }
 
-let mmTapTime=0,mmTapNode=null,mmLpTimer=null,mmTouchMoved=false;
-let mmPt1=null,mmPt2=null;
+function mmHitTestEdgePlus(wx,wy){
+  const pr=MM_PLUS_R/mmScale+4;
+  for(let i=mmEdges.length-1;i>=0;i--){
+    const e=mmEdges[i];
+    if(e.parentId==='root')continue;
+    const d=Math.hypot(wx-e.midX,wy-e.midY);
+    if(d<=pr)return e;
+  }
+  return null;
+}
+
+let mmTouchMoved=false,mmLpTimer=null,mmPt1=null,mmPt2=null,mmEventsAttached=false;
 
 function mmAttachEvents(){
-  const c=mmCanvas;
-  // Remove old listeners by cloning — safe since we re-attach each mmOpen
-  const nc=c.cloneNode(true);c.parentNode.replaceChild(nc,c);
-  mmCanvas=document.getElementById('mm-canvas');
-  mmCtx=mmCanvas.getContext('2d');
-  mmCtx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  // Clone canvas to wipe old listeners
+  const old=document.getElementById('mm-canvas');
+  const nc=old.cloneNode(false);
+  old.parentNode.replaceChild(nc,old);
+  mmCanvas=nc;
+  mmCtx=nc.getContext('2d');
+  mmResize();
+  mmDraw();
 
   mmCanvas.addEventListener('touchstart',e=>{
     e.preventDefault();
     if(e.touches.length===2){
-      mmPinching=true;mmDragging=false;
+      mmPinching=true;
       mmPt1={x:e.touches[0].clientX,y:e.touches[0].clientY};
       mmPt2={x:e.touches[1].clientX,y:e.touches[1].clientY};
       mmPinchDist=Math.hypot(mmPt2.x-mmPt1.x,mmPt2.y-mmPt1.y);
@@ -1394,11 +1471,9 @@ function mmAttachEvents(){
       mmTouchMoved=false;
       mmLpTimer=setTimeout(()=>{
         if(!mmTouchMoved){
-          // long press = add node menu
           const w=mmScreenToWorld(t.clientX,t.clientY);
-          const hit=mmHitTest(w.x,w.y);
+          const hit=mmHitTestNode(w.x,w.y);
           if(hit)mmContextMenu(hit,t.clientX,t.clientY);
-          else mmAddNodeAt(w.x,w.y);
         }
       },500);
     }
@@ -1410,10 +1485,8 @@ function mmAttachEvents(){
       const p1={x:e.touches[0].clientX,y:e.touches[0].clientY};
       const p2={x:e.touches[1].clientX,y:e.touches[1].clientY};
       const newDist=Math.hypot(p2.x-p1.x,p2.y-p1.y);
-      const ratio=newDist/mmPinchDist;
-      mmScale=Math.max(0.2,Math.min(4,mmScale*ratio));
+      mmScale=Math.max(0.15,Math.min(5,mmScale*(newDist/mmPinchDist)));
       mmPinchDist=newDist;
-      // also pan to midpoint
       const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
       const omx=(mmPt1.x+mmPt2.x)/2,omy=(mmPt1.y+mmPt2.y)/2;
       mmTx+=mx-omx;mmTy+=my-omy;
@@ -1422,7 +1495,7 @@ function mmAttachEvents(){
     } else if(e.touches.length===1&&!mmPinching){
       const t=e.touches[0];
       const dx=t.clientX-mmDragStart.x,dy=t.clientY-mmDragStart.y;
-      if(Math.abs(dx)>6||Math.abs(dy)>6){mmTouchMoved=true;clearTimeout(mmLpTimer);}
+      if(Math.abs(dx)>5||Math.abs(dy)>5){mmTouchMoved=true;clearTimeout(mmLpTimer);}
       mmTx=mmDragStart.tx+dx;mmTy=mmDragStart.ty+dy;
       mmDraw();
     }
@@ -1434,109 +1507,96 @@ function mmAttachEvents(){
     if(!mmTouchMoved&&e.changedTouches.length===1){
       const t=e.changedTouches[0];
       const w=mmScreenToWorld(t.clientX,t.clientY);
-      const hit=mmHitTest(w.x,w.y);
+      // check + button first
+      const ep=mmHitTestEdgePlus(w.x,w.y);
+      if(ep){SFX.click();mmAddChildModal(ep.parentId);return;}
+      // then node tap
+      const hit=mmHitTestNode(w.x,w.y);
       if(hit){
         SFX.nav();
-        if(hit.node.isFinal){pushHistory('mindmap');openFinal(hit.node.id,'mindmap');}
-        else{mmZoomTo(hit);setTimeout(()=>mmDraw(),200);}
+        if(hit.node.isFinal){openFinal(hit.node.id,'mindmap');}
+        else{mmZoomTo(hit);}
       }
     }
   },{passive:true});
 
-  // Mouse support for desktop testing
-  let mmMouseDown=false,mmMouseMoved=false;
-  mmCanvas.addEventListener('mousedown',e=>{
-    mmMouseDown=true;mmMouseMoved=false;
-    mmDragStart={x:e.clientX,y:e.clientY,tx:mmTx,ty:mmTy};
-  });
+  // Mouse (desktop)
+  let mmMD=false,mmMM=false;
+  mmCanvas.addEventListener('mousedown',e=>{mmMD=true;mmMM=false;mmDragStart={x:e.clientX,y:e.clientY,tx:mmTx,ty:mmTy};});
   mmCanvas.addEventListener('mousemove',e=>{
-    if(!mmMouseDown)return;
+    if(!mmMD)return;
     const dx=e.clientX-mmDragStart.x,dy=e.clientY-mmDragStart.y;
-    if(Math.abs(dx)>4||Math.abs(dy)>4)mmMouseMoved=true;
+    if(Math.abs(dx)>4||Math.abs(dy)>4)mmMM=true;
     mmTx=mmDragStart.tx+dx;mmTy=mmDragStart.ty+dy;mmDraw();
   });
   mmCanvas.addEventListener('mouseup',e=>{
-    mmMouseDown=false;
-    if(!mmMouseMoved){
+    mmMD=false;
+    if(!mmMM){
       const w=mmScreenToWorld(e.clientX,e.clientY);
-      const hit=mmHitTest(w.x,w.y);
-      if(hit){
-        SFX.nav();
-        if(hit.node.isFinal){pushHistory('mindmap');openFinal(hit.node.id,'mindmap');}
-        else mmZoomTo(hit);
-      }
+      const ep=mmHitTestEdgePlus(w.x,w.y);
+      if(ep){SFX.click();mmAddChildModal(ep.parentId);return;}
+      const hit=mmHitTestNode(w.x,w.y);
+      if(hit){SFX.nav();if(hit.node.isFinal)openFinal(hit.node.id,'mindmap');else mmZoomTo(hit);}
     }
   });
   mmCanvas.addEventListener('wheel',e=>{
     e.preventDefault();
-    const delta=e.deltaY>0?0.9:1.1;
-    mmScale=Math.max(0.2,Math.min(4,mmScale*delta));mmDraw();
+    mmScale=Math.max(0.15,Math.min(5,mmScale*(e.deltaY>0?0.9:1.1)));mmDraw();
   },{passive:false});
+  mmCanvas.addEventListener('dblclick',e=>{
+    const w=mmScreenToWorld(e.clientX,e.clientY);
+    const hit=mmHitTestNode(w.x,w.y);
+    if(hit)mmContextMenu(hit,e.clientX,e.clientY);
+  });
 }
 
 function mmZoomTo(n){
-  // pan to center on node
-  const pw=mmCanvas.offsetWidth,ph=mmCanvas.offsetHeight;
-  const wx=n.x,wy=n.y;
-  mmTx=-(wx-pw/2)*mmScale;mmTy=-(wy-ph/2)*mmScale;
+  const pw=mmCanvas.clientWidth,ph=mmCanvas.clientHeight;
+  mmTx=-(n.x-pw/2)*mmScale;mmTy=-(n.y-ph/2)*mmScale;
   mmDraw();
 }
-
 function mmReset(){mmTx=0;mmTy=0;mmScale=1;mmDraw();}
 
-/* Long-press context menu on mind map node */
+/* Add child via + button on edge — opens the modal with parent pre-set */
+function mmAddChildModal(parentId){
+  anPid=parentId;selType('fin');
+  document.getElementById('ann').value='';
+  openM('man');
+  setTimeout(()=>document.getElementById('ann').focus(),120);
+}
+
+/* Long-press context menu */
 let mmCtxNode=null;
 function mmContextMenu(n,sx,sy){
   SFX.click();mmCtxNode=n;
-  // reuse the rename/add modals
-  // show a small action sheet: open, add child livre, add child feuille, rename, delete
   const pop=document.createElement('div');
-  pop.style.cssText=`position:fixed;z-index:3000;background:#1a1917;border:1px solid #302e2c;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.7);min-width:200px;overflow:hidden;`;
-  let tx=Math.min(sx,window.innerWidth-220),ty=Math.min(sy,window.innerHeight-220);
+  pop.style.cssText='position:fixed;z-index:3000;background:#1a1917;border:1px solid #302e2c;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.7);min-width:200px;overflow:hidden;';
+  let tx=Math.min(sx,window.innerWidth-220),ty=Math.min(sy,window.innerHeight-240);
+  if(ty<60)ty=60;
   pop.style.left=tx+'px';pop.style.top=ty+'px';
   const acts=[
-    {lbl:n.node.isFinal?'📖 Ouvrir feuille':'📂 Entrer',fn:()=>{document.body.removeChild(pop);if(n.node.isFinal){pushHistory('mindmap');openFinal(n.node.id,'mindmap');}else mmZoomTo(n);}},
-    {lbl:'📁 + Livre',fn:()=>{document.body.removeChild(pop);mmAddChild(n.node.id,false);}},
-    {lbl:'★ + Feuille',fn:()=>{document.body.removeChild(pop);mmAddChild(n.node.id,true);}},
-    {lbl:'✏️ Renommer',fn:()=>{document.body.removeChild(pop);openRN(n.node.id,n.node.name);}},
-    ...(n.depth>1?[{lbl:'🗑 Supprimer',fn:()=>{document.body.removeChild(pop);confirmDel(n.node.id);}}]:[]),
+    ...(n.node.isFinal?[{lbl:'📖 Ouvrir feuille',fn:()=>{pop.remove();openFinal(n.node.id,'mindmap');}}]:[{lbl:'📂 Centrer vue',fn:()=>{pop.remove();mmZoomTo(n);}}]),
+    {lbl:'📁 + Livre (enfant)',fn:()=>{pop.remove();mmAddChildModal(n.node.id);}},
+    {lbl:'★ + Feuille (enfant)',fn:()=>{pop.remove();anPid=n.node.id;selType('fin');document.getElementById('ann').value='';openM('man');setTimeout(()=>document.getElementById('ann').focus(),120);}},
+    {lbl:'✏️ Renommer',fn:()=>{pop.remove();openRN(n.node.id,n.node.name);}},
+    ...(n.depth>1?[{lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}}]:[]),
   ];
-  acts.forEach(a=>{
+  acts.forEach((a,idx)=>{
     const d=document.createElement('div');
-    d.style.cssText='padding:13px 16px;font-size:14px;font-weight:600;color:#e8e0d0;cursor:pointer;border-bottom:1px solid #252320;';
+    d.style.cssText=`padding:13px 16px;font-size:14px;font-weight:600;color:#e8e0d0;cursor:pointer;${idx<acts.length-1?'border-bottom:1px solid #252320;':''}`;
     d.textContent=a.lbl;d.onclick=a.fn;
     pop.appendChild(d);
   });
   document.body.appendChild(pop);
-  // close on outside tap
-  setTimeout(()=>document.addEventListener('touchstart',function x(){document.body.contains(pop)&&document.body.removeChild(pop);document.removeEventListener('touchstart',x);},{once:true,passive:true}),100);
+  setTimeout(()=>document.addEventListener('touchstart',function x(ev){if(!pop.contains(ev.target)){pop.remove();}document.removeEventListener('touchstart',x);},{once:true,passive:true}),150);
+  setTimeout(()=>document.addEventListener('click',function x(ev){if(!pop.contains(ev.target)){pop.remove();}document.removeEventListener('click',x);},{once:true}),150);
 }
 
-function mmAddChild(parentId,isFinal){
-  anPid=parentId;selType(isFinal?'fin':'sub');
-  document.getElementById('ann').value='';openM('man');
-  setTimeout(()=>document.getElementById('ann').focus(),120);
-  // after confirm, renderBiblio and mmLayout both called via confirmAN which calls renderBiblio
-  // we also re-draw mm if mindmap screen is active after modal closes
-  const orig=window.confirmAN;
-  // patch to also re-layout mm — we override for one call
-  const _orig=confirmAN;
-  window._mmPatchedAN=true;
-}
-
-/* After any tree change, if mindmap is visible, re-layout */
+/* After any tree mutation, if mind map visible → re-layout + redraw */
 function mmMaybeRefresh(){
-  if(document.getElementById('sh-mindmap').classList.contains('active')){
+  if(document.getElementById('sh-mindmap')?.classList.contains('active')){
     mmLayout();mmDraw();
   }
-}
-
-function mmAddNodeAt(wx,wy){
-  // add a node at world position attached to nearest node
-  if(!mmNodes.length)return;
-  let nearest=mmNodes[0],nd2=Infinity;
-  mmNodes.forEach(n=>{const d2=(n.x-wx)**2+(n.y-wy)**2;if(d2<nd2){nd2=d2;nearest=n;}});
-  mmAddChild(nearest.node.id,false);
 }
 
 /* ══ INIT ══ */
