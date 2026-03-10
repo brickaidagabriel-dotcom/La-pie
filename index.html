@@ -3,77 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V8</title>
+    <title>JJB Vault V9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff; }
-        
-        * { 
-            -webkit-user-select: none; /* Bloque la sélection de texte */
-            user-select: none; 
-            -webkit-touch-callout: none; 
+        :root { 
+            --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; 
+            --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff;
+            --on-test: #30d158; --already: #ff9f0a; --future: #64d2ff;
         }
-
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         
-        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: relative; }
+        * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; box-sizing: border-box; }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
+        
+        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: relative; z-index: 10; }
         .version-tag { position: absolute; top: 5px; left: 10px; font-size: 10px; color: var(--turquoise); opacity: 0.7; font-weight: bold; }
         
         .container { padding: 15px; }
         .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
+        /* Items */
         .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: none; }
-        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
         .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         
         .swiped .item-main { transform: translateX(-195px); }
-        .swiped.double .item-main { transform: translateX(-130px); }
-        .swiped.single .item-main { transform: translateX(-65px); }
 
+        /* Status Bars */
+        .status-on_test { border-left: 5px solid var(--on-test); }
+        .status-already { border-left: 5px solid var(--already); }
+        .status-future { border-left: 5px solid var(--future); }
+
+        /* Fiche Technique (Note Editor) */
+        #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
+        .editor-header { padding: 20px; background: var(--card); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
+        .tabs { display: flex; gap: 10px; padding: 15px; background: #111; }
+        .tab { flex: 1; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; border: 2px solid transparent; opacity: 0.5; }
+        .tab.active { opacity: 1; border-color: white; }
+        
+        .tab-on { background: var(--on-test); color: #000; }
+        .tab-already { background: var(--already); color: #000; }
+        .tab-future { background: var(--future); color: #000; }
+
+        #note-textarea { flex: 1; background: transparent; border: none; color: white; padding: 20px; font-size: 16px; resize: none; outline: none; -webkit-user-select: text; user-select: text; }
+
+        /* Modale Classique */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
-        input, textarea, select { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; margin:10px 0; border-radius:10px; font-size: 16px; -webkit-user-select: text; user-select: text; }
+        input { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; border-radius:10px; font-size: 16px; -webkit-user-select: text; user-select: text; }
         
         .sortable-ghost { opacity: 0.1; background: var(--turquoise) !important; }
-        .sortable-drag { background: #444 !important; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <span class="version-tag">VERSION V8</span>
-    <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px; margin-top: 5px;">ACCUEIL</div>
-    <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
+<div id="main-view">
+    <div class="header">
+        <span class="version-tag">VERSION V9</span>
+        <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px; margin-top: 5px;">ACCUEIL</div>
+        <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
+    </div>
+
+    <div id="app-content" class="container"></div>
+
+    <nav style="position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
+        <button onclick="goHome()" style="background:none; border:none; font-size:32px; color:white;">🏠</button>
+    </nav>
 </div>
 
-<div id="app-content" class="container"></div>
-
-<nav style="position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
-    <button onclick="goHome()" style="background:none; border:none; font-size:32px; color:white;">🏠</button>
-</nav>
+<div id="note-editor">
+    <div class="editor-header">
+        <button onclick="closeEditor()" style="background:none; border:none; color:var(--turquoise); font-size:18px;">〈 Retour</button>
+        <h3 id="editor-title" style="margin:0; font-size:16px;">Technique</h3>
+        <div style="width:50px;"></div>
+    </div>
+    <div class="tabs">
+        <div class="tab tab-on" id="tab-on_test" onclick="switchTab('on_test')">ON TEST</div>
+        <div class="tab tab-already" id="tab-already" onclick="switchTab('already')">ALREADY</div>
+        <div class="tab tab-future" id="tab-future" onclick="switchTab('future')">FUTURE</div>
+    </div>
+    <textarea id="note-textarea" placeholder="Écris tes notes ici..." oninput="autoSaveNote()"></textarea>
+</div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-title" style="color:var(--turquoise); margin-top:0;">Édition</h3>
-        <input type="text" id="input-name" placeholder="Nom">
-        <div id="tech-fields" style="display:none;">
-            <textarea id="input-note" placeholder="Notes techniques..." rows="5"></textarea>
-        </div>
-        <div id="tech-toggle-area">
-            <label style="display:flex; align-items:center; gap:10px; margin:15px 0; font-size:14px; color:#aaa;">
-                <input type="checkbox" id="is-final" onchange="toggleTechFields(this.checked)" style="width:20px; margin:0;"> Technique finale
-            </label>
-        </div>
+        <h3 id="modal-title" style="color:var(--turquoise);">Nouveau</h3>
+        <input type="text" id="input-name" placeholder="Nom de l'élément">
+        <label style="display:flex; align-items:center; gap:10px; margin:20px 0; color:#aaa;">
+            <input type="checkbox" id="is-final" style="width:20px;"> Technique (avec notes)
+        </label>
         <div style="display:flex; gap:12px;">
-            <button onclick="closeModal()" style="flex:1; padding:14px; background:#333; color:#fff; border:none; border-radius:12px;">Annuler</button>
-            <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); color:#000; border:none; border-radius:12px; font-weight:bold;">Sauver</button>
+            <button onclick="closeModal()" style="flex:1; padding:14px; background:#333; border-radius:12px; border:none; color:white;">Annuler</button>
+            <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); border-radius:12px; border:none; font-weight:bold;">Sauver</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v8')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v9')) || {
         home_order: ["Journalier", "Data"],
         names: { "Journalier": "Journalier", "Data": "Data" },
         journalier: [],
@@ -84,40 +112,29 @@
     };
 
     let currentPath = [];
-    let editingKey = null;
+    let editingItem = null; // Pour le renommage
+    let activeTech = null; // Pour l'éditeur de notes
+    let activeStatus = 'on_test';
 
-    function save() { localStorage.setItem('jjb_vault_v8', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v9', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; editingKey = null; }
-    function toggleTechFields(show) { document.getElementById('tech-fields').style.display = show ? 'block' : 'none'; }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; editingItem = null; }
 
     function render() {
         const content = document.getElementById('app-content');
         content.innerHTML = "";
         const isJournalier = currentPath[0] === 'journalier';
         const isHome = currentPath.length === 0;
-        
+
         if (isHome) {
             document.getElementById('view-title').innerText = "JJB Vault";
-            document.getElementById('path-display').innerText = "ACCUEIL";
             const list = document.createElement('div');
-            list.id = "sortable-list";
             db.home_order.forEach(id => {
-                const wrap = document.createElement('div');
-                wrap.className = "item-wrapper single";
-                wrap.dataset.id = id;
-                wrap.innerHTML = `
-                    <div class="item-actions">
-                        <button class="action-btn" style="background:var(--edit)" onclick="editHomeItem('${id}')">✏️</button>
-                    </div>
-                    <div class="item-main" onclick="currentPath=['${id.toLowerCase()}'];render()">
-                        <strong>${db.names[id]}</strong><span>〉</span>
-                    </div>`;
-                setupSwipe(wrap);
+                const wrap = createItemUI(id, db.names[id], () => { currentPath=[id.toLowerCase()]; render(); }, true, false);
                 list.appendChild(wrap);
             });
             content.appendChild(list);
-            initSortable(list, (order) => { db.home_order = order; save(); });
+            initSortable(list, (order) => { db.home_order = order; saveDB(); });
             return;
         }
 
@@ -125,7 +142,6 @@
         if(!isJournalier) currentPath.forEach(p => current = current[p]);
 
         document.getElementById('view-title').innerText = isJournalier ? db.names["Journalier"] : (currentPath[currentPath.length-1] === "children" ? currentPath[currentPath.length-2] : currentPath[currentPath.length-1]);
-        document.getElementById('path-display').innerText = isJournalier ? "ACCÈS RAPIDE" : currentPath.filter(p => p !== "children" && p !== "data").join(" > ").toUpperCase();
 
         if(!isJournalier) content.innerHTML = `<button class="btn-add" onclick="openAddModal()">+ AJOUTER</button>`;
         
@@ -133,44 +149,49 @@
         list.id = "sortable-list";
         content.appendChild(list);
 
-        const itemsToRender = isJournalier ? db.journalier : (current.order || []);
+        const items = isJournalier ? db.journalier : (current.order || []);
 
-        itemsToRender.forEach((keyOrObj, index) => {
-            const key = isJournalier ? keyOrObj.name : keyOrObj;
+        items.forEach((obj, idx) => {
+            const key = isJournalier ? obj.name : obj;
             let item;
             if(isJournalier) {
-                let target = db;
-                keyOrObj.path.forEach(p => target = target[p]);
-                item = target.children[key];
-            } else {
-                item = current.children[key];
-            }
+                let t = db; obj.path.forEach(p => t = t[p]); item = t.children[key];
+            } else { item = current.children[key]; }
+            
             if(!item) return;
 
-            const wrap = document.createElement('div');
-            const isFav = db.journalier.some(f => f.name === key);
-            wrap.className = `item-wrapper ${isJournalier ? 'double' : 'triple'}`;
-            wrap.dataset.id = isJournalier ? index : key;
-
-            wrap.innerHTML = `
-                <div class="item-actions">
-                    <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${key}')">${isFav?'🚫':'⭐'}</button>
-                    ${!isJournalier ? `<button class="action-btn" style="background:var(--edit)" onclick="editItem('${key}', false)">✏️</button>` : ''}
-                    <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${key}', ${index}, ${isJournalier})">🗑️</button>
-                </div>
-                <div class="item-main" onclick="handleItemClick('${key}', ${isJournalier}, ${JSON.stringify(isJournalier ? keyOrObj.path : [])}, '${item.type}', '${encodeURIComponent(item.note||"")}')">
-                    <strong>${key}</strong><span>〉</span>
-                </div>`;
-
-            setupSwipe(wrap);
+            const wrap = createItemUI(key, key, () => {
+                if(item.type === 'folder') { currentPath = isJournalier ? [...obj.path, 'children', key] : [...currentPath, 'children', key]; render(); }
+                else { openEditor(key, isJournalier ? obj.path : currentPath); }
+            }, false, isJournalier, item.status);
+            
+            wrap.dataset.id = isJournalier ? idx : key;
             list.appendChild(wrap);
         });
 
         initSortable(list, (newOrder) => {
-            if(isJournalier) db.journalier = newOrder.map(idx => db.journalier[idx]);
+            if(isJournalier) db.journalier = newOrder.map(i => db.journalier[i]);
             else current.order = newOrder;
-            save();
+            saveDB();
         });
+    }
+
+    function createItemUI(id, label, onclick, isHome, isJournalier, status) {
+        const wrap = document.createElement('div');
+        const isFav = db.journalier.some(f => f.name === id);
+        wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
+        
+        wrap.innerHTML = `
+            <div class="item-actions">
+                ${!isHome ? `<button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="event.stopPropagation(); toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>` : ''}
+                <button class="action-btn" style="background:var(--edit)" onclick="event.stopPropagation(); openEditModal('${id}', ${isHome}, ${isJournalier})">✏️</button>
+                ${!isHome ? `<button class="action-btn" style="background:var(--danger)" onclick="event.stopPropagation(); deleteItem('${id}', ${isJournalier})">🗑️</button>` : ''}
+            </div>
+            <div class="item-main"><strong>${label}</strong><span>〉</span></div>`;
+        
+        wrap.querySelector('.item-main').onclick = onclick;
+        setupSwipe(wrap);
+        return wrap;
     }
 
     function setupSwipe(el) {
@@ -184,95 +205,101 @@
     }
 
     function initSortable(el, onEnd) {
-        new Sortable(el, { animation: 150, delay: 400, delayOnTouchOnly: true, forceFallback: true, onEnd: (evt) => {
+        new Sortable(el, { animation: 150, delay: 400, delayOnTouchOnly: true, forceFallback: true, onEnd: () => {
             const order = Array.from(el.children).map(item => item.dataset.id);
             onEnd(order);
         }});
     }
 
-    function handleItemClick(key, isJournalier, favPath, type, note) {
-        if(type === 'folder') {
-            currentPath = isJournalier ? [...favPath, 'children', key] : [...currentPath, 'children', key];
-            render();
-        } else {
-            alert(decodeURIComponent(note));
-        }
+    // --- LOGIQUE ÉDITEUR ---
+    function openEditor(key, path) {
+        let target = db; path.forEach(p => target = target[p]);
+        activeTech = target.children[key];
+        activeTech._parentPath = path;
+        activeTech._name = key;
+
+        if(!activeTech.notes) activeTech.notes = { on_test: "", already: "", future: "" };
+        activeStatus = activeTech.status || 'on_test';
+        
+        document.getElementById('editor-title').innerText = key;
+        document.getElementById('note-editor').style.display = 'flex';
+        switchTab(activeStatus);
     }
 
+    function switchTab(status) {
+        activeStatus = status;
+        activeTech.status = status; // Le dernier onglet vu devient le statut
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + status).classList.add('active');
+        document.getElementById('note-textarea').value = activeTech.notes[status] || "";
+        saveDB();
+    }
+
+    function autoSaveNote() {
+        activeTech.notes[activeStatus] = document.getElementById('note-textarea').value;
+        localStorage.setItem('jjb_vault_v9', JSON.stringify(db));
+    }
+
+    function closeEditor() {
+        document.getElementById('note-editor').style.display = 'none';
+        render();
+    }
+
+    // --- AJOUT / MODIF ---
     function openAddModal() {
-        editingKey = null;
+        editingItem = null;
         document.getElementById('modal-title').innerText = "Ajouter";
         document.getElementById('input-name').value = "";
-        document.getElementById('is-final').checked = false;
-        document.getElementById('tech-toggle-area').style.display = "block";
-        toggleTechFields(false);
         document.getElementById('modal').style.display = 'flex';
     }
 
-    function editHomeItem(id) {
-        editingKey = { type: 'home', id: id };
+    function openEditModal(id, isHome, isJournalier) {
+        editingItem = { id, isHome, isJournalier, path: [...currentPath] };
         document.getElementById('modal-title').innerText = "Renommer";
-        document.getElementById('input-name').value = db.names[id];
-        document.getElementById('tech-toggle-area').style.display = "none";
-        toggleTechFields(false);
-        document.getElementById('modal').style.display = 'flex';
-    }
-
-    function editItem(key) {
-        let current = db;
-        currentPath.forEach(p => current = current[p]);
-        const item = current.children[key];
-        editingKey = { type: 'data', name: key, path: [...currentPath] };
-        document.getElementById('modal-title').innerText = "Modifier";
-        document.getElementById('input-name').value = key;
-        document.getElementById('tech-toggle-area').style.display = "block";
-        document.getElementById('is-final').checked = (item.type === 'tech');
-        toggleTechFields(item.type === 'tech');
-        if(item.type === 'tech') document.getElementById('input-note').value = item.note || "";
+        document.getElementById('input-name').value = isHome ? db.names[id] : id;
         document.getElementById('modal').style.display = 'flex';
     }
 
     function saveItem() {
-        const name = document.getElementById('input-name').value.trim();
-        if(!name) return;
+        const newName = document.getElementById('input-name').value.trim();
+        if(!newName) return;
 
-        if(editingKey && editingKey.type === 'home') {
-            db.names[editingKey.id] = name;
+        if(editingItem && editingItem.isHome) {
+            db.names[editingItem.id] = newName;
+        } else if(editingItem) {
+            let t = db; editingItem.path.forEach(p => t = t[p]);
+            const data = t.children[editingItem.id];
+            delete t.children[editingItem.id];
+            t.children[newName] = data;
+            t.order = t.order.map(n => n === editingItem.id ? newName : n);
+            db.journalier.forEach(f => { if(f.name === editingItem.id) f.name = newName; });
         } else {
-            let path = editingKey ? editingKey.path : currentPath;
-            let current = db;
-            path.forEach(p => current = current[p]);
+            let t = db; currentPath.forEach(p => t = t[p]);
             const isTech = document.getElementById('is-final').checked;
-
-            if(editingKey && editingKey.name !== name) {
-                delete current.children[editingKey.name];
-                current.order = current.order.filter(k => k !== editingKey.name);
-                db.journalier.forEach(f => { if(f.name === editingKey.name) f.name = name; });
-            }
-            current.children[name] = isTech ? { type: 'tech', note: document.getElementById('input-note').value } : { type: 'folder', children: {}, order: (current.children[name]?.order || []) };
-            if(!current.order.includes(name)) current.order.push(name);
+            t.children[newName] = isTech ? { type:'tech', status:'on_test', notes:{on_test:"",already:"",future:""} } : { type:'folder', children:{}, order:[] };
+            t.order.push(newName);
         }
-        save(); closeModal();
+        saveDB(); closeModal();
     }
 
-    function deleteItem(key, index, fromJournalier) {
+    function deleteItem(key, isJournalier) {
         if(!confirm("Supprimer ?")) return;
-        if(fromJournalier) db.journalier.splice(index, 1);
-        else {
-            let current = db;
-            currentPath.forEach(p => current = current[p]);
-            delete current.children[key];
-            current.order = current.order.filter(k => k !== key);
+        if(isJournalier) {
+            db.journalier = db.journalier.filter(f => f.name !== key);
+        } else {
+            let t = db; currentPath.forEach(p => t = t[p]);
+            delete t.children[key];
+            t.order = t.order.filter(n => n !== key);
             db.journalier = db.journalier.filter(f => f.name !== key);
         }
-        save();
+        saveDB();
     }
 
     function toggleFav(key) {
         const idx = db.journalier.findIndex(f => f.name === key);
         if(idx > -1) db.journalier.splice(idx, 1);
         else db.journalier.push({name: key, path: [...currentPath]});
-        save();
+        saveDB();
     }
 
     render();
