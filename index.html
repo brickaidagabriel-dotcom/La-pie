@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V9</title>
+    <title>JJB Vault V10</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
             --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; 
             --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff;
-            --on-test: #30d158; --already: #ff9f0a; --future: #64d2ff;
+            --on-test: #30d158; --already: #ff9f0a; --future: #00f2ff;
         }
         
         * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; box-sizing: border-box; }
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: relative; z-index: 10; }
+        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: relative; }
         .version-tag { position: absolute; top: 5px; left: 10px; font-size: 10px; color: var(--turquoise); opacity: 0.7; font-weight: bold; }
         
         .container { padding: 15px; }
@@ -24,31 +24,34 @@
         
         /* Items */
         .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: none; }
-        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; }
+        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; border-left: 0px solid transparent; }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
         .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         
-        .swiped .item-main { transform: translateX(-195px); }
+        /* Swipe States */
+        .swiped.triple .item-main { transform: translateX(-195px); }
+        .swiped.double .item-main { transform: translateX(-130px); }
+        .swiped.single .item-main { transform: translateX(-65px); }
 
         /* Status Bars */
-        .status-on_test { border-left: 5px solid var(--on-test); }
-        .status-already { border-left: 5px solid var(--already); }
-        .status-future { border-left: 5px solid var(--future); }
+        .status-on_test { border-left: 5px solid var(--on-test) !important; }
+        .status-already { border-left: 5px solid var(--already) !important; }
+        .status-future { border-left: 5px solid var(--future) !important; }
 
-        /* Fiche Technique (Note Editor) */
+        /* Note Editor */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
         .editor-header { padding: 20px; background: var(--card); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
-        .tabs { display: flex; gap: 10px; padding: 15px; background: #111; }
-        .tab { flex: 1; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; border: 2px solid transparent; opacity: 0.5; }
-        .tab.active { opacity: 1; border-color: white; }
+        .tabs { display: flex; gap: 8px; padding: 15px; background: #111; }
+        .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; border: 2px solid transparent; opacity: 0.4; transition: 0.2s; }
+        .tab.active { opacity: 1; border-color: white; transform: scale(1.05); }
         
         .tab-on { background: var(--on-test); color: #000; }
         .tab-already { background: var(--already); color: #000; }
         .tab-future { background: var(--future); color: #000; }
 
-        #note-textarea { flex: 1; background: transparent; border: none; color: white; padding: 20px; font-size: 16px; resize: none; outline: none; -webkit-user-select: text; user-select: text; }
+        #note-textarea { flex: 1; background: transparent; border: none; color: white; padding: 20px; font-size: 17px; resize: none; outline: none; -webkit-user-select: text; user-select: text; line-height: 1.5; }
 
-        /* Modale Classique */
+        /* Modals */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
         input { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; border-radius:10px; font-size: 16px; -webkit-user-select: text; user-select: text; }
@@ -60,7 +63,7 @@
 
 <div id="main-view">
     <div class="header">
-        <span class="version-tag">VERSION V9</span>
+        <span class="version-tag">VERSION V10</span>
         <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px; margin-top: 5px;">ACCUEIL</div>
         <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
     </div>
@@ -74,8 +77,8 @@
 
 <div id="note-editor">
     <div class="editor-header">
-        <button onclick="closeEditor()" style="background:none; border:none; color:var(--turquoise); font-size:18px;">〈 Retour</button>
-        <h3 id="editor-title" style="margin:0; font-size:16px;">Technique</h3>
+        <button onclick="closeEditor()" style="background:none; border:none; color:var(--turquoise); font-size:18px; font-weight:bold;">〈 Retour</button>
+        <h3 id="editor-title" style="margin:0; font-size:16px; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Technique</h3>
         <div style="width:50px;"></div>
     </div>
     <div class="tabs">
@@ -83,25 +86,27 @@
         <div class="tab tab-already" id="tab-already" onclick="switchTab('already')">ALREADY</div>
         <div class="tab tab-future" id="tab-future" onclick="switchTab('future')">FUTURE</div>
     </div>
-    <textarea id="note-textarea" placeholder="Écris tes notes ici..." oninput="autoSaveNote()"></textarea>
+    <textarea id="note-textarea" placeholder="Commence à écrire..." oninput="autoSaveNote()"></textarea>
 </div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-title" style="color:var(--turquoise);">Nouveau</h3>
-        <input type="text" id="input-name" placeholder="Nom de l'élément">
-        <label style="display:flex; align-items:center; gap:10px; margin:20px 0; color:#aaa;">
-            <input type="checkbox" id="is-final" style="width:20px;"> Technique (avec notes)
-        </label>
+        <h3 id="modal-title" style="color:var(--turquoise);">Action</h3>
+        <input type="text" id="input-name" placeholder="Nom">
+        <div id="tech-toggle-area">
+            <label style="display:flex; align-items:center; gap:10px; margin:20px 0; color:#aaa; font-size: 14px;">
+                <input type="checkbox" id="is-final" style="width:20px; height:20px;"> Activer comme Technique Finale
+            </label>
+        </div>
         <div style="display:flex; gap:12px;">
             <button onclick="closeModal()" style="flex:1; padding:14px; background:#333; border-radius:12px; border:none; color:white;">Annuler</button>
-            <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); border-radius:12px; border:none; font-weight:bold;">Sauver</button>
+            <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); border-radius:12px; border:none; font-weight:bold; color:black;">Sauver</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v9')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v10')) || {
         home_order: ["Journalier", "Data"],
         names: { "Journalier": "Journalier", "Data": "Data" },
         journalier: [],
@@ -112,11 +117,11 @@
     };
 
     let currentPath = [];
-    let editingItem = null; // Pour le renommage
-    let activeTech = null; // Pour l'éditeur de notes
+    let editingItem = null;
+    let activeTech = null;
     let activeStatus = 'on_test';
 
-    function saveDB() { localStorage.setItem('jjb_vault_v9', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v10', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; editingItem = null; }
 
@@ -130,7 +135,7 @@
             document.getElementById('view-title').innerText = "JJB Vault";
             const list = document.createElement('div');
             db.home_order.forEach(id => {
-                const wrap = createItemUI(id, db.names[id], () => { currentPath=[id.toLowerCase()]; render(); }, true, false);
+                const wrap = createItemUI(id, db.names[id], () => { currentPath=[id.toLowerCase()]; render(); }, true, false, null);
                 list.appendChild(wrap);
             });
             content.appendChild(list);
@@ -179,7 +184,13 @@
     function createItemUI(id, label, onclick, isHome, isJournalier, status) {
         const wrap = document.createElement('div');
         const isFav = db.journalier.some(f => f.name === id);
-        wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
+        
+        // Configuration des slides
+        let slideCount = "triple"; // Par défaut 3 boutons
+        if(isHome) slideCount = "single"; // Juste modifier
+        else if(isJournalier) slideCount = "double"; // Favoris(Stop) + Modifier + Supprimer -> En fait on va mettre les 3
+        
+        wrap.className = `item-wrapper ${slideCount} ${status ? 'status-'+status : ''}`;
         
         wrap.innerHTML = `
             <div class="item-actions">
@@ -211,16 +222,11 @@
         }});
     }
 
-    // --- LOGIQUE ÉDITEUR ---
     function openEditor(key, path) {
         let target = db; path.forEach(p => target = target[p]);
         activeTech = target.children[key];
-        activeTech._parentPath = path;
-        activeTech._name = key;
-
         if(!activeTech.notes) activeTech.notes = { on_test: "", already: "", future: "" };
         activeStatus = activeTech.status || 'on_test';
-        
         document.getElementById('editor-title').innerText = key;
         document.getElementById('note-editor').style.display = 'flex';
         switchTab(activeStatus);
@@ -228,7 +234,7 @@
 
     function switchTab(status) {
         activeStatus = status;
-        activeTech.status = status; // Le dernier onglet vu devient le statut
+        activeTech.status = status;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-' + status).classList.add('active');
         document.getElementById('note-textarea').value = activeTech.notes[status] || "";
@@ -237,19 +243,16 @@
 
     function autoSaveNote() {
         activeTech.notes[activeStatus] = document.getElementById('note-textarea').value;
-        localStorage.setItem('jjb_vault_v9', JSON.stringify(db));
+        localStorage.setItem('jjb_vault_v10', JSON.stringify(db));
     }
 
-    function closeEditor() {
-        document.getElementById('note-editor').style.display = 'none';
-        render();
-    }
+    function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
 
-    // --- AJOUT / MODIF ---
     function openAddModal() {
         editingItem = null;
         document.getElementById('modal-title').innerText = "Ajouter";
         document.getElementById('input-name').value = "";
+        document.getElementById('tech-toggle-area').style.display = "block";
         document.getElementById('modal').style.display = 'flex';
     }
 
@@ -257,6 +260,7 @@
         editingItem = { id, isHome, isJournalier, path: [...currentPath] };
         document.getElementById('modal-title').innerText = "Renommer";
         document.getElementById('input-name').value = isHome ? db.names[id] : id;
+        document.getElementById('tech-toggle-area').style.display = isHome ? "none" : "block";
         document.getElementById('modal').style.display = 'flex';
     }
 
