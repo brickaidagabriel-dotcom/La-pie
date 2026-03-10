@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V20</title>
+    <title>JJB Vault V23.0.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -14,13 +14,13 @@
         * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        /* HEADER & VERSION */
+        /* HEADER V15 STYLE */
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
         .version-tag { position: absolute; top: 5px; left: 10px; font-size: 8px; color: #555; font-weight: bold; }
         .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; height: 30px; }
         .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; padding: 0; cursor: pointer; }
         
-        /* SEARCH */
+        /* SEARCH BAR V15 */
         .search-bar-wrap { display: flex; gap: 8px; margin-bottom: 15px; }
         .search-input { flex: 1; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; outline: none; }
         .search-go { background: var(--turquoise); border: none; border-radius: 10px; padding: 0 15px; font-weight: bold; color: #000; }
@@ -28,7 +28,7 @@
         .container { padding: 15px; }
         .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        /* LIST ITEMS */
+        /* ITEM WRAPPERS V15 STYLE */
         .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
         .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; z-index: 1; }
@@ -39,42 +39,43 @@
         .status-already { border-left: 5px solid var(--already) !important; }
         .status-future { border-left: 5px solid var(--future) !important; }
 
-        /* SPLIT EDITOR */
+        /* EDITOR SPLIT V23 */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
         .editor-split-container { display: flex; flex-direction: column; height: 100%; }
         
-        .tabs { display: flex; gap: 8px; padding: 10px; background: #111; }
-        .tab { flex: 1; padding: 10px 5px; border-radius: 8px; font-size: 10px; font-weight: bold; text-align: center; opacity: 0.4; color: #000; }
+        .tabs { display: flex; gap: 8px; padding: 15px; background: #111; }
+        .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.4; color: #000; }
         .tab.active { opacity: 1; border: 2px solid white; }
+        
+        .text-pane { flex: 1; position: relative; border-bottom: 2px solid #333; }
+        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; overflow-y: auto; }
+        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; line-height: 1.5; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
+        
+        /* VIDEO AREA */
+        .video-pane { flex: 1; background: #000; overflow-y: auto; padding: 10px; }
+        .video-wrapper-inner { position: relative; margin-bottom: 15px; background: var(--danger); border-radius: 12px; overflow: hidden; }
+        .video-card { background: #1c1c1e; position: relative; z-index: 10; transition: transform 0.3s ease; }
+        .video-card iframe { width: 100%; height: 200px; border: none; }
+        .video-meta { padding: 10px; font-size: 12px; color: var(--turquoise); display: flex; justify-content: space-between; }
+        .swiped-video { transform: translateX(-80px); }
+        .del-vid-btn { position: absolute; right: 0; top: 0; width: 80px; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
 
-        /* Top Text Zone */
-        .text-pane { flex: 1; position: relative; border-bottom: 2px solid #333; overflow: hidden; }
-        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 15px; color: white; font-size: 16px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; overflow-y: auto; }
-        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: white; padding: 15px; font-size: 16px; line-height: 1.4; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
-
-        /* Bottom Video Zone */
-        .video-pane { flex: 1; background: #000; display: flex; flex-direction: column; overflow-y: auto; padding: 10px; }
-        .video-list { display: flex; flex-direction: column; gap: 15px; }
-        .video-card { background: #1c1c1e; border-radius: 12px; overflow: hidden; position: relative; transition: transform 0.3s; }
-        .video-card iframe { width: 100%; height: 180px; border: none; }
-        .video-meta { padding: 8px; font-size: 11px; color: var(--turquoise); display: flex; justify-content: space-between; }
-        .add-video-btn { border: 2px dashed #444; border-radius: 12px; padding: 20px; text-align: center; color: #666; margin-bottom: 20px; }
+        /* TIME PICKER */
+        .time-picker { display: flex; justify-content: center; align-items: center; gap: 8px; background: #2c2c2e; padding: 10px; border-radius: 10px; margin: 10px 0; }
+        .time-picker select { background: #1c1c1e; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 5px; }
 
         .wiki-link { color: var(--turquoise); text-decoration: underline; pointer-events: auto; font-weight: bold; cursor: pointer; }
 
         /* MODALS */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; justify-content:center; align-items:center; }
-        .modal-content { background:var(--card); padding:20px; border-radius:20px; width:90%; border: 1px solid var(--turquoise); }
-        .type-selector { display: flex; gap: 10px; margin-bottom: 15px; }
-        .type-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #444; color: #fff; background: #2c2c2e; font-size: 12px; }
-        .type-btn.active { background: var(--turquoise); color: #000; border-color: var(--turquoise); }
+        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
     </style>
 </head>
 <body>
 
 <div id="main-view">
     <div class="header">
-        <div class="version-tag">V20.0.0</div>
+        <div class="version-tag">V23.0.0</div>
         <div class="nav-top">
             <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
             <span id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px;">ACCUEIL</span>
@@ -91,7 +92,7 @@
 
 <div id="note-editor">
     <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="version-tag">V20.0.0</div>
+        <div class="version-tag">V23.0.0</div>
         <button onclick="closeEditor()" class="back-btn">〈 Retour</button>
         <h3 id="editor-title" style="margin:0; font-size:16px;">Note</h3>
         <div style="width:50px;"></div>
@@ -102,29 +103,24 @@
             <div class="tab" id="tab-already" style="background:var(--already)" onclick="switchTab('already')">ALREADY</div>
             <div class="tab" id="tab-future" style="background:var(--future)" onclick="switchTab('future')">FUTURE</div>
         </div>
-        
         <div class="text-pane" id="text-pane-container">
             <div id="note-display"></div>
             <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
         </div>
-
-        <div class="video-pane" id="video-pane-list">
-            </div>
+        <div class="video-pane" id="video-pane-list"></div>
     </div>
 </div>
 
 <div id="video-modal" class="modal">
     <div class="modal-content">
-        <h3 style="color:var(--turquoise); margin-top:0;">Importer une ressource</h3>
-        <div class="type-selector">
-            <button class="type-btn active" id="btn-type-vid" onclick="setImportType('video')">VIDÉO</button>
-            <button class="type-btn" id="btn-type-short" onclick="setImportType('short')">SHORT / TIKTOK</button>
+        <h3 style="color:var(--turquoise); margin:0 0 15px 0;">Ajouter Vidéo</h3>
+        <input type="text" id="vid-url" class="search-input" style="width:100%;" placeholder="Lien YouTube ou Short">
+        <div class="time-picker">
+            <select id="p-h"><option value="0">00h</option><option value="1">01h</option></select>
+            <select id="p-m"></select>
+            <select id="p-s"></select>
         </div>
-        <input type="text" id="vid-url" class="search-input" style="width:100%; margin-bottom:15px;" placeholder="Coller le lien ici...">
-        <div id="time-input-wrap">
-            <input type="text" id="vid-time" class="search-input" style="width:100%; margin-bottom:15px;" placeholder="Timecode (ex: 2:45)">
-        </div>
-        <div style="display:flex; gap:12px;">
+        <div style="display:flex; gap:12px; margin-top:20px;">
             <button onclick="closeVideoModal()" style="flex:1; padding:12px; background:#333; color:#fff; border-radius:8px; border:none;">Annuler</button>
             <button onclick="addVideo()" style="flex:1; padding:12px; background:var(--turquoise); color:#000; border-radius:8px; border:none; font-weight:bold;">Ajouter</button>
         </div>
@@ -148,69 +144,40 @@
 </div>
 
 <script>
-    // DATA UNTOUCHED FROM V15
-    const initialData = {
+    // INIT TIME SELECTORS
+    const mS = document.getElementById('p-m'); const sS = document.getElementById('p-s');
+    for(let i=0; i<60; i++){
+        let o = `<option value="${i}">${i < 10 ? '0'+i : i}</option>`;
+        mS.innerHTML += o; sS.innerHTML += o;
+    }
+
+    // BASE DATA V15
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v23')) || {
         journalier: [],
         data: { 
             order: ["Grappling", "Wrestling"], 
             children: { 
-                "Grappling": { type: "folder", order: ["Top", "Bottom", "Submissions"], children: {
-                    "Top": { type: "folder", order: ["Pin", "Passing"], children: {
-                        "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { 
-                            "Mount": {type:"folder", order:["Underhook Control"], children:{
-                                "Underhook Control": {
-                                    type: "tech", status: "on_test",
-                                    notes: { on_test: "essayez de grimper avec votre main comme une araignée pour passer en chest wrap", already: "prendre le poignet et le plaquer au sol", future: "" },
-                                    videos: { on_test: [], already: [], future: [] }
-                                }
-                            }}, 
-                            "Side Control": {type:"folder", children:{}, order:[]}, 
-                            "Ride": {type:"folder", children:{}, order:[]} 
-                        } },
-                        "Passing": { type: "folder", order: ["Half Guard Pass", "Outside Pass"], children: {
-                            "Half Guard Pass": { type: "folder", order: ["Chest-to-Chest", "Half Guard", "Knee Shield Half Guard"], children: {
-                                "Chest-to-Chest": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]},
-                                "Knee Shield Half Guard": { type: "folder", order: ["High Knee Shield", "Medium Knee Shield", "Low Knee Shield"], children: {
-                                    "High Knee Shield": {type:"folder", children:{}, order:[]}, "Low Knee Shield": {type:"folder", children:{}, order:[]},
-                                    "Medium Knee Shield": { type: "folder", order: ["Knee Elbow Open", "Knee Elbow Close"], children: { "Knee Elbow Open": {type:"folder", children:{}, order:[]}, "Knee Elbow Close": {type:"folder", children:{}, order:[]} } }
-                                }}
-                            }},
-                            "Outside Pass": {type:"folder", children:{}, order:[]}
-                        }}
-                    }},
-                    "Bottom": { type: "folder", order: ["Closed Guard", "Half Guard", "Open Seated", "Open Supine", "Pin Escape"], children: {
-                        "Closed Guard": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]}, "Open Seated": {type:"folder", children:{}, order:[]}, "Open Supine": {type:"folder", children:{}, order:[]},
-                        "Pin Escape": { type: "folder", order: ["Side Control Escape", "Mount Escape", "Back Escape", "Ride Escape", "Turtle Escape", "Dogfight"], children: { "Side Control Escape":{type:"folder", children:{}, order:[]},"Mount Escape":{type:"folder", children:{}, order:[]},"Back Escape":{type:"folder", children:{}, order:[]},"Ride Escape":{type:"folder", children:{}, order:[]},"Turtle Escape":{type:"folder", children:{}, order:[]},"Dogfight":{type:"folder", children:{}, order:[]} } }
-                    }},
-                    "Submissions": { type: "folder", order: ["Submissions (global)", "Submission Defense (global)"], children: { "Submissions (global)":{type:"folder", children:{}, order:[]}, "Submission Defense (global)":{type:"folder", children:{}, order:[]} } }
+                "Grappling": { type: "folder", order: ["Top"], children: {
+                    "Top": { type: "folder", order: ["Underhook Control"], children: {
+                        "Underhook Control": { type: "tech", status: "on_test", notes: { on_test: "Notes...", already: "", future: "" }, videos: { on_test: [], already: [], future: [] } }
+                    }}
                 }},
-                "Wrestling": { type: "folder", order: ["Underhook", "2-on-1", "Collar Tie", "Single Leg", "Double Leg", "50-50", "Other Grip"], children: {
-                    "Underhook": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", order:["Overhook"], children:{"Overhook":{type:"folder", children:{}, order:[]}}} } },
-                    "2-on-1": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Collar Tie": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Single Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Double Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "50-50": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Other Grip": { type: "folder", order: ["Other"], children: { "Other":{type:"folder", children:{}, order:[]}} }
-                }}
+                "Wrestling": { type: "folder", order: [], children: {} }
             } 
         }
     };
 
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v20')) || initialData;
     let currentPath = [];
     let editingItem = null;
     let activeTech = null;
     let searchQuery = "";
     let techMap = {};
-    let importType = 'video';
 
-    function saveDB() { localStorage.setItem('jjb_vault_v20', JSON.stringify(db)); buildTechMap(); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v23', JSON.stringify(db)); buildTechMap(); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // BUILD TECH MAP FOR WIKI LINKS
     function buildTechMap() {
         techMap = {};
         function scan(obj, path) {
@@ -229,7 +196,6 @@
         content.innerHTML = "";
         const isHome = currentPath.length === 0;
         const isJournalier = currentPath[0] === 'journalier';
-
         document.getElementById('btn-back').style.visibility = (isHome) ? "hidden" : "visible";
         document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p => p !== "children").join(" > ").toUpperCase();
 
@@ -242,20 +208,16 @@
         }
 
         if (!isJournalier) {
-            const searchDiv = document.createElement('div');
-            searchDiv.className = "search-bar-wrap";
-            searchDiv.innerHTML = `
-                <input type="text" id="search-input" class="search-input" placeholder="Rechercher..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()">
-                <button class="search-go" onclick="execSearch()">OK</button>`;
-            content.appendChild(searchDiv);
+            const sDiv = document.createElement('div');
+            sDiv.className = "search-bar-wrap";
+            sDiv.innerHTML = `<input type="text" id="search-input" class="search-input" placeholder="Titre ou contenu..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()"><button class="search-go" onclick="execSearch()">OK</button>`;
+            content.appendChild(sDiv);
         }
 
         if (searchQuery) { renderSearchResults(content); return; }
 
-        let current = db;
-        currentPath.forEach(p => current = current[p]);
+        let current = db; currentPath.forEach(p => current = current[p]);
         document.getElementById('view-title').innerText = isJournalier ? "Journalier" : (currentPath[currentPath.length-1]);
-
         if(!isJournalier) content.innerHTML += `<button class="btn-add" onclick="openAddModal()">+ AJOUTER</button>`;
         
         const list = document.createElement('div');
@@ -263,14 +225,11 @@
         content.appendChild(list);
 
         const items = isJournalier ? db.journalier : (current.order || []);
-
         items.forEach((obj, idx) => {
             const key = isJournalier ? obj.name : obj;
             let item;
-            if(isJournalier) {
-                let t = db; obj.path.forEach(p => t = t[p]); item = t.children[key];
-            } else { item = current.children[key]; }
-            
+            if(isJournalier) { let t = db; obj.path.forEach(p => t = t[p]); item = t.children[key]; }
+            else { item = current.children[key]; }
             if(!item) return;
             const wrap = createItemUI(key, key, () => {
                 if(item.type === 'folder') { currentPath = isJournalier ? [...obj.path, 'children', key] : [...currentPath, 'children', key]; render(); }
@@ -280,12 +239,38 @@
             list.appendChild(wrap);
         });
 
-        new Sortable(list, { animation: 150, delay: 400, delayOnTouchOnly: true, forceFallback: true, onEnd: () => {
+        new Sortable(list, { animation: 150, delay: 400, onEnd: () => {
             const order = Array.from(list.children).map(item => item.dataset.id);
             if(isJournalier) db.journalier = order.map(i => db.journalier[i]);
             else current.order = order;
             saveDB();
         }});
+    }
+
+    function createItemUI(id, label, onclick, isJournalier, status) {
+        const wrap = document.createElement('div');
+        const isFav = db.journalier.some(f => f.name === id);
+        wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
+        wrap.innerHTML = `
+            <div class="item-actions">
+                <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>
+                <button class="action-btn" style="background:var(--edit)" onclick="openEditModal('${id}')">✏️</button>
+                <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${id}', ${isJournalier})">🗑️</button>
+            </div>
+            <div class="item-main"><strong>${label}</strong><span>〉</span></div>`;
+        wrap.querySelector('.item-main').onclick = onclick;
+        setupSwipe(wrap);
+        return wrap;
+    }
+
+    function setupSwipe(el) {
+        let startX;
+        el.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
+        el.addEventListener('touchend', e => {
+            let diff = startX - e.changedTouches[0].clientX;
+            if(diff > 60) el.classList.add('swiped');
+            else if(diff < -60) el.classList.remove('swiped');
+        });
     }
 
     function execSearch() { searchQuery = document.getElementById('search-input').value.trim().toLowerCase(); render(); }
@@ -306,41 +291,15 @@
         scan(db.data, ['data', 'children']);
         results.forEach(res => {
             const wrap = createItemUI(res.name, res.name, () => {
-                const targetPath = [...res.path]; searchQuery = "";
-                if(res.item.type === 'folder') { currentPath = [...targetPath, res.name]; render(); }
-                else { openEditor(res.name, targetPath); }
+                searchQuery = "";
+                if(res.item.type === 'folder') { currentPath = [...res.path, res.name]; render(); }
+                else { openEditor(res.name, res.path); }
             }, false, res.item.status);
             container.appendChild(wrap);
         });
     }
 
-    function createItemUI(id, label, onclick, isJournalier, status) {
-        const wrap = document.createElement('div');
-        const isFav = db.journalier.some(f => f.name === id);
-        wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
-        wrap.innerHTML = `
-            <div class="item-actions">
-                <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>
-                <button class="action-btn" style="background:var(--edit)" onclick="openEditModal('${id}')">✏️</button>
-                <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${id}', ${isJournalier})">🗑️</button>
-            </div>
-            <div class="item-main"><strong>${label}</strong><span>〉</span></div>`;
-        wrap.querySelector('.item-main').onclick = onclick;
-        setupSwipe(wrap);
-        return wrap;
-    }
-
-    function setupSwipe(el, onLeftSwipe) {
-        let startX;
-        el.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
-        el.addEventListener('touchend', e => {
-            let diff = startX - e.changedTouches[0].clientX;
-            if(diff > 60) { el.classList.add('swiped'); if(onLeftSwipe) onLeftSwipe(); }
-            else if(diff < -60) el.classList.remove('swiped');
-        });
-    }
-
-    // --- EDITOR LOGIC ---
+    // EDITOR & VIDEO LOGIC
     function openEditor(key, path) {
         let t = db; path.forEach(p => t = t[p]);
         activeTech = t.children[key];
@@ -357,72 +316,63 @@
         document.getElementById('note-textarea').value = activeTech.notes[status] || "";
         updateWikiDisplay(activeTech.notes[status] || "");
         renderVideos();
-        saveDB();
     }
+
+    function renderVideos() {
+        const container = document.getElementById('video-pane-list');
+        container.innerHTML = `<div style="border:2px dashed #444; border-radius:12px; padding:20px; text-align:center; color:#666; margin-bottom:15px;" onclick="openVideoModal()">➕ Ajouter Vidéo / Short</div>`;
+        const vids = activeTech.videos[activeTech.status] || [];
+        vids.forEach((v, idx) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = "video-wrapper-inner";
+            wrapper.innerHTML = `
+                <div class="del-vid-btn" onclick="deleteVideo(${idx})">SUPPRIMER</div>
+                <div class="video-card">
+                    <iframe src="${v.embedUrl}" allowfullscreen></iframe>
+                    <div class="video-meta"><strong>${v.label}</strong><span>⬅️ Glisser</span></div>
+                </div>`;
+            setupVidSwipe(wrapper);
+            container.appendChild(wrapper);
+        });
+    }
+
+    function setupVidSwipe(el) {
+        let startX; const card = el.querySelector('.video-card');
+        el.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
+        el.addEventListener('touchend', e => {
+            let diff = startX - e.changedTouches[0].clientX;
+            if(diff > 50) card.classList.add('swiped-video');
+            else if(diff < -50) card.classList.remove('swiped-video');
+        });
+    }
+
+    function addVideo() {
+        let url = document.getElementById('vid-url').value.trim();
+        if(!url) return;
+        const totalSec = (parseInt(document.getElementById('p-h').value)*3600) + (parseInt(document.getElementById('p-m').value)*60) + parseInt(document.getElementById('p-s').value);
+        let id = "", embedUrl = "", label = "Ressource";
+
+        if(url.includes("shorts/")) {
+            id = url.split("shorts/")[1].split(/[?&]/)[0];
+            embedUrl = `https://www.youtube.com/embed/${id}`; label = "Short YouTube";
+        } else if(url.includes("v=") || url.includes("youtu.be/")) {
+            id = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.split("be/")[1].split(/[?&]/)[0];
+            embedUrl = `https://www.youtube.com/embed/${id}?start=${totalSec}`;
+            label = totalSec > 0 ? "Vidéo @ Timecode" : "Vidéo YouTube";
+        }
+        activeTech.videos[activeTech.status].push({ embedUrl, label });
+        saveDB(); renderVideos(); closeVideoModal();
+    }
+
+    function deleteVideo(idx) { activeTech.videos[activeTech.status].splice(idx, 1); saveDB(); renderVideos(); }
+    function openVideoModal() { document.getElementById('video-modal').style.display = 'flex'; }
+    function closeVideoModal() { document.getElementById('video-modal').style.display = 'none'; }
 
     function handleInput() {
         const text = document.getElementById('note-textarea').value;
         activeTech.notes[activeTech.status] = text;
         updateWikiDisplay(text);
-        localStorage.setItem('jjb_vault_v20', JSON.stringify(db));
-    }
-
-    function renderVideos() {
-        const container = document.getElementById('video-pane-list');
-        container.innerHTML = `<div class="add-video-btn" onclick="openVideoModal()">➕ Ajouter une vidéo / short</div>`;
-        
-        const list = document.createElement('div');
-        list.className = "video-list";
-        
-        const vids = activeTech.videos[activeTech.status] || [];
-        vids.forEach((v, idx) => {
-            const card = document.createElement('div');
-            card.className = "video-card";
-            const ytId = extractYT(v.url);
-            card.innerHTML = `
-                <iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>
-                <div class="video-meta">
-                    <span>${v.type.toUpperCase()}</span>
-                    <span>${v.time ? '⏱ '+v.time : ''}</span>
-                </div>
-            `;
-            // Swipe to delete on card
-            setupSwipe(card, () => {
-                if(confirm("Supprimer cette vidéo ?")) {
-                    vids.splice(idx, 1);
-                    renderVideos();
-                    saveDB();
-                }
-            });
-            list.appendChild(card);
-        });
-        container.appendChild(list);
-    }
-
-    function setImportType(t) {
-        importType = t;
-        document.getElementById('btn-type-vid').classList.toggle('active', t === 'video');
-        document.getElementById('btn-type-short').classList.toggle('active', t === 'short');
-        document.getElementById('time-input-wrap').style.display = (t === 'video') ? 'block' : 'none';
-    }
-
-    function openVideoModal() { document.getElementById('video-modal').style.display = 'flex'; }
-    function closeVideoModal() { document.getElementById('video-modal').style.display = 'none'; }
-    
-    function addVideo() {
-        const url = document.getElementById('vid-url').value;
-        const time = document.getElementById('vid-time').value;
-        if(url) {
-            activeTech.videos[activeTech.status].push({ url, time, type: importType });
-            saveDB();
-            renderVideos();
-        }
-        closeVideoModal();
-    }
-
-    function extractYT(url) {
-        const reg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        const m = url.match(reg); return (m && m[2].length == 11) ? m[2] : "";
+        localStorage.setItem('jjb_vault_v23', JSON.stringify(db));
     }
 
     function updateWikiDisplay(text) {
@@ -436,42 +386,18 @@
         display.innerHTML = html + "\n";
     }
 
-    document.getElementById('text-pane-container').onclick = (e) => {
-        if (e.target.classList.contains('wiki-link')) {
-            const name = e.target.innerText.toLowerCase();
-            const target = techMap[name];
-            if(target) {
-                let p = db; target.path.forEach(seg => p = p[seg]);
-                const item = p.children[target.name];
-                if(item.type === 'tech') openEditor(target.name, target.path);
-                else { closeEditor(); currentPath = [...target.path, target.name]; render(); }
-            }
-        }
-    };
-
     function syncScroll() { document.getElementById('note-display').scrollTop = document.getElementById('note-textarea').scrollTop; }
     function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
 
-    // --- GENERIC MODALS ---
-    function openAddModal() { 
-        editingItem = null; 
-        document.getElementById('input-name').value = "";
-        document.getElementById('is-final').checked = false;
-        document.getElementById('modal').style.display = 'flex'; 
-    }
-    function openEditModal(id) { 
-        editingItem = { id, path: [...currentPath] }; 
-        document.getElementById('input-name').value = id; 
-        document.getElementById('modal').style.display = 'flex'; 
-    }
+    // GENERIC MODALS V15
+    function openAddModal() { editingItem = null; document.getElementById('input-name').value = ""; document.getElementById('modal').style.display = 'flex'; }
+    function openEditModal(id) { editingItem = { id, path: [...currentPath] }; document.getElementById('input-name').value = id; document.getElementById('modal').style.display = 'flex'; }
     function saveItem() {
-        const name = document.getElementById('input-name').value.trim();
-        if(!name) return;
+        const name = document.getElementById('input-name').value.trim(); if(!name) return;
         let t = db; (editingItem ? editingItem.path : currentPath).forEach(p => t = t[p]);
         if(editingItem) {
             const data = t.children[editingItem.id]; delete t.children[editingItem.id];
             t.children[name] = data; t.order = t.order.map(n => n === editingItem.id ? name : n);
-            db.journalier.forEach(f => { if(f.name === editingItem.id) f.name = name; });
         } else {
             const isTech = document.getElementById('is-final').checked;
             t.children[name] = isTech ? { type:'tech', status:'on_test', notes:{on_test:"",already:"",future:""}, videos:{on_test:[],already:[],future:[]} } : { type:'folder', children:{}, order:[] };
@@ -479,16 +405,11 @@
         }
         saveDB(); closeModal();
     }
-    function deleteItem(id, isJournalier) {
-        if(!confirm("Supprimer ?")) return;
+    function deleteItem(id, isJournalier) { if(confirm("Supprimer ?")) {
         if(isJournalier) db.journalier = db.journalier.filter(f => f.name !== id);
-        else {
-            let t = db; currentPath.forEach(p => t = t[p]);
-            delete t.children[id]; t.order = t.order.filter(n => n !== id);
-            db.journalier = db.journalier.filter(f => f.name !== id);
-        }
+        else { let t = db; currentPath.forEach(p => t = t[p]); delete t.children[id]; t.order = t.order.filter(n => n !== id); }
         saveDB();
-    }
+    }}
     function toggleFav(id) {
         const idx = db.journalier.findIndex(f => f.name === id);
         if(idx > -1) db.journalier.splice(idx, 1);
@@ -496,8 +417,7 @@
         saveDB();
     }
 
-    buildTechMap();
-    render();
+    buildTechMap(); render();
 </script>
 </body>
 </html>
