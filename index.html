@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V13</title>
+    <title>JJB Vault V14 - Wiki System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -36,13 +36,19 @@
         .status-already { border-left: 5px solid var(--already) !important; }
         .status-future { border-left: 5px solid var(--future) !important; }
 
+        /* Note Editor specific */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
         .tabs { display: flex; gap: 8px; padding: 15px; background: #111; }
         .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.4; }
         .tab.active { opacity: 1; border: 2px solid white; }
-        #note-textarea { flex: 1; background: transparent; border: none; color: white; padding: 20px; font-size: 17px; resize: none; outline: none; -webkit-user-select: text; user-select: text; }
+        
+        .editor-body { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; pointer-events: none; }
+        #note-textarea { flex: 1; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; line-height: 1.5; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 5; }
+        
+        .wiki-link { color: var(--turquoise); text-decoration: underline; pointer-events: auto; font-weight: bold; }
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
     </style>
 </head>
@@ -75,7 +81,10 @@
         <div class="tab" id="tab-already" style="background:var(--already); color:#000;" onclick="switchTab('already')">ALREADY</div>
         <div class="tab" id="tab-future" style="background:var(--future); color:#000;" onclick="switchTab('future')">FUTURE</div>
     </div>
-    <textarea id="note-textarea" oninput="autoSaveNote()"></textarea>
+    <div class="editor-body">
+        <div id="note-display"></div>
+        <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
+    </div>
 </div>
 
 <div id="modal" class="modal">
@@ -95,7 +104,7 @@
 </div>
 
 <script>
-    // Structure pré-remplie selon tes instructions
+    // Structure de base
     const initialData = {
         journalier: [],
         data: { 
@@ -134,16 +143,31 @@
         }
     };
 
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v13')) || initialData;
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v14')) || initialData;
     let currentPath = [];
     let editingItem = null;
     let activeTech = null;
     let searchQuery = "";
+    let techMap = {}; // Cache pour les noms de techniques existantes
 
-    function saveDB() { localStorage.setItem('jjb_vault_v13', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v14', JSON.stringify(db)); buildTechMap(); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    // Map toutes les techniques pour les wiki-links
+    function buildTechMap() {
+        techMap = {};
+        function scan(obj, path) {
+            if(obj.children) {
+                Object.keys(obj.children).forEach(key => {
+                    techMap[key.toLowerCase()] = { name: key, path: [...path, 'children'] };
+                    scan(obj.children[key], [...path, 'children', key]);
+                });
+            }
+        }
+        scan(db.data, ['data']);
+    }
 
     function render() {
         const content = document.getElementById('app-content');
@@ -166,7 +190,7 @@
             const searchDiv = document.createElement('div');
             searchDiv.className = "search-bar-wrap";
             searchDiv.innerHTML = `
-                <input type="text" id="search-input" class="search-input" placeholder="Rechercher..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()">
+                <input type="text" id="search-input" class="search-input" placeholder="Titre ou contenu..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()">
                 <button class="search-go" onclick="execSearch()">OK</button>`;
             content.appendChild(searchDiv);
         }
@@ -213,8 +237,7 @@
     }
 
     function execSearch() {
-        const val = document.getElementById('search-input').value.trim();
-        searchQuery = val.toLowerCase();
+        searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
         render();
     }
 
@@ -223,28 +246,23 @@
         function scan(obj, path) {
             if(obj.children) {
                 Object.keys(obj.children).forEach(key => {
-                    if(key.toLowerCase().includes(searchQuery)) {
-                        results.push({name: key, path: [...path, 'children'], item: obj.children[key]});
+                    const item = obj.children[key];
+                    let match = key.toLowerCase().includes(searchQuery);
+                    if(!match && item.notes) {
+                        match = Object.values(item.notes).some(txt => txt.toLowerCase().includes(searchQuery));
                     }
-                    scan(obj.children[key], [...path, 'children', key]);
+                    if(match) results.push({name: key, path: [...path, 'children'], item: item});
+                    scan(item, [...path, 'children', key]);
                 });
             }
         }
         scan(db.data, ['data']);
-        
-        if(results.length === 0) {
-            container.innerHTML += "<p style='text-align:center; color:#666; margin-top:20px;'>Aucun résultat pour '"+searchQuery+"'</p>";
-        }
-
+        if(results.length === 0) container.innerHTML += "<p style='text-align:center; color:#666;'>Aucun résultat</p>";
         results.forEach(res => {
             const wrap = createItemUI(res.name, res.name, () => {
-                searchQuery = ""; // Reset recherche avant navigation
-                if(res.item.type === 'folder') {
-                    currentPath = [...res.path, res.name];
-                    render();
-                } else {
-                    openEditor(res.name, res.path);
-                }
+                searchQuery = "";
+                if(res.item.type === 'folder') { currentPath = [...res.path, res.name]; render(); }
+                else { openEditor(res.name, res.path); }
             }, false, res.item.status);
             container.appendChild(wrap);
         });
@@ -276,8 +294,52 @@
         });
     }
 
+    // --- WIKI LINKS LOGIC ---
+    function handleInput() {
+        const text = document.getElementById('note-textarea').value;
+        activeTech.notes[activeTech.status] = text;
+        updateWikiDisplay(text);
+        localStorage.setItem('jjb_vault_v14', JSON.stringify(db));
+    }
+
+    function updateWikiDisplay(text) {
+        const display = document.getElementById('note-display');
+        // Échapper HTML de base
+        let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        
+        // Trouver tous les mots qui correspondent à des techniques
+        const keys = Object.keys(techMap).sort((a,b) => b.length - a.length);
+        if(keys.length > 0) {
+            const regex = new RegExp(`\\b(${keys.join('|')})\\b`, 'gi');
+            html = html.replace(regex, (matched) => {
+                return `<span class="wiki-link" onclick="openWiki('${matched.toLowerCase()}')">${matched}</span>`;
+            });
+        }
+        display.innerHTML = html + "\n";
+    }
+
+    function openWiki(name) {
+        const target = techMap[name];
+        if(target) {
+            const item = getFromPath(target.path).children[target.name];
+            if(item.type === 'tech') openEditor(target.name, target.path);
+            else { closeEditor(); currentPath = [...target.path, target.name]; render(); }
+        }
+    }
+
+    function getFromPath(path) {
+        let t = db; path.forEach(p => t = t[p]); return t;
+    }
+
+    function syncScroll() {
+        const textarea = document.getElementById('note-textarea');
+        const display = document.getElementById('note-display');
+        display.scrollTop = textarea.scrollTop;
+    }
+
+    // --- EDITOR ---
     function openEditor(key, path) {
-        let target = db; path.forEach(p => target = target[p]);
+        let target = getFromPath(path);
         activeTech = target.children[key];
         if(!activeTech.notes) activeTech.notes = { on_test: "", already: "", future: "" };
         document.getElementById('editor-title').innerText = key;
@@ -289,20 +351,16 @@
         activeTech.status = status;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-' + status).classList.add('active');
-        document.getElementById('note-textarea').value = activeTech.notes[status] || "";
+        const text = activeTech.notes[status] || "";
+        document.getElementById('note-textarea').value = text;
+        updateWikiDisplay(text);
         saveDB();
-    }
-
-    function autoSaveNote() {
-        activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
-        localStorage.setItem('jjb_vault_v13', JSON.stringify(db));
     }
 
     function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
 
     function openAddModal() { 
         editingItem = null; 
-        document.getElementById('modal-title').innerText = "Ajouter";
         document.getElementById('input-name').value = "";
         document.getElementById('is-final').checked = false;
         document.getElementById('modal').style.display = 'flex'; 
@@ -310,7 +368,6 @@
     
     function openEditModal(id) { 
         editingItem = { id, path: [...currentPath] }; 
-        document.getElementById('modal-title').innerText = "Renommer";
         document.getElementById('input-name').value = id; 
         document.getElementById('modal').style.display = 'flex'; 
     }
@@ -318,7 +375,7 @@
     function saveItem() {
         const name = document.getElementById('input-name').value.trim();
         if(!name) return;
-        let t = db; (editingItem ? editingItem.path : currentPath).forEach(p => t = t[p]);
+        let t = getFromPath(editingItem ? editingItem.path : currentPath);
         if(editingItem) {
             const data = t.children[editingItem.id]; delete t.children[editingItem.id];
             t.children[name] = data; t.order = t.order.map(n => n === editingItem.id ? name : n);
@@ -331,24 +388,25 @@
         saveDB(); closeModal();
     }
 
-    function deleteItem(key, isJournalier) {
+    function deleteItem(id, isJournalier) {
         if(!confirm("Supprimer ?")) return;
-        if(isJournalier) db.journalier = db.journalier.filter(f => f.name !== key);
+        if(isJournalier) db.journalier = db.journalier.filter(f => f.name !== id);
         else {
-            let t = db; currentPath.forEach(p => t = t[p]);
-            delete t.children[key]; t.order = t.order.filter(n => n !== key);
-            db.journalier = db.journalier.filter(f => f.name !== key);
+            let t = getFromPath(currentPath);
+            delete t.children[id]; t.order = t.order.filter(n => n !== id);
+            db.journalier = db.journalier.filter(f => f.name === id);
         }
         saveDB();
     }
 
-    function toggleFav(key) {
-        const idx = db.journalier.findIndex(f => f.name === key);
+    function toggleFav(id) {
+        const idx = db.journalier.findIndex(f => f.name === id);
         if(idx > -1) db.journalier.splice(idx, 1);
-        else db.journalier.push({name: key, path: [...currentPath]});
+        else db.journalier.push({name: id, path: [...currentPath]});
         saveDB();
     }
 
+    buildTechMap();
     render();
 </script>
 </body>
