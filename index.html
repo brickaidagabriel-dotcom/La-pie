@@ -283,28 +283,12 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
 <!-- HOME -->
 
 <div id="sh-home" class="screen active">
-  <div class="hm-hdr">
-    <div class="hm-logo">JJB NOTES</div>
-    <div class="hm-sub">Sélectionne un module</div>
-  </div>
   <div class="hm-panels">
     <button class="hm-panel hp-c" onclick="SFX.click();goCarnet()">
-      <div class="hp-icon">📋</div>
       <div class="hp-lbl" style="color:#c8a96e">CARNET</div>
-      <div class="hp-desc">Tes raccourcis du jour</div>
-      <div class="hp-tags">
-        <span class="hp-tag" style="color:#c8a96e;border-color:#3a2e18" id="tag-g">GRAPPLING</span>
-        <span class="hp-tag" style="color:#c47a5a;border-color:#3a1810" id="tag-w">WRESTLING</span>
-      </div>
     </button>
     <button class="hm-panel hp-b" onclick="SFX.click();goBiblio()">
-      <div class="hp-icon">🗂</div>
       <div class="hp-lbl" style="color:#6dbb8a">BIBLIOTHÈQUE</div>
-      <div class="hp-desc">Arbre des techniques JJB</div>
-      <div class="hp-tags">
-        <span class="hp-tag" style="color:#c8a96e;border-color:#3a2e18">GRAPPLING</span>
-        <span class="hp-tag" style="color:#c47a5a;border-color:#3a1810">WRESTLING</span>
-      </div>
     </button>
   </div>
   <div class="hm-bot">
@@ -315,16 +299,7 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
 <!-- CARNET -->
 
 <div id="sh-carnet" class="screen">
-  <div class="jsplit">
-    <div class="jhalf">
-      <div class="jhdr jh-g" id="jhdr-g">◈  GRAPPLING</div>
-      <div class="jlist" id="jg"></div>
-    </div>
-    <div class="jhalf">
-      <div class="jhdr jh-w" id="jhdr-w">◈  WRESTLING</div>
-      <div class="jlist" id="jw"></div>
-    </div>
-  </div>
+  <div class="jsplit" id="carnet-split"></div>
 </div>
 
 <!-- BIBLIOTHÈQUE -->
@@ -572,7 +547,13 @@ function norm(s){return s.toLowerCase().replace(/[-_]/g,' ').normalize('NFD').re
 function rootChildren(){return S.tree.children||[];}
 
 /* ══ NAV ══ */
+/* historyStack entries: {screen, navStack, curFinalId, finalOrigin} */
 let navStack=[],curFinalId=null,prevScr='home',finalOrigin='biblio';
+let historyStack=[];
+
+function pushHistory(screen){
+  historyStack.push({screen,navStack:navStack.slice(),curFinalId,finalOrigin});
+}
 
 function setTopbar(id){
   const isHome=id==='home';
@@ -587,7 +568,9 @@ function setTopbar(id){
   } else {
     document.getElementById('tt').textContent=titles[id]||id;
   }
-  document.getElementById('tbk').style.visibility=(id==='biblio'&&navStack.length<=1)?'hidden':'visible';
+  // back button always visible when there's history, hidden only on biblio root with no history
+  const hasHistory=historyStack.length>0;
+  document.getElementById('tbk').style.visibility=hasHistory?'visible':'hidden';
 }
 
 function scr(id){
@@ -598,43 +581,72 @@ function scr(id){
 
 function topBack(){
   SFX.back();
-  const cur=document.querySelector('.screen.active')?.id?.replace('sh-','');
-  if(cur==='biblio')biblioBack();
-  else if(cur==='final')finalBack();
-  else if(cur==='settings')closeSettings();
-  else goHome();
+  if(historyStack.length===0){goHome();return;}
+  const prev=historyStack.pop();
+  // restore state
+  navStack=prev.navStack.slice();
+  curFinalId=prev.curFinalId;
+  finalOrigin=prev.finalOrigin;
+  const s=prev.screen;
+  if(s==='biblio'){renderBiblio();}
+  else if(s==='carnet'){renderCarnet();}
+  else if(s==='final'){
+    // re-open final with restored state
+    const ndata=nd(curFinalId);
+    const mode=ndata.mode||'on';
+    document.getElementById('tt').textContent=fn(curFinalId)?.name||'Technique';
+    showTA();
+    document.getElementById('ntarea').value=ndata[mode]||'';
+    document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
+    document.getElementById('tab-'+mode).classList.add('act');
+    renderVids();
+  }
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.getElementById('sh-'+s).classList.add('active');
+  setTopbar(s);
 }
-function goHome(){scr('home');navStack=[];}
-function goCarnet(){updateCarnetHeaders();renderCarnet();scr('carnet');}
-function goBiblio(){navStack=['root'];renderBiblio();scr('biblio');}
-function biblioBack(){
-  if(navStack.length<=1){goHome();return;}
-  navStack.pop();renderBiblio();
-  document.getElementById('tbk').style.visibility=navStack.length>1?'visible':'hidden';
-  const node=navStack.length>1?fn(navStack[navStack.length-1]):null;
-  document.getElementById('tt').textContent=navStack.length>1?(node?.name||'Bibliothèque'):'Bibliothèque';
-}
-function finalBack(){saveNote();if(finalOrigin==='carnet'){updateCarnetHeaders();renderCarnet();scr('carnet');}else{renderBiblio();scr('biblio');}}
+
+function goHome(){historyStack=[];navStack=[];scr('home');}
+function goCarnet(){pushHistory('home');renderCarnet();scr('carnet');}
+function goBiblio(){pushHistory('home');navStack=['root'];renderBiblio();scr('biblio');}
 function openSettings(){prevScr=document.querySelector('.screen.active')?.id?.replace('sh-','')||'home';scr('settings');}
 function closeSettings(){scr(prevScr||'home');}
 
-/* carnet header shows root child names */
+/* carnet header colors cycle for extra sections */
+const CAT_COLORS=['#c8a96e','#c47a5a','#7aaec8','#6dbb8a','#b09ee0','#a09880'];
+
 function updateCarnetHeaders(){
-  const ch=rootChildren();
-  const g=ch.find(c=>c.category==='grappling');
-  const w=ch.find(c=>c.category==='wrestling');
-  if(g){document.getElementById('jhdr-g').textContent='◈  '+g.name.toUpperCase();if(document.getElementById('tag-g'))document.getElementById('tag-g').textContent=g.name.toUpperCase();}
-  if(w){document.getElementById('jhdr-w').textContent='◈  '+w.name.toUpperCase();if(document.getElementById('tag-w'))document.getElementById('tag-w').textContent=w.name.toUpperCase();}
+  // kept for rename refresh — just re-render carnet
+  renderCarnet();
 }
 
-/* ══ RENDER BIBLIO ══ */
+function renderCarnet(){
+  const split=document.getElementById('carnet-split');
+  split.innerHTML='';
+  const rootKids=S.tree.children||[];
+  rootKids.forEach((rk,idx)=>{
+    const color=CAT_COLORS[idx%CAT_COLORS.length];
+    const half=document.createElement('div');half.className='jhalf';
+    const hdr=document.createElement('div');hdr.className='jhdr';
+    hdr.style.color=color;hdr.textContent='◈  '+rk.name.toUpperCase();
+    const list=document.createElement('div');list.className='jlist';list.id='jlist-'+rk.id;
+    half.appendChild(hdr);half.appendChild(list);
+    split.appendChild(half);
+    // populate
+    const ids=collectCarnetIds(rk.id);
+    const ord=getCarnetOrder(rk.id);
+    ids.sort((a,b)=>{let ai=ord.indexOf(a),bi=ord.indexOf(b);if(ai<0)ai=999;if(bi<0)bi=999;return ai-bi;});
+    if(!ids.length){list.innerHTML=`<div class="jempty">Aucun raccourci<br>← Ajoute depuis Bibliothèque</div>`;}
+    else ids.forEach(id=>{const node=fn(id);if(node)list.appendChild(mkCarnetCard(node));});
+  });
+}
 let aSlide=null;
 
 function renderBiblio(){
   const cid=navStack[navStack.length-1];
   const node=fn(cid);
   // Update topbar title
-  document.getElementById('tbk').style.visibility=navStack.length>1?'visible':'hidden';
+  document.getElementById('tbk').style.visibility=historyStack.length>0?'visible':'hidden';
   document.getElementById('tt').textContent=cid==='root'?'Bibliothèque':(node?.name||'Bibliothèque');
   // Reset search
   document.getElementById('bsrch').style.display='none';
@@ -645,12 +657,13 @@ function renderBiblio(){
   if(!node)return;
 
   if(cid==='root'){
-    // Show root children as big clickable cards — now with slide to rename + drag
-    const rc=document.createElement('div');rc.className='rc-wrap';
-    node.children.forEach(child=>{
-      rc.appendChild(mkRootCard(child));
-    });
-    cont.appendChild(rc);
+    // root children shown as normal cards (can go to carnet, rename, delete, drag)
+    node.children.forEach(child=>cont.appendChild(mkCard(child)));
+    // add button at root level too
+    const ab=document.createElement('div');ab.className='addb';
+    const b1=document.createElement('button');b1.className='btn bsm';b1.textContent='+ Section';
+    b1.onclick=()=>{SFX.click();openAN('root');};
+    ab.appendChild(b1);cont.appendChild(ab);
   } else {
     if(node.children&&node.children.length)node.children.forEach(c=>cont.appendChild(mkCard(c)));
     const ab=document.createElement('div');ab.className='addb';
@@ -658,34 +671,6 @@ function renderBiblio(){
     b1.onclick=()=>{SFX.click();openAN(cid);};
     ab.appendChild(b1);cont.appendChild(ab);
   }
-}
-
-function mkRootCard(child){
-  const w=document.createElement('div');w.className='ncw';w.dataset.id=child.id;
-  // slide: only rename (no delete, no carnet for root)
-  const sa=document.createElement('div');sa.className='sla';
-  const br=mkSlb('sl-r','✏️','Renommer');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(child.id,child.name);closeSlide();};sa.appendChild(br);
-  w.appendChild(sa);
-
-  const card=document.createElement('div');card.className='rc '+(child.category==='wrestling'?'rc-w':'rc-g');
-  card.innerHTML=`<div class="rc-txt"><div class="rc-lbl" style="color:${child.category==='wrestling'?'#c47a5a':'#c8a96e'}">${child.name.toUpperCase()}</div><div class="rc-sub">${child.children?.length||0} sections</div></div><div class="rc-arr">›</div>`;
-  card.addEventListener('click',()=>{SFX.nav();navStack.push(child.id);renderBiblio();});
-  w.appendChild(card);
-
-  // touch for swipe-to-reveal rename + drag for reorder
-  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false;
-  card.addEventListener('touchstart',e=>{
-    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;
-    lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;SFX.click();startDrag(child.id,w,t,null);},500);
-  },{passive:true});
-  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=Math.abs(t.clientX-t0x),dy=Math.abs(t.clientY-t0y);if(dx>6||dy>6){moved=true;clearTimeout(lpTimer);}if(dx>28&&dy<40)swOK=true;},{passive:true});
-  card.addEventListener('touchend',()=>{
-    clearTimeout(lpTimer);
-    if(lpFired)return;
-    if(swOK){if(aSlide===sa)closeSlide();else{closeSlide();sa.classList.add('vis');aSlide=sa;}return;}
-    if(!moved){SFX.nav();navStack.push(child.id);renderBiblio();}
-  });
-  return w;
 }
 
 function mkCard(child){
@@ -746,7 +731,17 @@ function mkSlb(cls,icon,label){
   b.innerHTML=`<span style="font-size:20px">${icon}</span><span>${label.replace(/\n/g,'<br>')}</span>`;
   return b;
 }
-function navTo(node){SFX.nav();if(node.isFinal)openFinal(node.id,'biblio');else{navStack.push(node.id);renderBiblio();}}
+function navTo(node){
+  SFX.nav();
+  if(node.isFinal){
+    pushHistory('biblio');
+    openFinal(node.id,'biblio');
+  } else {
+    pushHistory('biblio');
+    navStack.push(node.id);
+    renderBiblio();
+  }
+}
 function closeSlide(){if(aSlide){aSlide.classList.remove('vis');aSlide=null;}}
 document.addEventListener('touchstart',e=>{if(!e.target.closest('.nc')&&!e.target.closest('.rc')&&!e.target.closest('.sla')&&!e.target.closest('.ltp'))closeSlide();},{passive:true});
 
@@ -769,7 +764,7 @@ function onDragMove(e){
   document.querySelectorAll('.ncw.drag-over,.rc-wrap .ncw.drag-over').forEach(w=>w.classList.remove('drag-over'));
   const tgt=el?.closest('.ncw');
   if(tgt&&tgt.dataset.id&&tgt.dataset.id!==dragId){
-    if(dragCat){const tn=fn(tgt.dataset.id);if(!tn||tn.category!==dragCat)return;}
+    if(dragCat){if(getRootChildId(tgt.dataset.id)!==dragCat)return;}
     dragOverId=tgt.dataset.id;tgt.classList.add('drag-over');
   } else dragOverId=null;
 }
@@ -790,29 +785,31 @@ function onDragEnd(){
 }
 
 /* ══ CARNET ORDER ══ */
-function getCarnetOrder(cat){if(!S.jourOrder)S.jourOrder={};if(!S.jourOrder[cat])S.jourOrder[cat]=[];return S.jourOrder[cat];}
-function collectCarnetIds(cat){const arr=[];function w(n){if(n.id!=='root'&&S.notes[n.id]?.inCarnet&&n.category===cat)arr.push(n.id);for(const c of(n.children||[]))w(c);}w(S.tree);return arr;}
-function reorderCarnet(srcId,tgtId,cat){
-  const all=collectCarnetIds(cat);const order=getCarnetOrder(cat);
+/* get the direct child of root that is ancestor of nodeId */
+function getRootChildId(nodeId){
+  for(const rk of (S.tree.children||[])){
+    function wk(n){if(n.id===nodeId)return true;for(const c of(n.children||[])){if(wk(c))return true;}return false;}
+    if(wk(rk))return rk.id;
+  }
+  return null;
+}
+function getCarnetOrder(rootChildId){if(!S.jourOrder)S.jourOrder={};if(!S.jourOrder[rootChildId])S.jourOrder[rootChildId]=[];return S.jourOrder[rootChildId];}
+function collectCarnetIds(rootChildId){
+  const arr=[];
+  const rk=fn(rootChildId);
+  if(!rk)return arr;
+  function w(n){if(S.notes[n.id]?.inCarnet)arr.push(n.id);for(const c of(n.children||[]))w(c);}
+  w(rk);return arr;
+}
+function reorderCarnet(srcId,tgtId,rootChildId){
+  const all=collectCarnetIds(rootChildId);const order=getCarnetOrder(rootChildId);
   all.forEach(id=>{if(!order.includes(id))order.push(id);});
   const ai=order.indexOf(srcId),bi=order.indexOf(tgtId);if(ai<0||bi<0)return;
-  const[it]=order.splice(ai,1);order.splice(bi,0,it);S.jourOrder[cat]=order;saveS();renderCarnet();
+  const[it]=order.splice(ai,1);order.splice(bi,0,it);S.jourOrder[rootChildId]=order;saveS();renderCarnet();
 }
 
 function addCarnet(id){nd(id).inCarnet=true;saveS();renderBiblio();renderCarnet();}
 function rmCarnet(id){nd(id).inCarnet=false;saveS();renderBiblio();renderCarnet();}
-
-function renderCarnet(){
-  ['grappling','wrestling'].forEach(cat=>{
-    const listEl=document.getElementById(cat==='grappling'?'jg':'jw');
-    listEl.innerHTML='';
-    const ids=collectCarnetIds(cat);
-    const ord=getCarnetOrder(cat);
-    ids.sort((a,b)=>{let ai=ord.indexOf(a),bi=ord.indexOf(b);if(ai<0)ai=999;if(bi<0)bi=999;return ai-bi;});
-    if(!ids.length){listEl.innerHTML=`<div class="jempty">Aucun raccourci<br>← Ajoute depuis Bibliothèque</div>`;return;}
-    ids.forEach(id=>{const node=fn(id);if(node)listEl.appendChild(mkCarnetCard(node));});
-  });
-}
 
 function mkCarnetCard(node){
   const C={bg2:'#222120',bg3:'#2c2b29',b1:'#302e2c',t1:'#e8e0d0',t2:'#a09880',t3:'#504840',aon:'#6dbb8a',aal:'#c47a5a',afu:'#7aaec8',b2:'#252320',acc:'#c8a96e'};
@@ -847,7 +844,7 @@ function mkCarnetCard(node){
   let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false;
   card.addEventListener('touchstart',e=>{
     const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;
-    lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;SFX.click();startDrag(node.id,w,t,node.category);setTimeout(()=>w.classList.remove('lp-active'),300);},500);
+    lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;SFX.click();startDrag(node.id,w,t,getRootChildId(node.id));setTimeout(()=>w.classList.remove('lp-active'),300);},500);
   },{passive:true});
   card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=Math.abs(t.clientX-t0x),dy=Math.abs(t.clientY-t0y);if(dx>6||dy>6){moved=true;clearTimeout(lpTimer);}if(dx>28&&dy<40)swOK=true;},{passive:true});
   card.addEventListener('touchend',()=>{
@@ -861,8 +858,15 @@ function mkCarnetCard(node){
 }
 
 function carnetNavTo(node){
-  if(node.isFinal){openFinal(node.id,'carnet');}
-  else{buildNav(node.id);renderBiblio();scr('biblio');}
+  if(node.isFinal){
+    pushHistory('carnet');
+    openFinal(node.id,'carnet');
+  } else {
+    pushHistory('carnet');
+    buildNav(node.id);
+    renderBiblio();
+    scr('biblio');
+  }
 }
 function buildNav(id){const path=[];function dfs(n){path.push(n.id);if(n.id===id)return true;for(const c of(n.children||[])){if(dfs(c))return true;}path.pop();return false;}dfs(S.tree);navStack=path;}
 
@@ -873,7 +877,15 @@ function openAN(pid){anPid=pid;selType('fin');document.getElementById('ann').val
 function confirmAN(){
   const name=document.getElementById('ann').value.trim();if(!name)return;
   const p=fn(anPid);if(!p)return;
-  const cat=p.category||getCat(anPid);
+  let cat;
+  if(anPid==='root'){
+    // new root section: use its own id as category key
+    const newId=gid();
+    p.children.push({id:newId,name,isFinal:anIsFinal,category:newId,children:[]});
+    saveS();closeM('man');renderBiblio();renderCarnet();return;
+  } else {
+    cat=p.category||getCat(anPid);
+  }
   p.children.push({id:gid(),name,isFinal:anIsFinal,category:cat,children:[]});
   saveS();closeM('man');renderBiblio();
 }
@@ -884,10 +896,7 @@ function confirmRN(){
   const node=fn(rnId);
   if(node){
     node.name=name;
-    // if root child, propagate category (category stays same, just name changes)
     saveS();
-    // refresh carnet headers in case a root node was renamed
-    updateCarnetHeaders();
     renderBiblio();renderCarnet();
   }
   closeM('mrn');
@@ -992,27 +1001,45 @@ function renderView(){
   if(!curFinalId){vw.innerHTML='';return;}
   const ndata=nd(curFinalId);
   const mode=ndata.mode||'on';
-  // IMPORTANT: read text from ndata[mode], NOT from textarea (already saved by saveNote)
   const text=ndata[mode]||'';
   if(!text.trim()){vw.innerHTML='';return;}
 
+  // gather all nodes except current, sorted longest-name first
   const nodes=allNodes().filter(n=>n.id!==curFinalId);
   nodes.sort((a,b)=>b.name.length-a.name.length);
   if(!nodes.length){vw.textContent=text;return;}
 
-  const normText=norm(text);
-  const patterns=nodes.map(n=>({node:n,normed:norm(n.name)}));
-  const escaped=patterns.map(p=>p.normed.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-  const rx=new RegExp('('+escaped.join('|')+')','gi');
+  // build regex patterns from node names, applied directly to original text (case-insensitive, accent-aware via norm)
+  // We match in original text using original names but case-insensitively
+  // Group by normed name so multiple nodes with same normed name share one pattern
+  const byNormed={};
+  nodes.forEach(n=>{
+    const k=norm(n.name);
+    if(!byNormed[k])byNormed[k]=[];
+    byNormed[k].push(n);
+  });
 
+  // Build regex that matches original node names case-insensitively in original text
+  // For each unique normed name, we use the original name as pattern (longest first already)
+  const patterns=[];
+  nodes.forEach(n=>{
+    // escape the original name for regex
+    const escaped=n.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    patterns.push({re:escaped,nodes:byNormed[norm(n.name)],normed:norm(n.name)});
+  });
+  // deduplicate patterns by normed key
+  const seen=new Set();
+  const uniquePats=patterns.filter(p=>{if(seen.has(p.normed))return false;seen.add(p.normed);return true;});
+
+  const rx=new RegExp('('+uniquePats.map(p=>p.re).join('|')+')','gi');
   const hits=[];let m;
-  while((m=rx.exec(normText))!==null){
+  while((m=rx.exec(text))!==null){
     const start=m.index,end=m.index+m[0].length;
-    const matched=m[0].toLowerCase().trim();
-    const matchingNodes=patterns.filter(p=>p.normed===matched).map(p=>p.node);
-    if(matchingNodes.length)hits.push({start,end,nodes:matchingNodes});
+    const matchedNorm=norm(m[0]);
+    const matchingNodes=byNormed[matchedNorm];
+    if(matchingNodes&&matchingNodes.length)hits.push({start,end,nodes:matchingNodes});
   }
-  // remove overlapping
+  // remove overlapping hits (keep first)
   const clean=[];let lastEnd=-1;
   hits.forEach(h=>{if(h.start>=lastEnd){clean.push(h);lastEnd=h.end;}});
 
@@ -1114,7 +1141,6 @@ function resetTree(){showConfirm('Reset ?','Remettre l\'arbre par défaut ? Note
 
 /* ══ INIT ══ */
 loadS();
-updateCarnetHeaders();
 renderCarnet();
 let ip=false;
 const pi=()=>{if(!ip){ip=true;SFX.intro();}};
