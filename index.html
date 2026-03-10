@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V14 - Wiki System</title>
+    <title>JJB Vault V15</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -36,17 +36,16 @@
         .status-already { border-left: 5px solid var(--already) !important; }
         .status-future { border-left: 5px solid var(--future) !important; }
 
-        /* Note Editor specific */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
         .tabs { display: flex; gap: 8px; padding: 15px; background: #111; }
         .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.4; }
         .tab.active { opacity: 1; border: 2px solid white; }
         
-        .editor-body { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; pointer-events: none; }
-        #note-textarea { flex: 1; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; line-height: 1.5; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 5; }
+        .editor-body { flex: 1; position: relative; display: flex; flex-direction: column; }
+        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; }
+        #note-textarea { flex: 1; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; line-height: 1.5; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
         
-        .wiki-link { color: var(--turquoise); text-decoration: underline; pointer-events: auto; font-weight: bold; }
+        .wiki-link { color: var(--turquoise); text-decoration: underline; pointer-events: auto; font-weight: bold; cursor: pointer; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
@@ -81,7 +80,7 @@
         <div class="tab" id="tab-already" style="background:var(--already); color:#000;" onclick="switchTab('already')">ALREADY</div>
         <div class="tab" id="tab-future" style="background:var(--future); color:#000;" onclick="switchTab('future')">FUTURE</div>
     </div>
-    <div class="editor-body">
+    <div class="editor-body" id="editor-container">
         <div id="note-display"></div>
         <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
     </div>
@@ -104,7 +103,7 @@
 </div>
 
 <script>
-    // Structure de base
+    // Configuration de base avec Underhook Control injecté
     const initialData = {
         journalier: [],
         data: { 
@@ -112,7 +111,21 @@
             children: { 
                 "Grappling": { type: "folder", order: ["Top", "Bottom", "Submissions"], children: {
                     "Top": { type: "folder", order: ["Pin", "Passing"], children: {
-                        "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { "Mount": {type:"folder", children:{}, order:[]}, "Side Control": {type:"folder", children:{}, order:[]}, "Ride": {type:"folder", children:{}, order:[]} } },
+                        "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { 
+                            "Mount": {type:"folder", order:["Underhook Control"], children:{
+                                "Underhook Control": {
+                                    type: "tech",
+                                    status: "on_test",
+                                    notes: {
+                                        on_test: "essayez de grimper avec votre main comme une araignée pour passer en chest wrap",
+                                        already: "prendre le poignet et le plaquer au sol",
+                                        future: ""
+                                    }
+                                }
+                            }}, 
+                            "Side Control": {type:"folder", children:{}, order:[]}, 
+                            "Ride": {type:"folder", children:{}, order:[]} 
+                        } },
                         "Passing": { type: "folder", order: ["Half Guard Pass", "Outside Pass"], children: {
                             "Half Guard Pass": { type: "folder", order: ["Chest-to-Chest", "Half Guard", "Knee Shield Half Guard"], children: {
                                 "Chest-to-Chest": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]},
@@ -143,26 +156,25 @@
         }
     };
 
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v14')) || initialData;
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v15')) || initialData;
     let currentPath = [];
     let editingItem = null;
     let activeTech = null;
     let searchQuery = "";
-    let techMap = {}; // Cache pour les noms de techniques existantes
+    let techMap = {};
 
-    function saveDB() { localStorage.setItem('jjb_vault_v14', JSON.stringify(db)); buildTechMap(); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v15', JSON.stringify(db)); buildTechMap(); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Map toutes les techniques pour les wiki-links
     function buildTechMap() {
         techMap = {};
         function scan(obj, path) {
             if(obj.children) {
                 Object.keys(obj.children).forEach(key => {
-                    techMap[key.toLowerCase()] = { name: key, path: [...path, 'children'] };
-                    scan(obj.children[key], [...path, 'children', key]);
+                    techMap[key.toLowerCase()] = { name: key, path: [...path] };
+                    scan(obj.children[key], [...path, key, 'children']);
                 });
             }
         }
@@ -175,7 +187,7 @@
         const isHome = currentPath.length === 0;
         const isJournalier = currentPath[0] === 'journalier';
 
-        document.getElementById('btn-back').style.visibility = isHome ? "hidden" : "visible";
+        document.getElementById('btn-back').style.visibility = (isHome) ? "hidden" : "visible";
         document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p => p !== "children").join(" > ").toUpperCase();
 
         if (isHome) {
@@ -251,18 +263,20 @@
                     if(!match && item.notes) {
                         match = Object.values(item.notes).some(txt => txt.toLowerCase().includes(searchQuery));
                     }
-                    if(match) results.push({name: key, path: [...path, 'children'], item: item});
-                    scan(item, [...path, 'children', key]);
+                    if(match) results.push({name: key, path: [...path], item: item});
+                    scan(item, [...path, key, 'children']);
                 });
             }
         }
-        scan(db.data, ['data']);
+        scan(db.data, ['data', 'children']);
+        
         if(results.length === 0) container.innerHTML += "<p style='text-align:center; color:#666;'>Aucun résultat</p>";
         results.forEach(res => {
             const wrap = createItemUI(res.name, res.name, () => {
+                const targetPath = [...res.path];
                 searchQuery = "";
-                if(res.item.type === 'folder') { currentPath = [...res.path, res.name]; render(); }
-                else { openEditor(res.name, res.path); }
+                if(res.item.type === 'folder') { currentPath = [...targetPath, res.name]; render(); }
+                else { openEditor(res.name, targetPath); }
             }, false, res.item.status);
             container.appendChild(wrap);
         });
@@ -294,54 +308,51 @@
         });
     }
 
-    // --- WIKI LINKS LOGIC ---
     function handleInput() {
         const text = document.getElementById('note-textarea').value;
         activeTech.notes[activeTech.status] = text;
         updateWikiDisplay(text);
-        localStorage.setItem('jjb_vault_v14', JSON.stringify(db));
+        localStorage.setItem('jjb_vault_v15', JSON.stringify(db));
     }
 
     function updateWikiDisplay(text) {
         const display = document.getElementById('note-display');
-        // Échapper HTML de base
         let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        
-        // Trouver tous les mots qui correspondent à des techniques
         const keys = Object.keys(techMap).sort((a,b) => b.length - a.length);
         if(keys.length > 0) {
             const regex = new RegExp(`\\b(${keys.join('|')})\\b`, 'gi');
             html = html.replace(regex, (matched) => {
-                return `<span class="wiki-link" onclick="openWiki('${matched.toLowerCase()}')">${matched}</span>`;
+                return `<span class="wiki-link">${matched}</span>`;
             });
         }
         display.innerHTML = html + "\n";
     }
 
-    function openWiki(name) {
-        const target = techMap[name];
-        if(target) {
-            const item = getFromPath(target.path).children[target.name];
-            if(item.type === 'tech') openEditor(target.name, target.path);
-            else { closeEditor(); currentPath = [...target.path, target.name]; render(); }
+    // Gestion du clic sur les liens Wiki
+    document.getElementById('editor-container').addEventListener('click', (e) => {
+        if (e.target.classList.contains('wiki-link')) {
+            const name = e.target.innerText.toLowerCase();
+            const target = techMap[name];
+            if(target) {
+                const parent = getFromPath(target.path);
+                const item = parent.children[target.name];
+                if(item.type === 'tech') openEditor(target.name, target.path);
+                else { closeEditor(); currentPath = [...target.path, target.name]; render(); }
+            }
         }
-    }
+    });
 
     function getFromPath(path) {
         let t = db; path.forEach(p => t = t[p]); return t;
     }
 
     function syncScroll() {
-        const textarea = document.getElementById('note-textarea');
-        const display = document.getElementById('note-display');
-        display.scrollTop = textarea.scrollTop;
+        document.getElementById('note-display').scrollTop = document.getElementById('note-textarea').scrollTop;
     }
 
-    // --- EDITOR ---
     function openEditor(key, path) {
         let target = getFromPath(path);
         activeTech = target.children[key];
-        if(!activeTech.notes) activeTech.notes = { on_test: "", already: "", future: "" };
         document.getElementById('editor-title').innerText = key;
         document.getElementById('note-editor').style.display = 'flex';
         switchTab(activeTech.status || 'on_test');
@@ -394,7 +405,7 @@
         else {
             let t = getFromPath(currentPath);
             delete t.children[id]; t.order = t.order.filter(n => n !== id);
-            db.journalier = db.journalier.filter(f => f.name === id);
+            db.journalier = db.journalier.filter(f => f.name !== id);
         }
         saveDB();
     }
