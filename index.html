@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V10</title>
+    <title>JJB Vault V11</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -11,14 +11,19 @@
             --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff;
             --on-test: #30d158; --already: #ff9f0a; --future: #00f2ff;
         }
-        
-        * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; box-sizing: border-box; }
-
+        * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: relative; }
-        .version-tag { position: absolute; top: 5px; left: 10px; font-size: 10px; color: var(--turquoise); opacity: 0.7; font-weight: bold; }
+        /* Header & Navigation */
+        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
+        .version-tag { position: absolute; top: 5px; right: 10px; font-size: 9px; color: var(--turquoise); opacity: 0.5; }
+        .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; height: 30px; }
+        .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; padding: 0; }
         
+        /* Search Bar */
+        .search-container { margin-bottom: 15px; }
+        .search-input { width: 100%; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px 15px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; outline: none; }
+
         .container { padding: 15px; }
         .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
@@ -27,88 +32,73 @@
         .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; border-left: 0px solid transparent; }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
         .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-        
-        /* Swipe States */
-        .swiped.triple .item-main { transform: translateX(-195px); }
-        .swiped.double .item-main { transform: translateX(-130px); }
-        .swiped.single .item-main { transform: translateX(-65px); }
+        .swiped .item-main { transform: translateX(-195px); }
 
-        /* Status Bars */
+        /* Bars & Tabs */
         .status-on_test { border-left: 5px solid var(--on-test) !important; }
         .status-already { border-left: 5px solid var(--already) !important; }
         .status-future { border-left: 5px solid var(--future) !important; }
 
-        /* Note Editor */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
-        .editor-header { padding: 20px; background: var(--card); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
         .tabs { display: flex; gap: 8px; padding: 15px; background: #111; }
-        .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; border: 2px solid transparent; opacity: 0.4; transition: 0.2s; }
-        .tab.active { opacity: 1; border-color: white; transform: scale(1.05); }
-        
-        .tab-on { background: var(--on-test); color: #000; }
-        .tab-already { background: var(--already); color: #000; }
-        .tab-future { background: var(--future); color: #000; }
+        .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.4; }
+        .tab.active { opacity: 1; border: 2px solid white; }
+        #note-textarea { flex: 1; background: transparent; border: none; color: white; padding: 20px; font-size: 17px; resize: none; outline: none; -webkit-user-select: text; user-select: text; }
 
-        #note-textarea { flex: 1; background: transparent; border: none; color: white; padding: 20px; font-size: 17px; resize: none; outline: none; -webkit-user-select: text; user-select: text; line-height: 1.5; }
-
-        /* Modals */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
-        input { width:100%; background:#2c2c2e; border:1px solid #444; color:#fff; padding:14px; border-radius:10px; font-size: 16px; -webkit-user-select: text; user-select: text; }
-        
-        .sortable-ghost { opacity: 0.1; background: var(--turquoise) !important; }
+        .sortable-ghost { opacity: 0.1; }
     </style>
 </head>
 <body>
 
 <div id="main-view">
     <div class="header">
-        <span class="version-tag">VERSION V10</span>
-        <div id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px; margin-top: 5px;">ACCUEIL</div>
+        <span class="version-tag">V11</span>
+        <div class="nav-top">
+            <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
+            <span id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px;">ACCUEIL</span>
+        </div>
         <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
     </div>
 
     <div id="app-content" class="container"></div>
 
     <nav style="position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100;">
-        <button onclick="goHome()" style="background:none; border:none; font-size:32px; color:white;">🏠</button>
+        <button onclick="goHome()" style="background:none; border:none; font-size:32px;">🏠</button>
     </nav>
 </div>
 
 <div id="note-editor">
-    <div class="editor-header">
-        <button onclick="closeEditor()" style="background:none; border:none; color:var(--turquoise); font-size:18px; font-weight:bold;">〈 Retour</button>
-        <h3 id="editor-title" style="margin:0; font-size:16px; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Technique</h3>
+    <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
+        <button onclick="closeEditor()" class="back-btn">〈 Retour</button>
+        <h3 id="editor-title" style="margin:0; font-size:16px;">Note</h3>
         <div style="width:50px;"></div>
     </div>
     <div class="tabs">
-        <div class="tab tab-on" id="tab-on_test" onclick="switchTab('on_test')">ON TEST</div>
-        <div class="tab tab-already" id="tab-already" onclick="switchTab('already')">ALREADY</div>
-        <div class="tab tab-future" id="tab-future" onclick="switchTab('future')">FUTURE</div>
+        <div class="tab" id="tab-on_test" style="background:var(--on-test); color:#000;" onclick="switchTab('on_test')">ON TEST</div>
+        <div class="tab" id="tab-already" style="background:var(--already); color:#000;" onclick="switchTab('already')">ALREADY</div>
+        <div class="tab" id="tab-future" style="background:var(--future); color:#000;" onclick="switchTab('future')">FUTURE</div>
     </div>
-    <textarea id="note-textarea" placeholder="Commence à écrire..." oninput="autoSaveNote()"></textarea>
+    <textarea id="note-textarea" oninput="autoSaveNote()"></textarea>
 </div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
         <h3 id="modal-title" style="color:var(--turquoise);">Action</h3>
-        <input type="text" id="input-name" placeholder="Nom">
-        <div id="tech-toggle-area">
-            <label style="display:flex; align-items:center; gap:10px; margin:20px 0; color:#aaa; font-size: 14px;">
-                <input type="checkbox" id="is-final" style="width:20px; height:20px;"> Activer comme Technique Finale
-            </label>
+        <input type="text" id="input-name" style="width:100%; padding:12px; background:#2c2c2e; border:1px solid #444; color:#fff; border-radius:8px; -webkit-user-select: text;">
+        <div id="tech-toggle-area" style="margin:20px 0;">
+            <label style="color:#aaa;"><input type="checkbox" id="is-final"> Technique Finale</label>
         </div>
         <div style="display:flex; gap:12px;">
-            <button onclick="closeModal()" style="flex:1; padding:14px; background:#333; border-radius:12px; border:none; color:white;">Annuler</button>
-            <button onclick="saveItem()" style="flex:1; padding:14px; background:var(--turquoise); border-radius:12px; border:none; font-weight:bold; color:black;">Sauver</button>
+            <button onclick="closeModal()" style="flex:1; padding:12px; background:#333; color:#fff; border-radius:8px; border:none;">Annuler</button>
+            <button onclick="saveItem()" style="flex:1; padding:12px; background:var(--turquoise); color:#000; border-radius:8px; border:none; font-weight:bold;">Sauver</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v10')) || {
-        home_order: ["Journalier", "Data"],
-        names: { "Journalier": "Journalier", "Data": "Data" },
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v11')) || {
         journalier: [],
         data: { order: ["Grappling", "Wrestling"], children: { 
             "Grappling": { type: "folder", children: {}, order: [] }, 
@@ -119,36 +109,49 @@
     let currentPath = [];
     let editingItem = null;
     let activeTech = null;
-    let activeStatus = 'on_test';
+    let searchQuery = "";
 
-    function saveDB() { localStorage.setItem('jjb_vault_v10', JSON.stringify(db)); render(); }
-    function goHome() { currentPath = []; render(); }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; editingItem = null; }
+    function saveDB() { localStorage.setItem('jjb_vault_v11', JSON.stringify(db)); render(); }
+    function goHome() { currentPath = []; searchQuery = ""; render(); }
+    function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function render() {
         const content = document.getElementById('app-content');
         content.innerHTML = "";
-        const isJournalier = currentPath[0] === 'journalier';
         const isHome = currentPath.length === 0;
+        const isJournalier = currentPath[0] === 'journalier';
+        const isDataRoot = currentPath.length === 1 && currentPath[0] === 'data';
+
+        document.getElementById('btn-back').style.visibility = isHome ? "hidden" : "visible";
+        document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p => p !== "children").join(" > ").toUpperCase();
 
         if (isHome) {
             document.getElementById('view-title').innerText = "JJB Vault";
-            const list = document.createElement('div');
-            db.home_order.forEach(id => {
-                const wrap = createItemUI(id, db.names[id], () => { currentPath=[id.toLowerCase()]; render(); }, true, false, null);
-                list.appendChild(wrap);
-            });
-            content.appendChild(list);
-            initSortable(list, (order) => { db.home_order = order; saveDB(); });
+            content.innerHTML = `
+                <div class="item-wrapper"><div class="item-main" onclick="currentPath=['journalier'];render()"><strong>Journalier</strong><span>〉</span></div></div>
+                <div class="item-wrapper"><div class="item-main" onclick="currentPath=['data'];render()"><strong>Data</strong><span>〉</span></div></div>`;
+            return;
+        }
+
+        // Search Bar (Seulement dans Data)
+        if (!isJournalier) {
+            const searchDiv = document.createElement('div');
+            searchDiv.className = "search-container";
+            searchDiv.innerHTML = `<input type="text" class="search-input" placeholder="Rechercher une technique..." value="${searchQuery}" oninput="search(this.value)">`;
+            content.appendChild(searchDiv);
+        }
+
+        if (searchQuery) {
+            renderSearchResults(content);
             return;
         }
 
         let current = db;
-        if(!isJournalier) currentPath.forEach(p => current = current[p]);
+        currentPath.forEach(p => current = current[p]);
+        document.getElementById('view-title').innerText = isJournalier ? "Journalier" : (currentPath[currentPath.length-1]);
 
-        document.getElementById('view-title').innerText = isJournalier ? db.names["Journalier"] : (currentPath[currentPath.length-1] === "children" ? currentPath[currentPath.length-2] : currentPath[currentPath.length-1]);
-
-        if(!isJournalier) content.innerHTML = `<button class="btn-add" onclick="openAddModal()">+ AJOUTER</button>`;
+        if(!isJournalier) content.innerHTML += `<button class="btn-add" onclick="openAddModal()">+ AJOUTER</button>`;
         
         const list = document.createElement('div');
         list.id = "sortable-list";
@@ -164,42 +167,61 @@
             } else { item = current.children[key]; }
             
             if(!item) return;
-
             const wrap = createItemUI(key, key, () => {
                 if(item.type === 'folder') { currentPath = isJournalier ? [...obj.path, 'children', key] : [...currentPath, 'children', key]; render(); }
                 else { openEditor(key, isJournalier ? obj.path : currentPath); }
-            }, false, isJournalier, item.status);
-            
+            }, isJournalier, item.status);
             wrap.dataset.id = isJournalier ? idx : key;
             list.appendChild(wrap);
         });
 
-        initSortable(list, (newOrder) => {
-            if(isJournalier) db.journalier = newOrder.map(i => db.journalier[i]);
-            else current.order = newOrder;
+        new Sortable(list, { animation: 150, delay: 400, delayOnTouchOnly: true, forceFallback: true, onEnd: () => {
+            const order = Array.from(list.children).map(item => item.dataset.id);
+            if(isJournalier) db.journalier = order.map(i => db.journalier[i]);
+            else current.order = order;
             saveDB();
+        }});
+    }
+
+    function search(val) {
+        searchQuery = val.toLowerCase();
+        render();
+    }
+
+    function renderSearchResults(container) {
+        const results = [];
+        function scan(obj, path) {
+            if(obj.children) {
+                Object.keys(obj.children).forEach(key => {
+                    if(key.toLowerCase().includes(searchQuery)) results.push({name: key, path: [...path, 'children'], item: obj.children[key]});
+                    scan(obj.children[key], [...path, 'children', key]);
+                });
+            }
+        }
+        scan(db.data, ['data']);
+
+        results.forEach(res => {
+            const wrap = createItemUI(res.name, res.name, () => {
+                searchQuery = "";
+                if(res.item.type === 'folder') { currentPath = [...res.path, res.name]; }
+                else { openEditor(res.name, res.path); return; }
+                render();
+            }, false, res.item.status);
+            container.appendChild(wrap);
         });
     }
 
-    function createItemUI(id, label, onclick, isHome, isJournalier, status) {
+    function createItemUI(id, label, onclick, isJournalier, status) {
         const wrap = document.createElement('div');
         const isFav = db.journalier.some(f => f.name === id);
-        
-        // Configuration des slides
-        let slideCount = "triple"; // Par défaut 3 boutons
-        if(isHome) slideCount = "single"; // Juste modifier
-        else if(isJournalier) slideCount = "double"; // Favoris(Stop) + Modifier + Supprimer -> En fait on va mettre les 3
-        
-        wrap.className = `item-wrapper ${slideCount} ${status ? 'status-'+status : ''}`;
-        
+        wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
         wrap.innerHTML = `
             <div class="item-actions">
-                ${!isHome ? `<button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="event.stopPropagation(); toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>` : ''}
-                <button class="action-btn" style="background:var(--edit)" onclick="event.stopPropagation(); openEditModal('${id}', ${isHome}, ${isJournalier})">✏️</button>
-                ${!isHome ? `<button class="action-btn" style="background:var(--danger)" onclick="event.stopPropagation(); deleteItem('${id}', ${isJournalier})">🗑️</button>` : ''}
+                <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="event.stopPropagation(); toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>
+                <button class="action-btn" style="background:var(--edit)" onclick="event.stopPropagation(); openEditModal('${id}')">✏️</button>
+                <button class="action-btn" style="background:var(--danger)" onclick="event.stopPropagation(); deleteItem('${id}', ${isJournalier})">🗑️</button>
             </div>
             <div class="item-main"><strong>${label}</strong><span>〉</span></div>`;
-        
         wrap.querySelector('.item-main').onclick = onclick;
         setupSwipe(wrap);
         return wrap;
@@ -215,25 +237,16 @@
         });
     }
 
-    function initSortable(el, onEnd) {
-        new Sortable(el, { animation: 150, delay: 400, delayOnTouchOnly: true, forceFallback: true, onEnd: () => {
-            const order = Array.from(el.children).map(item => item.dataset.id);
-            onEnd(order);
-        }});
-    }
-
     function openEditor(key, path) {
         let target = db; path.forEach(p => target = target[p]);
         activeTech = target.children[key];
         if(!activeTech.notes) activeTech.notes = { on_test: "", already: "", future: "" };
-        activeStatus = activeTech.status || 'on_test';
         document.getElementById('editor-title').innerText = key;
         document.getElementById('note-editor').style.display = 'flex';
-        switchTab(activeStatus);
+        switchTab(activeTech.status || 'on_test');
     }
 
     function switchTab(status) {
-        activeStatus = status;
         activeTech.status = status;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-' + status).classList.add('active');
@@ -242,58 +255,37 @@
     }
 
     function autoSaveNote() {
-        activeTech.notes[activeStatus] = document.getElementById('note-textarea').value;
-        localStorage.setItem('jjb_vault_v10', JSON.stringify(db));
+        activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
+        localStorage.setItem('jjb_vault_v11', JSON.stringify(db));
     }
 
     function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
 
-    function openAddModal() {
-        editingItem = null;
-        document.getElementById('modal-title').innerText = "Ajouter";
-        document.getElementById('input-name').value = "";
-        document.getElementById('tech-toggle-area').style.display = "block";
-        document.getElementById('modal').style.display = 'flex';
-    }
-
-    function openEditModal(id, isHome, isJournalier) {
-        editingItem = { id, isHome, isJournalier, path: [...currentPath] };
-        document.getElementById('modal-title').innerText = "Renommer";
-        document.getElementById('input-name').value = isHome ? db.names[id] : id;
-        document.getElementById('tech-toggle-area').style.display = isHome ? "none" : "block";
-        document.getElementById('modal').style.display = 'flex';
-    }
+    function openAddModal() { editingItem = null; document.getElementById('modal').style.display = 'flex'; }
+    function openEditModal(id) { editingItem = { id, path: [...currentPath] }; document.getElementById('input-name').value = id; document.getElementById('modal').style.display = 'flex'; }
 
     function saveItem() {
-        const newName = document.getElementById('input-name').value.trim();
-        if(!newName) return;
-
-        if(editingItem && editingItem.isHome) {
-            db.names[editingItem.id] = newName;
-        } else if(editingItem) {
-            let t = db; editingItem.path.forEach(p => t = t[p]);
-            const data = t.children[editingItem.id];
-            delete t.children[editingItem.id];
-            t.children[newName] = data;
-            t.order = t.order.map(n => n === editingItem.id ? newName : n);
-            db.journalier.forEach(f => { if(f.name === editingItem.id) f.name = newName; });
+        const name = document.getElementById('input-name').value.trim();
+        if(!name) return;
+        let t = db; (editingItem ? editingItem.path : currentPath).forEach(p => t = t[p]);
+        if(editingItem) {
+            const data = t.children[editingItem.id]; delete t.children[editingItem.id];
+            t.children[name] = data; t.order = t.order.map(n => n === editingItem.id ? name : n);
+            db.journalier.forEach(f => { if(f.name === editingItem.id) f.name = name; });
         } else {
-            let t = db; currentPath.forEach(p => t = t[p]);
             const isTech = document.getElementById('is-final').checked;
-            t.children[newName] = isTech ? { type:'tech', status:'on_test', notes:{on_test:"",already:"",future:""} } : { type:'folder', children:{}, order:[] };
-            t.order.push(newName);
+            t.children[name] = isTech ? { type:'tech', status:'on_test', notes:{on_test:"",already:"",future:""} } : { type:'folder', children:{}, order:[] };
+            t.order.push(name);
         }
         saveDB(); closeModal();
     }
 
     function deleteItem(key, isJournalier) {
         if(!confirm("Supprimer ?")) return;
-        if(isJournalier) {
-            db.journalier = db.journalier.filter(f => f.name !== key);
-        } else {
+        if(isJournalier) db.journalier = db.journalier.filter(f => f.name !== key);
+        else {
             let t = db; currentPath.forEach(p => t = t[p]);
-            delete t.children[key];
-            t.order = t.order.filter(n => n !== key);
+            delete t.children[key]; t.order = t.order.filter(n => n !== key);
             db.journalier = db.journalier.filter(f => f.name !== key);
         }
         saveDB();
