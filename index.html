@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V12</title>
+    <title>JJB Vault V13</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -15,12 +15,11 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
-        .version-tag { position: absolute; top: 5px; right: 10px; font-size: 9px; color: var(--turquoise); opacity: 0.5; }
         .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; height: 30px; }
         .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; padding: 0; cursor: pointer; }
         
         .search-bar-wrap { display: flex; gap: 8px; margin-bottom: 15px; }
-        .search-input { flex: 1; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; }
+        .search-input { flex: 1; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; outline: none; }
         .search-go { background: var(--turquoise); border: none; border-radius: 10px; padding: 0 15px; font-weight: bold; color: #000; }
 
         .container { padding: 15px; }
@@ -29,7 +28,7 @@
         .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
         .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; }
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; z-index: 1; }
-        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         
         .swiped .item-main { transform: translateX(-195px); }
 
@@ -45,14 +44,12 @@
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
-        .sortable-ghost { opacity: 0.1; }
     </style>
 </head>
 <body>
 
 <div id="main-view">
     <div class="header">
-        <span class="version-tag">V12</span>
         <div class="nav-top">
             <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
             <span id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px;">ACCUEIL</span>
@@ -98,20 +95,52 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v12')) || {
+    // Structure pré-remplie selon tes instructions
+    const initialData = {
         journalier: [],
-        data: { order: ["Grappling", "Wrestling"], children: { 
-            "Grappling": { type: "folder", children: {}, order: [] }, 
-            "Wrestling": { type: "folder", children: {}, order: [] } 
-        } }
+        data: { 
+            order: ["Grappling", "Wrestling"], 
+            children: { 
+                "Grappling": { type: "folder", order: ["Top", "Bottom", "Submissions"], children: {
+                    "Top": { type: "folder", order: ["Pin", "Passing"], children: {
+                        "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { "Mount": {type:"folder", children:{}, order:[]}, "Side Control": {type:"folder", children:{}, order:[]}, "Ride": {type:"folder", children:{}, order:[]} } },
+                        "Passing": { type: "folder", order: ["Half Guard Pass", "Outside Pass"], children: {
+                            "Half Guard Pass": { type: "folder", order: ["Chest-to-Chest", "Half Guard", "Knee Shield Half Guard"], children: {
+                                "Chest-to-Chest": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]},
+                                "Knee Shield Half Guard": { type: "folder", order: ["High Knee Shield", "Medium Knee Shield", "Low Knee Shield"], children: {
+                                    "High Knee Shield": {type:"folder", children:{}, order:[]}, "Low Knee Shield": {type:"folder", children:{}, order:[]},
+                                    "Medium Knee Shield": { type: "folder", order: ["Knee Elbow Open", "Knee Elbow Close"], children: { "Knee Elbow Open": {type:"folder", children:{}, order:[]}, "Knee Elbow Close": {type:"folder", children:{}, order:[]} } }
+                                }}
+                            }},
+                            "Outside Pass": {type:"folder", children:{}, order:[]}
+                        }}
+                    }},
+                    "Bottom": { type: "folder", order: ["Closed Guard", "Half Guard", "Open Seated", "Open Supine", "Pin Escape"], children: {
+                        "Closed Guard": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]}, "Open Seated": {type:"folder", children:{}, order:[]}, "Open Supine": {type:"folder", children:{}, order:[]},
+                        "Pin Escape": { type: "folder", order: ["Side Control Escape", "Mount Escape", "Back Escape", "Ride Escape", "Turtle Escape", "Dogfight"], children: { "Side Control Escape":{type:"folder", children:{}, order:[]},"Mount Escape":{type:"folder", children:{}, order:[]},"Back Escape":{type:"folder", children:{}, order:[]},"Ride Escape":{type:"folder", children:{}, order:[]},"Turtle Escape":{type:"folder", children:{}, order:[]},"Dogfight":{type:"folder", children:{}, order:[]} } }
+                    }},
+                    "Submissions": { type: "folder", order: ["Submissions (global)", "Submission Defense (global)"], children: { "Submissions (global)":{type:"folder", children:{}, order:[]}, "Submission Defense (global)":{type:"folder", children:{}, order:[]} } }
+                }},
+                "Wrestling": { type: "folder", order: ["Underhook", "2-on-1", "Collar Tie", "Single Leg", "Double Leg", "50-50", "Other Grip"], children: {
+                    "Underhook": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", order:["Overhook"], children:{"Overhook":{type:"folder", children:{}, order:[]}}} } },
+                    "2-on-1": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
+                    "Collar Tie": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
+                    "Single Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
+                    "Double Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
+                    "50-50": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
+                    "Other Grip": { type: "folder", order: ["Other"], children: { "Other":{type:"folder", children:{}, order:[]}} }
+                }}
+            } 
+        }
     };
 
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v13')) || initialData;
     let currentPath = [];
     let editingItem = null;
     let activeTech = null;
     let searchQuery = "";
 
-    function saveDB() { localStorage.setItem('jjb_vault_v12', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v13', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
@@ -184,7 +213,8 @@
     }
 
     function execSearch() {
-        searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
+        const val = document.getElementById('search-input').value.trim();
+        searchQuery = val.toLowerCase();
         render();
     }
 
@@ -193,19 +223,28 @@
         function scan(obj, path) {
             if(obj.children) {
                 Object.keys(obj.children).forEach(key => {
-                    if(key.toLowerCase().includes(searchQuery)) results.push({name: key, path: [...path, 'children'], item: obj.children[key]});
+                    if(key.toLowerCase().includes(searchQuery)) {
+                        results.push({name: key, path: [...path, 'children'], item: obj.children[key]});
+                    }
                     scan(obj.children[key], [...path, 'children', key]);
                 });
             }
         }
         scan(db.data, ['data']);
-        if(results.length === 0) container.innerHTML += "<p style='text-align:center; color:#666;'>Aucun résultat</p>";
+        
+        if(results.length === 0) {
+            container.innerHTML += "<p style='text-align:center; color:#666; margin-top:20px;'>Aucun résultat pour '"+searchQuery+"'</p>";
+        }
+
         results.forEach(res => {
             const wrap = createItemUI(res.name, res.name, () => {
-                searchQuery = "";
-                if(res.item.type === 'folder') { currentPath = [...res.path, res.name]; }
-                else { openEditor(res.name, res.path); return; }
-                render();
+                searchQuery = ""; // Reset recherche avant navigation
+                if(res.item.type === 'folder') {
+                    currentPath = [...res.path, res.name];
+                    render();
+                } else {
+                    openEditor(res.name, res.path);
+                }
             }, false, res.item.status);
             container.appendChild(wrap);
         });
@@ -256,7 +295,7 @@
 
     function autoSaveNote() {
         activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
-        localStorage.setItem('jjb_vault_v12', JSON.stringify(db));
+        localStorage.setItem('jjb_vault_v13', JSON.stringify(db));
     }
 
     function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
@@ -264,7 +303,7 @@
     function openAddModal() { 
         editingItem = null; 
         document.getElementById('modal-title').innerText = "Ajouter";
-        document.getElementById('input-name').value = ""; // Vide le titre
+        document.getElementById('input-name').value = "";
         document.getElementById('is-final').checked = false;
         document.getElementById('modal').style.display = 'flex'; 
     }
