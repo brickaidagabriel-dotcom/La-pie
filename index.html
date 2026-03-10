@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V27.0.0</title>
+    <title>JJB Vault V15 - ORIGINAL STABLE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -14,9 +14,8 @@
         * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        /* HEADER & NAVIGATION */
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
-        .version-tag { position: absolute; top: 5px; left: 10px; font-size: 9px; color: var(--turquoise); font-weight: bold; opacity: 0.8; }
+        .version-tag { position: absolute; top: 5px; left: 10px; font-size: 8px; color: #555; font-weight: bold; }
         .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; height: 30px; }
         .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; padding: 0; cursor: pointer; }
         
@@ -25,44 +24,32 @@
         .search-input { flex: 1; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; outline: none; }
         .search-go { background: var(--turquoise); border: none; border-radius: 10px; padding: 0 15px; font-weight: bold; color: #000; }
 
-        .btn-add { background: var(--turquoise); color: #000; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
+        .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        /* LISTE ITEMS (V15) */
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
+        .item-wrapper { position: relative; margin-bottom: 12px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
         .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 10; display: flex; flex-direction: column; transition: transform 0.3s ease; cursor: pointer; }
         .item-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; pointer-events: none; }
-        .item-snippet { font-size: 12px; color: #888; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+        .item-snippet { font-size: 11px; color: #888; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; z-index: 1; }
         .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         .swiped .item-main { transform: translateX(-195px); }
 
-        .status-on_test { border-left: 5px solid var(--on-test) !important; }
-        .status-already { border-left: 5px solid var(--already) !important; }
-        .status-future { border-left: 5px solid var(--future) !important; }
+        .status-on_test { border-left: 6px solid var(--on-test) !important; }
+        .status-already { border-left: 6px solid var(--already) !important; }
+        .status-future { border-left: 6px solid var(--future) !important; }
 
-        /* ÉDITEUR SPLIT-SCREEN (FENÊTRE FINALE) */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
-        .editor-split-container { display: flex; flex-direction: column; height: 100%; }
         .tabs { display: flex; gap: 8px; padding: 12px; background: #111; }
         .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.4; color: #000; }
         .tab.active { opacity: 1; border: 2px solid white; }
         
-        .text-pane { flex: 1; position: relative; border-bottom: 2px solid #333; overflow: hidden; }
-        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; overflow-y: auto; }
-        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; line-height: 1.5; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
+        .editor-body { flex: 1; position: relative; overflow: hidden; }
+        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; overflow-y: auto; }
+        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: var(--turquoise); padding: 20px; font-size: 17px; line-height: 1.6; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
         
-        .video-pane { flex: 1; background: #000; overflow-y: auto; padding: 10px; }
-        .video-item-box { margin-bottom: 20px; background: #1c1c1e; border-radius: 12px; overflow: hidden; border: 1px solid #333; }
-        .video-item-box iframe { width: 100%; height: 200px; border: none; display: block; }
-        .video-controls { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #262629; }
-        .btn-del-video { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; }
-
-        /* MODALS */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; justify-content:center; align-items:center; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; }
         .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
-        
-        .time-picker { display: flex; justify-content: center; align-items: center; gap: 8px; background: #2c2c2e; padding: 10px; border-radius: 10px; margin: 10px 0; }
-        .time-picker select { background: #1c1c1e; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; }
 
         nav { position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100; }
     </style>
@@ -71,7 +58,7 @@
 
 <div id="main-view">
     <div class="header">
-        <div class="version-tag">V27.0.0 - BASE V15</div>
+        <div class="version-tag">V15 ORIGINAL</div>
         <div class="nav-top">
             <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
             <span id="path-display" style="font-size:10px; color:var(--turquoise);">ACCUEIL</span>
@@ -84,22 +71,18 @@
 
 <div id="note-editor">
     <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="version-tag">V27 EDITOR</div>
         <button onclick="closeEditor()" class="back-btn">〈 Retour</button>
         <h3 id="editor-title" style="margin:0; font-size:16px;">Note</h3>
         <div style="width:50px;"></div>
     </div>
-    <div class="editor-split-container">
-        <div class="tabs">
-            <div class="tab" id="tab-on_test" style="background:var(--on-test)" onclick="switchTab('on_test')">ON TEST</div>
-            <div class="tab" id="tab-already" style="background:var(--already)" onclick="switchTab('already')">ALREADY</div>
-            <div class="tab" id="tab-future" style="background:var(--future)" onclick="switchTab('future')">FUTURE</div>
-        </div>
-        <div class="text-pane">
-            <div id="note-display"></div>
-            <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
-        </div>
-        <div class="video-pane" id="video-list-container"></div>
+    <div class="tabs">
+        <div class="tab" id="tab-on_test" style="background:var(--on-test)" onclick="switchTab('on_test')">ON TEST</div>
+        <div class="tab" id="tab-already" style="background:var(--already)" onclick="switchTab('already')">ALREADY</div>
+        <div class="tab" id="tab-future" style="background:var(--future)" onclick="switchTab('future')">FUTURE</div>
+    </div>
+    <div class="editor-body">
+        <div id="note-display"></div>
+        <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
     </div>
 </div>
 
@@ -109,66 +92,33 @@
         <input type="text" id="new-item-name" class="search-input" style="width:100%; margin-bottom:15px;" placeholder="Nom...">
         <div style="margin-bottom:20px;">
             <label style="color:#fff; display:flex; align-items:center; gap:10px;">
-                <input type="checkbox" id="is-final-tech" style="width:20px; height:20px;"> Fenêtre Finale (Notes/Vidéos)
+                <input type="checkbox" id="is-tech-checkbox" style="width:20px; height:20px;"> Technique Finale
             </label>
         </div>
         <div style="display:flex; gap:10px;">
             <button onclick="closeModal('add-modal')" style="flex:1; padding:12px; background:#444; color:#fff; border:none; border-radius:8px;">Annuler</button>
-            <button onclick="addNewItem()" style="flex:1; padding:12px; background:var(--turquoise); color:#000; border:none; border-radius:8px; font-weight:bold;">Créer</button>
-        </div>
-    </div>
-</div>
-
-<div id="video-modal" class="modal">
-    <div class="modal-content">
-        <h3 style="color:var(--turquoise); margin-top:0;">Ajouter Vidéo</h3>
-        <input type="text" id="vid-url" class="search-input" style="width:100%;" placeholder="Lien YouTube ou Short">
-        <div class="time-picker">
-            <select id="p-h"><option value="0">00h</option><option value="1">01h</option></select>
-            <select id="p-m"></select><select id="p-s"></select>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button onclick="closeModal('video-modal')" style="flex:1; padding:12px; background:#444; border:none; border-radius:8px; color:#fff;">Annuler</button>
-            <button onclick="confirmAddVideo()" style="flex:1; padding:12px; background:var(--turquoise); border:none; border-radius:8px; color:#000; font-weight:bold;">Valider</button>
+            <button onclick="addItem()" style="flex:1; padding:12px; background:var(--turquoise); color:#000; border:none; border-radius:8px; font-weight:bold;">Créer</button>
         </div>
     </div>
 </div>
 
 <script>
-    // INIT SELECTS
-    const mS = document.getElementById('p-m'); const sS = document.getElementById('p-s');
-    for(let i=0; i<60; i++){
-        let o = `<option value="${i}">${i<10?'0'+i:i}</option>`;
-        mS.innerHTML += o; sS.innerHTML += o;
-    }
-
-    // DATA INITIALISATION (ARBRE COMPLET RECONSTRUIT)
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v27')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v15')) || {
         journalier: [],
         data: {
             order: ["Grappling", "Wrestling"],
             children: {
-                "Grappling": { type:"folder", order:["Top", "Bottom", "Submissions"], children:{
-                    "Top": { type:"folder", order:["Pin", "Passing"], children:{
-                        "Pin": { type:"folder", order:["Mount", "Side Control", "Ride"], children: {
-                            "Mount": {type:"folder", order:[], children:{}}, "Side Control": {type:"folder", order:[], children:{}}, "Ride": {type:"folder", order:[], children:{}}
-                        }},
-                        "Passing": { type:"folder", order:["Half Guard Pass"], children: {
-                            "Half Guard Pass": { type:"folder", order:["Knee Shield Half Guard"], children: {
-                                "Knee Shield Half Guard": { type:"folder", order:["Medium Knee Shield"], children: {
-                                    "Medium Knee Shield": { type:"folder", order:["Underhook Attack"], children: {
-                                        "Underhook Attack": { type:"tech", status:"on_test", notes:{on_test:"",already:"",future:""}, videos:{on_test:[],already:[],future:[]} }
-                                    }}
-                                }}
+                "Grappling": { type: "folder", order: ["Top", "Bottom"], children: {
+                    "Top": { type: "folder", order: ["Passing"], children: {
+                        "Passing": { type: "folder", order: ["Knee Shield"], children: {
+                            "Knee Shield": { type: "folder", order: ["Underhook Attack"], children: {
+                                "Underhook Attack": { type: "tech", status: "on_test", notes: { on_test: "", already: "", future: "" } }
                             }}
                         }}
                     }},
-                    "Bottom": { type:"folder", order:["Closed Guard", "Half Guard"], children: {
-                        "Closed Guard": {type:"folder", order:[], children:{}}, "Half Guard": {type:"folder", order:[], children:{}}
-                    }},
-                    "Submissions": { type:"folder", order:[], children:{} }
+                    "Bottom": { type: "folder", order: [], children: {} }
                 }},
-                "Wrestling": { type:"folder", order:[], children:{} }
+                "Wrestling": { type: "folder", order: [], children: {} }
             }
         }
     };
@@ -177,7 +127,7 @@
     let activeTech = null;
     let searchQuery = "";
 
-    function saveDB() { localStorage.setItem('jjb_vault_v27', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v15', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -199,16 +149,15 @@
             return;
         }
 
-        // BARRE DE RECHERCHE
         if(!isJournalier) {
             const sDiv = document.createElement('div');
             sDiv.className = "search-bar-wrap";
-            sDiv.innerHTML = `<input type="text" id="search-input" class="search-input" placeholder="Chercher une technique..." value="${searchQuery}"><button class="search-go" onclick="execSearch()">OK</button>`;
+            sDiv.innerHTML = `<input type="text" id="search-input" class="search-input" placeholder="Rechercher..." value="${searchQuery}"><button class="search-go" onclick="execSearch()">OK</button>`;
             content.appendChild(sDiv);
             if(!searchQuery) content.innerHTML += `<button class="btn-add" onclick="document.getElementById('add-modal').style.display='flex'">+ AJOUTER</button>`;
         }
 
-        if(searchQuery) { renderSearchResults(content); return; }
+        if(searchQuery) { renderResults(content); return; }
 
         let current = db; currentPath.forEach(p => current = current[p]);
         document.getElementById('view-title').innerText = currentPath[currentPath.length-1];
@@ -224,21 +173,23 @@
             let target = db; itemPath.forEach(p => target = target[p]);
             const item = target.children[itemKey];
 
-            const wrap = createItemUI(itemKey, itemKey, () => {
+            const wrap = createUI(itemKey, () => {
                 if(item.type === 'folder') { currentPath = [...itemPath, 'children', itemKey]; render(); }
                 else { openEditor(itemKey, itemPath); }
             }, item.status);
             list.appendChild(wrap);
         });
+
+        new Sortable(list, { animation: 150 });
     }
 
-    function createItemUI(id, label, onclick, status, snippet) {
+    function createUI(label, onclick, status, snippet) {
         const wrap = document.createElement('div');
         wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
         wrap.innerHTML = `
             <div class="item-actions">
-                <button class="action-btn" style="background:var(--accent)" onclick="toggleFav('${id}')">⭐</button>
-                <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${id}')">🗑️</button>
+                <button class="action-btn" style="background:var(--accent)" onclick="toggleFav('${label}')">⭐</button>
+                <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${label}')">🗑️</button>
             </div>
             <div class="item-main">
                 <div class="item-title-row"><strong>${label}</strong><span>〉</span></div>
@@ -261,42 +212,29 @@
 
     function execSearch() { searchQuery = document.getElementById('search-input').value.trim().toLowerCase(); render(); }
 
-    function renderSearchResults(container) {
-        const results = [];
+    function renderResults(container) {
         function scan(obj, path) {
-            if(obj.children) {
-                Object.keys(obj.children).forEach(k => {
-                    const it = obj.children[k];
-                    let match = k.toLowerCase().includes(searchQuery);
-                    let snip = "";
-                    if(!match && it.notes) {
-                        for(let s in it.notes) if(it.notes[s].toLowerCase().includes(searchQuery)) { match=true; snip=it.notes[s].substring(0,40)+"..."; break; }
-                    }
-                    if(match) results.push({name:k, path:[...path], item:it, snippet:snip});
-                    scan(it, [...path, k, 'children']);
-                });
-            }
+            Object.keys(obj.children || {}).forEach(k => {
+                const it = obj.children[k];
+                if(k.toLowerCase().includes(searchQuery)) {
+                    container.appendChild(createUI(k, () => {
+                        searchQuery = "";
+                        if(it.type === 'folder') { currentPath = [...path, 'children', k]; render(); }
+                        else { openEditor(k, path); }
+                    }, it.status));
+                }
+                scan(it, [...path, k, 'children']);
+            });
         }
         scan(db.data, ['data', 'children']);
-        results.forEach(res => {
-            const w = createItemUI(res.name, res.name, () => {
-                searchQuery = "";
-                if(res.item.type === 'folder') { currentPath = [...res.path, res.name]; render(); }
-                else { openEditor(res.name, res.path); }
-            }, res.item.status, res.snippet);
-            container.appendChild(w);
-        });
     }
 
-    // GESTION ITEMS (V15)
-    function addNewItem() {
+    function addItem() {
         const name = document.getElementById('new-item-name').value.trim();
         if(!name) return;
-        const isFinal = document.getElementById('is-final-tech').checked;
+        const isTech = document.getElementById('is-tech-checkbox').checked;
         let t = db; currentPath.forEach(p => t = t[p]);
-        t.children[name] = isFinal ? 
-            { type:"tech", status:"on_test", notes:{on_test:"",already:"",future:""}, videos:{on_test:[],already:[],future:[]} } : 
-            { type:"folder", order:[], children:{} };
+        t.children[name] = isTech ? { type:"tech", status:"on_test", notes:{on_test:"",already:"",future:""} } : { type:"folder", order:[], children:{} };
         t.order.push(name);
         saveDB(); closeModal('add-modal');
     }
@@ -310,7 +248,13 @@
         }
     }
 
-    // ÉDITEUR SPLIT-SCREEN & VIDÉOS
+    function toggleFav(id) {
+        const idx = db.journalier.findIndex(f => f.name === id);
+        if(idx > -1) db.journalier.splice(idx, 1);
+        else db.journalier.push({name: id, path: [...currentPath]});
+        saveDB();
+    }
+
     function openEditor(key, path) {
         let t = db; path.forEach(p => t = t[p]);
         activeTech = t.children[key];
@@ -325,53 +269,12 @@
         document.getElementById('tab-'+s).classList.add('active');
         document.getElementById('note-textarea').value = activeTech.notes[s] || "";
         document.getElementById('note-display').innerText = activeTech.notes[s] || "";
-        renderVideos();
-    }
-
-    function renderVideos() {
-        const container = document.getElementById('video-list-container');
-        container.innerHTML = `<button onclick="document.getElementById('video-modal').style.display='flex'" style="width:100%; padding:20px; background:#111; border:2px dashed #444; color:#888; border-radius:12px; font-weight:bold; margin-bottom:15px;">➕ AJOUTER VIDÉO / SHORT</button>`;
-        const vids = activeTech.videos[activeTech.status] || [];
-        vids.forEach((v, idx) => {
-            const box = document.createElement('div');
-            box.className = "video-item-box";
-            box.innerHTML = `
-                <iframe src="${v.url}" allowfullscreen></iframe>
-                <div class="video-controls">
-                    <span style="font-size:12px; color:var(--turquoise)">${v.type}</span>
-                    <button class="btn-del-video" onclick="askDeleteVideo(${idx})">MOINS (-)</button>
-                </div>`;
-            container.appendChild(box);
-        });
-    }
-
-    function confirmAddVideo() {
-        const url = document.getElementById('vid-url').value.trim();
-        if(!url) return;
-        const totalSec = (parseInt(document.getElementById('p-h').value)*3600) + (parseInt(document.getElementById('p-m').value)*60) + parseInt(document.getElementById('p-s').value);
-        let finalUrl = "", type = "Vidéo";
-        if(url.includes("shorts/")) {
-            let id = url.split("shorts/")[1].split(/[?&]/)[0];
-            finalUrl = `https://www.youtube.com/embed/${id}`; type = "YouTube Short";
-        } else {
-            let id = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.split("be/")[1].split(/[?&]/)[0];
-            finalUrl = `https://www.youtube.com/embed/${id}?start=${totalSec}`; type = "YouTube Video";
-        }
-        activeTech.videos[activeTech.status].push({ url: finalUrl, type: type });
-        saveDB(); renderVideos(); closeModal('video-modal');
-    }
-
-    function askDeleteVideo(idx) {
-        if(confirm("Supprimer cette vidéo ?")) {
-            activeTech.videos[activeTech.status].splice(idx, 1);
-            saveDB(); renderVideos();
-        }
     }
 
     function handleInput() {
         activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
         document.getElementById('note-display').innerText = activeTech.notes[activeTech.status];
-        localStorage.setItem('jjb_vault_v27', JSON.stringify(db));
+        localStorage.setItem('jjb_vault_v15', JSON.stringify(db));
     }
 
     function syncScroll() { document.getElementById('note-display').scrollTop = document.getElementById('note-textarea').scrollTop; }
