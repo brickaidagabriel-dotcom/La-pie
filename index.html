@@ -1,317 +1,1289 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V28.2.0</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <style>
-        :root { 
-            --bg: #000; --card: #1c1c1e; --text: #fff; --turquoise: #00f2ff; 
-            --danger: #ff453a; --edit: #5e5ce6; --accent: #0a84ff;
-            --on-test: #30d158; --already: #ff9f0a; --future: #00f2ff;
-        }
-        * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
-        
-        .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
-        .version-tag { position: absolute; top: 5px; left: 10px; font-size: 9px; color: var(--turquoise); font-weight: bold; }
-        .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; height: 30px; }
-        .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; cursor: pointer; }
-        
-        .container { padding: 15px; }
-        .btn-add { background: var(--turquoise); color: #000; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
-        
-        /* LIST SYSTEM */
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; }
-        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; z-index: 1; }
-        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        
-        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; cursor: pointer; }
-        .swiped .item-main { transform: translateX(-195px); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>JJB NOTES</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        .status-on_test { border-left: 5px solid var(--on-test) !important; }
-        .status-already { border-left: 5px solid var(--already) !important; }
-        .status-future { border-left: 5px solid var(--future) !important; }
+/* ─────────────────────────────────────────
+DESIGN TOKENS  — change here to retheme
+───────────────────────────────────────── */
+:root {
+/* backgrounds */
+–bg0: #0d1117;   /* deepest */
+–bg1: #161b22;   /* base panels */
+–bg2: #1c2333;   /* cards */
+–bg3: #232d3f;   /* card hover / raised */
 
-        /* EDITOR SPLIT */
-        #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
-        .tabs { display: flex; gap: 8px; padding: 12px; background: #111; }
-        .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.3; color: #000; }
-        .tab.active { opacity: 1; border: 2px solid white; }
-        .text-pane { flex: 1; position: relative; border-bottom: 2px solid #333; }
-        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; white-space: pre-wrap; pointer-events: none; overflow-y: auto; z-index:1; }
-        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; resize: none; outline: none; -webkit-user-select: text; user-select: text; position: relative; z-index:2; }
-        .video-pane { flex: 1; background: #000; overflow-y: auto; padding: 10px; }
+/* accents */
+–acc:    #58a6ff;   /* blue – primary accent */
+–acc2:   #3fb950;   /* green – confirm / on-test */
+–acc3:   #f78166;   /* coral – already-test */
+–acc4:   #79c0ff;   /* light blue – future-test */
+–acc5:   #d2a8ff;   /* lavender – journalier badge */
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; }
-        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
-        nav { position:fixed; bottom:0; width:100%; height:75px; background:var(--card); display:flex; justify-content:center; align-items:center; border-top:1px solid #333; z-index:100; }
-    </style>
+/* text */
+–t1: #e6edf3;   /* primary */
+–t2: #8b949e;   /* secondary */
+–t3: #484f58;   /* muted */
+
+/* borders */
+–b1: #30363d;
+–b2: #21262d;
+
+/* status strip */
+–s-on:  var(–acc2);
+–s-al:  var(–acc3);
+–s-fu:  var(–acc4);
+–s-no:  var(–b1);
+
+/* fonts */
+–fp: ‘Press Start 2P’, monospace;
+
+/* misc */
+–r: 10px;
+–shadow: 0 4px 24px rgba(0,0,0,.5);
+}
+
+/* ── reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;width:100%;overflow:hidden;position:fixed;background:var(–bg0);color:var(–t1);font-family:var(–fp);font-size:10px;line-height:1.6;}
+
+/* ── subtle grid bg ── */
+body::before{content:’’;position:fixed;inset:0;
+background-image:linear-gradient(var(–b2) 1px,transparent 1px),linear-gradient(90deg,var(–b2) 1px,transparent 1px);
+background-size:40px 40px;opacity:.4;pointer-events:none;z-index:0;}
+
+/* ── screens ── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;z-index:1;background:var(–bg0);}
+.screen.active{display:flex;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ════════════════════════════════════════
+LAYOUT SHELL — top bar + scroll + home bar
+════════════════════════════════════════ */
+.topbar{
+display:flex;align-items:center;gap:10px;
+padding:10px 16px;flex-shrink:0;
+background:var(–bg1);
+border-bottom:1px solid var(–b1);
+min-height:54px;
+z-index:10;
+}
+.topbar-title{
+flex:1;font-size:9px;letter-spacing:2px;
+color:var(–t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* HOME BAR — always visible at bottom */
+.homebar{
+flex-shrink:0;
+display:flex;align-items:center;justify-content:center;
+padding:10px 16px;
+background:var(–bg1);
+border-top:1px solid var(–b1);
+gap:12px;
+z-index:10;
+}
+
+/* main scroll zone */
+.scroll{
+flex:1;overflow-y:auto;overflow-x:hidden;
+padding:16px;
+-webkit-overflow-scrolling:touch;
+}
+.scroll::-webkit-scrollbar{width:3px;}
+.scroll::-webkit-scrollbar-thumb{background:var(–b1);border-radius:2px;}
+
+/* ════════════════════════════════════════
+BUTTONS
+════════════════════════════════════════ */
+.btn{
+display:inline-flex;align-items:center;justify-content:center;gap:6px;
+font-family:var(–fp);font-size:7px;letter-spacing:1px;cursor:pointer;
+border:1px solid var(–b1);padding:9px 14px;border-radius:6px;
+background:var(–bg2);color:var(–t1);
+transition:background .12s,border-color .12s,transform .08s;
+user-select:none;white-space:nowrap;
+}
+.btn:active{transform:scale(.96);background:var(–bg3);}
+.btn.acc  {background:#1f3a6e;border-color:var(–acc); color:var(–acc);}
+.btn.green{background:#1a3a23;border-color:var(–acc2);color:var(–acc2);}
+.btn.red  {background:#3a1a1a;border-color:var(–acc3);color:var(–acc3);}
+.btn.sm   {font-size:7px;padding:7px 11px;}
+.btn.home-btn{
+font-size:8px;padding:10px 28px;
+background:var(–bg2);border-color:var(–acc);color:var(–acc);
+border-radius:8px;letter-spacing:2px;
+}
+.btn.home-btn:active{transform:scale(.96);}
+
+/* ════════════════════════════════════════
+HOME SCREEN
+════════════════════════════════════════ */
+.home-title-block{
+flex-shrink:0;text-align:center;padding:32px 20px 24px;
+background:linear-gradient(180deg,var(–bg2) 0%,transparent 100%);
+border-bottom:1px solid var(–b1);
+}
+.home-logo{
+font-size:20px;letter-spacing:6px;color:var(–acc);
+text-shadow:0 0 30px #58a6ff50;line-height:1.5;
+}
+.home-sub{font-size:7px;color:var(–t2);margin-top:8px;letter-spacing:3px;}
+
+.home-panels{
+flex:1;display:flex;flex-direction:column;gap:16px;
+padding:20px 16px;overflow:hidden;
+}
+.home-panel{
+flex:1;cursor:pointer;border-radius:var(–r);position:relative;
+background:var(–bg2);border:1px solid var(–b1);
+box-shadow:var(–shadow);
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+gap:12px;padding:20px;transition:background .12s,border-color .12s,transform .1s;
+}
+.home-panel:active{transform:scale(.98);background:var(–bg3);}
+.home-panel.jour{border-color:#1d3557;}
+.home-panel.data{border-color:#1a3a23;}
+
+.hp-icon{font-size:36px;}
+.hp-label{font-size:12px;letter-spacing:4px;}
+.hp-desc{font-size:8px;color:var(–t2);text-align:center;line-height:1.8;}
+.hp-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.hp-tag{font-size:7px;padding:3px 10px;border:1px solid;border-radius:20px;}
+
+/* ════════════════════════════════════════
+NODE CARDS — large
+════════════════════════════════════════ */
+.ncw{position:relative;overflow:hidden;margin-bottom:12px;border-radius:var(–r);}
+
+.nc{
+display:flex;align-items:stretch;
+background:var(–bg2);border:1px solid var(–b1);
+border-radius:var(–r);cursor:pointer;
+user-select:none;touch-action:pan-y;
+position:relative;overflow:hidden;
+min-height:72px;  /* large cards */
+transition:background .12s,transform .08s;
+}
+.nc:active{background:var(–bg3);}
+
+.strip{width:5px;align-self:stretch;flex-shrink:0;border-radius:var(–r) 0 0 var(–r);}
+.s-on{background:var(–s-on);}
+.s-al{background:var(–s-al);}
+.s-fu{background:var(–s-fu);}
+.s-no{background:var(–b1);}
+
+.nbody{flex:1;padding:16px 18px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;}
+.ntitle{font-size:10px;color:var(–t1);letter-spacing:1px;line-height:1.5;}
+.nmeta{font-size:8px;color:var(–t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+.narrow{
+display:flex;align-items:center;justify-content:center;
+padding:0 18px;font-size:16px;color:var(–t2);flex-shrink:0;
+}
+
+.badge{font-size:7px;padding:3px 8px;border:1px solid;border-radius:20px;}
+.badge-fin{color:var(–acc);border-color:#1d3557;background:#0d1f3c;}
+.badge-jour{color:var(–acc5);border-color:#2d1f4a;background:#1a1030;}
+.badge-sub{color:var(–t2);border-color:var(–b1);}
+
+/* category header */
+.cath{
+font-size:9px;letter-spacing:3px;padding:10px 14px;margin-bottom:12px;
+border-left:3px solid;border-radius:0 6px 6px 0;
+background:linear-gradient(90deg,var(–bg2),transparent);
+color:var(–t2);
+}
+.cath-g{border-color:var(–acc); color:var(–acc);}
+.cath-w{border-color:var(–acc3);color:var(–acc3);}
+
+/* ════════════════════════════════════════
+SLIDE ACTIONS
+════════════════════════════════════════ */
+.sla{
+position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;
+transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
+z-index:3;border-radius:0 var(–r) var(–r) 0;overflow:hidden;
+}
+.sla.vis{transform:translateX(0);}
+.slb{
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+padding:0 14px;font-family:var(–fp);font-size:7px;letter-spacing:.5px;
+cursor:pointer;border:none;gap:5px;min-width:64px;text-align:center;line-height:1.4;
+}
+.slb-j {background:#1d3a5a;color:var(–acc);}
+.slb-uj{background:#2d1f4a;color:var(–acc5);}
+.slb-r {background:#2a2a1a;color:#e3b341;}
+.slb-d {background:#3a1a1a;color:var(–acc3);}
+
+/* ════════════════════════════════════════
+ADD BUTTONS
+════════════════════════════════════════ */
+.addb{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+/* ════════════════════════════════════════
+SEARCH — hidden until scroll
+════════════════════════════════════════ */
+.swrap{
+display:flex;gap:8px;margin-bottom:16px;
+opacity:0;transform:translateY(-6px);
+transition:opacity .2s,transform .2s;pointer-events:none;
+}
+.swrap.vis{opacity:1;transform:none;pointer-events:all;}
+.sinput{
+flex:1;background:var(–bg2);border:1px solid var(–b1);
+color:var(–t1);font-family:var(–fp);font-size:9px;
+padding:10px 14px;outline:none;border-radius:6px;caret-color:var(–acc);
+}
+.sinput:focus{border-color:var(–acc);}
+.sinput::placeholder{color:var(–t3);}
+.spath{font-size:7px;color:var(–acc4);margin-top:4px;}
+
+/* ════════════════════════════════════════
+JOURNALIER
+════════════════════════════════════════ */
+.jsplit{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.jhalf{flex:1;display:flex;flex-direction:column;border-bottom:1px solid var(–b1);overflow:hidden;}
+.jhalf:last-child{border-bottom:none;}
+.jhdr{flex-shrink:0;padding:10px 16px;font-size:9px;letter-spacing:2px;border-bottom:1px solid var(–b2);}
+.jhdr-g{color:var(–acc);}
+.jhdr-w{color:var(–acc3);}
+.jlist{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.jempty{font-size:8px;color:var(–t3);text-align:center;padding:28px 14px;line-height:2.5;}
+
+/* ════════════════════════════════════════
+FINAL NODE SCREEN
+════════════════════════════════════════ */
+.mtabs{
+display:flex;flex-shrink:0;
+background:var(–bg1);border-bottom:1px solid var(–b1);
+}
+.mtab{
+flex:1;padding:12px 4px;font-family:var(–fp);font-size:7px;
+text-align:center;cursor:pointer;border:none;background:none;
+color:var(–t3);border-bottom:2px solid transparent;
+margin-bottom:-1px;transition:all .12s;line-height:1.6;
+}
+.mtab-on.act {color:var(–acc2);border-color:var(–acc2);}
+.mtab-al.act {color:var(–acc3);border-color:var(–acc3);}
+.mtab-fu.act {color:var(–acc4);border-color:var(–acc4);}
+
+.fbody{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+.narea{flex:1;display:flex;flex-direction:column;border-bottom:1px solid var(–b1);min-height:0;}
+.ntarea{
+flex:1;background:var(–bg0);border:none;color:var(–t1);
+font-family:var(–fp);font-size:10px;padding:16px;
+resize:none;outline:none;line-height:2;caret-color:var(–acc);
+}
+.ntarea::placeholder{color:var(–t3);}
+
+/* video section */
+.vsec{flex:1;display:flex;flex-direction:column;min-height:0;max-height:48vh;}
+.vhdr{
+display:flex;align-items:center;justify-content:space-between;
+padding:10px 16px;border-bottom:1px solid var(–b1);
+background:var(–bg1);flex-shrink:0;
+}
+.vhdr-t{font-size:8px;color:var(–t2);letter-spacing:2px;}
+.vlist{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px;}
+.vitem{background:var(–bg2);border:1px solid var(–b1);border-radius:8px;overflow:hidden;}
+.vihdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(–b2);}
+.vlbl{font-size:7px;color:var(–t2);}
+/* 16:9 iframe wrapper */
+.viframe{position:relative;width:100%;padding-top:56.25%;background:#000;}
+.viframe iframe{position:absolute;inset:0;width:100%;height:100%;border:none;}
+.shlink{padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.shlink a{color:var(–acc4);font-size:9px;text-decoration:none;word-break:break-all;}
+
+/* ════════════════════════════════════════
+MODALS
+════════════════════════════════════════ */
+.mov{
+position:fixed;inset:0;background:rgba(0,0,0,.75);
+z-index:1000;display:none;align-items:flex-end;justify-content:center;
+padding:0;
+}
+.mov.open{display:flex;animation:sheetIn .2s ease;}
+@keyframes sheetIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+.mbox{
+background:var(–bg1);
+border:1px solid var(–b1);
+border-radius:16px 16px 0 0;
+width:100%;max-width:500px;max-height:85vh;
+display:flex;flex-direction:column;overflow:hidden;
+}
+.mhdr{
+padding:16px 20px;border-bottom:1px solid var(–b1);
+font-size:9px;color:var(–t1);letter-spacing:2px;
+display:flex;align-items:center;justify-content:space-between;
+}
+.mhdr-close{background:none;border:none;color:var(–t2);font-size:16px;cursor:pointer;padding:4px;}
+.mbody{padding:20px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.mfoot{padding:14px 20px;border-top:1px solid var(–b1);display:flex;gap:10px;justify-content:flex-end;}
+.mlbl{font-size:7px;color:var(–t2);letter-spacing:1px;margin-bottom:6px;}
+.mfield{display:flex;flex-direction:column;}
+.minput{
+background:var(–bg2);border:1px solid var(–b1);color:var(–t1);
+font-family:var(–fp);font-size:10px;padding:12px 14px;
+outline:none;border-radius:6px;caret-color:var(–acc);width:100%;
+}
+.minput:focus{border-color:var(–acc);}
+.vtbtns{display:flex;gap:10px;}
+.vtbtn{
+flex:1;background:var(–bg2);border:1px solid var(–b1);
+color:var(–t2);font-family:var(–fp);font-size:8px;
+padding:12px;cursor:pointer;border-radius:6px;text-align:center;
+transition:all .12s;
+}
+.vtbtn.sel{border-color:var(–acc);color:var(–acc);background:#0d1f3c;}
+
+/* timecode */
+.tcwrap{display:flex;gap:8px;align-items:center;justify-content:center;}
+.tcdrum{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.tclbl{font-size:7px;color:var(–t3);}
+.tcdis{
+background:var(–bg0);border:1px solid var(–acc);
+color:var(–acc);font-size:20px;width:58px;text-align:center;
+padding:8px 0;cursor:ns-resize;user-select:none;border-radius:6px;letter-spacing:3px;
+}
+.tcbtn{
+background:var(–bg2);border:1px solid var(–b1);color:var(–t2);
+font-size:12px;width:58px;padding:6px 0;cursor:pointer;
+text-align:center;border-radius:4px;font-family:var(–fp);
+}
+.tcbtn:active{background:var(–bg3);}
+.tcsep{font-size:24px;color:var(–acc);padding-top:22px;}
+
+/* ════════════════════════════════════════
+SETTINGS
+════════════════════════════════════════ */
+.slist{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.scard{background:var(–bg2);border:1px solid var(–b1);border-radius:var(–r);padding:18px;display:flex;flex-direction:column;gap:10px;}
+.slbl{font-size:8px;color:var(–t1);letter-spacing:1px;}
+.sdesc{font-size:8px;color:var(–t2);line-height:2;}
+.trow{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.toggle{position:relative;width:48px;height:26px;flex-shrink:0;background:var(–bg0);border:1px solid var(–b1);border-radius:14px;cursor:pointer;transition:background .2s,border-color .2s;}
+.toggle.on{background:#1a3a23;border-color:var(–acc2);}
+.toggle::after{content:’’;position:absolute;top:3px;left:3px;width:18px;height:18px;background:var(–t3);border-radius:50%;transition:transform .2s,background .2s;}
+.toggle.on::after{transform:translateX(22px);background:var(–acc2);}
+
+/* ════════════════════════════════════════
+DRAG
+════════════════════════════════════════ */
+.dragging{opacity:.35;}
+.drag-over .nc{border-top:2px solid var(–acc)!important;}
+</style>
+
 </head>
 <body>
 
-<div id="main-view">
-    <div class="header">
-        <div class="version-tag">V28.2.0</div>
-        <div class="nav-top">
-            <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
-            <span id="path-display" style="font-size:10px; color:var(--turquoise);">ACCUEIL</span>
-        </div>
-        <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
-    </div>
-    <div id="app-content" class="container"></div>
-    <nav><button onclick="goHome()" style="background:none; border:none; font-size:32px;">🏠</button></nav>
+<!-- ══════════════ HOME ══════════════ -->
+
+<div id="screen-home" class="screen active">
+  <div class="home-title-block">
+    <div class="home-logo">JJB NOTES</div>
+    <div class="home-sub">▶ SELECT MODULE</div>
+  </div>
+  <div class="home-panels">
+    <button class="home-panel jour" onclick="SFX.click();goJournalier()">
+      <div class="hp-icon">📋</div>
+      <div class="hp-label" style="color:var(--acc)">JOURNALIER</div>
+      <div class="hp-desc">Tes raccourcis du jour</div>
+      <div class="hp-tags">
+        <span class="hp-tag" style="color:var(--acc);border-color:#1d3557">GRAPPLING</span>
+        <span class="hp-tag" style="color:var(--acc3);border-color:#3a1a1a">WRESTLING</span>
+      </div>
+    </button>
+    <button class="home-panel data" onclick="SFX.click();goData()">
+      <div class="hp-icon">🗂</div>
+      <div class="hp-label" style="color:var(--acc2)">DATA</div>
+      <div class="hp-desc">Arbre des techniques JJB</div>
+      <div class="hp-tags">
+        <span class="hp-tag" style="color:var(--acc);border-color:#1d3557">GRAPPLING</span>
+        <span class="hp-tag" style="color:var(--acc3);border-color:#3a1a1a">WRESTLING</span>
+      </div>
+    </button>
+  </div>
+  <div class="homebar">
+    <button class="btn" onclick="SFX.click();openSettings()">⚙ SETTINGS</button>
+  </div>
 </div>
 
-<div id="note-editor">
-    <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
-        <button onclick="closeEditor()" class="back-btn">〈 Retour</button>
-        <h3 id="editor-title" style="margin:0; font-size:16px;">Note</h3>
-        <div style="width:40px;"></div>
+<!-- ══════════════ JOURNALIER ══════════════ -->
+
+<div id="screen-journalier" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">JOURNALIER</div>
+    <button class="btn sm" onclick="SFX.click();openSettings()">⚙</button>
+  </div>
+  <div class="jsplit">
+    <div class="jhalf">
+      <div class="jhdr jhdr-g">◈ GRAPPLING</div>
+      <div class="jlist" id="jour-g"></div>
     </div>
-    <div class="tabs">
-        <div class="tab" id="tab-on_test" style="background:var(--on-test)" onclick="switchTab('on_test')">ON TEST</div>
-        <div class="tab" id="tab-already" style="background:var(--already)" onclick="switchTab('already')">ALREADY</div>
-        <div class="tab" id="tab-future" style="background:var(--future)" onclick="switchTab('future')">FUTURE</div>
+    <div class="jhalf">
+      <div class="jhdr jhdr-w">◈ WRESTLING</div>
+      <div class="jlist" id="jour-w"></div>
     </div>
-    <div class="text-pane">
-        <div id="note-display"></div>
-        <textarea id="note-textarea" spellcheck="false" oninput="handleInput()" onscroll="syncScroll()"></textarea>
-    </div>
-    <div class="video-pane" id="video-list"></div>
+  </div>
+  <div class="homebar">
+    <button class="btn home-btn" onclick="SFX.back();goHome()">⌂ HOME</button>
+  </div>
 </div>
 
-<div id="item-modal" class="modal">
-    <div class="modal-content">
-        <h3 id="modal-title" style="color:var(--turquoise);">Nouveau</h3>
-        <input type="text" id="item-input" style="width:100%; padding:12px; background:#2c2c2e; border:1px solid #444; color:#fff; border-radius:10px; margin-bottom:15px;">
-        <div id="tech-opt" style="margin-bottom:20px;">
-            <label style="color:#fff;"><input type="checkbox" id="is-tech"> Fenêtre Finale</label>
-        </div>
-        <div style="display:flex; gap:10px;">
-            <button onclick="closeModal('item-modal')" style="flex:1; padding:12px; background:#444; border:none; border-radius:8px; color:#fff;">Annuler</button>
-            <button id="modal-confirm" style="flex:1; padding:12px; background:var(--turquoise); border:none; border-radius:8px; font-weight:bold;">Valider</button>
-        </div>
+<!-- ══════════════ DATA ══════════════ -->
+
+<div id="screen-data" class="screen">
+  <div class="topbar">
+    <button class="btn sm" id="dbk" onclick="SFX.back();dataBack()" style="visibility:hidden">◄</button>
+    <div class="topbar-title" id="dpath">DATA</div>
+    <button class="btn sm" onclick="SFX.click();openSettings()">⚙</button>
+  </div>
+  <div class="scroll" id="dscroll" onscroll="onDScroll(this)">
+    <div class="swrap" id="swrap">
+      <input class="sinput" id="sinput" placeholder="Rechercher une technique..." type="text">
+      <button class="btn sm" onclick="SFX.click();doSearch()">🔍</button>
     </div>
+    <div id="dcontent"></div>
+    <div id="dsearch" style="display:none"></div>
+  </div>
+  <div class="homebar">
+    <button class="btn home-btn" onclick="SFX.back();goHome()">⌂ HOME</button>
+  </div>
+</div>
+
+<!-- ══════════════ FINAL NODE ══════════════ -->
+
+<div id="screen-final" class="screen">
+  <div class="topbar">
+    <button class="btn sm" onclick="SFX.back();finalBack()">◄</button>
+    <div class="topbar-title" id="ftitle">TECHNIQUE</div>
+    <button class="btn sm" onclick="SFX.click();openSettings()">⚙</button>
+  </div>
+  <div class="mtabs">
+    <button class="mtab mtab-on"  id="tab-on"      onclick="SFX.tab();switchMode('on')">🟢 ON TEST</button>
+    <button class="mtab mtab-al"  id="tab-already" onclick="SFX.tab();switchMode('already')">🟠 ALREADY</button>
+    <button class="mtab mtab-fu"  id="tab-future"  onclick="SFX.tab();switchMode('future')">🔵 FUTURE</button>
+  </div>
+  <div class="fbody">
+    <div class="narea">
+      <textarea class="ntarea" id="ntarea" placeholder="Tes notes ici..."></textarea>
+    </div>
+    <div class="vsec">
+      <div class="vhdr">
+        <div class="vhdr-t">VIDÉOS</div>
+        <button class="btn sm green" onclick="SFX.click();openAddVid()">+ ADD</button>
+      </div>
+      <div class="vlist" id="vlist"></div>
+    </div>
+  </div>
+  <div class="homebar">
+    <button class="btn home-btn" onclick="SFX.back();goHome()">⌂ HOME</button>
+  </div>
+</div>
+
+<!-- ══════════════ SETTINGS ══════════════ -->
+
+<div id="screen-settings" class="screen">
+  <div class="topbar">
+    <button class="btn sm" onclick="SFX.back();closeSettings()">◄</button>
+    <div class="topbar-title">SETTINGS</div>
+  </div>
+  <div class="slist">
+    <div class="scard">
+      <div class="slbl">🔊 SON</div>
+      <div class="trow">
+        <div class="sdesc">Musique & effets 16-bit</div>
+        <div class="toggle on" id="stoggle" onclick="toggleSnd()"></div>
+      </div>
+    </div>
+    <div class="scard">
+      <div class="slbl">⬇ EXPORTER</div>
+      <div class="sdesc">Télécharge toutes tes données en JSON.</div>
+      <button class="btn" onclick="SFX.click();exportD()">EXPORTER JSON</button>
+    </div>
+    <div class="scard">
+      <div class="slbl">⬆ IMPORTER</div>
+      <div class="sdesc">Restaure tes données depuis un fichier JSON.</div>
+      <button class="btn" onclick="SFX.click();importClick()">IMPORTER JSON</button>
+      <input type="file" id="ifile" accept=".json" style="display:none" onchange="importD(event)">
+    </div>
+    <div class="scard">
+      <div class="slbl">🔄 RESET ARBRE</div>
+      <div class="sdesc">Réinitialise l'arbre JJB. Notes et vidéos conservées.</div>
+      <button class="btn red" onclick="SFX.click();resetTree()">RESET</button>
+    </div>
+  </div>
+  <div class="homebar">
+    <button class="btn home-btn" onclick="SFX.back();goHome()">⌂ HOME</button>
+  </div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- Confirm -->
+
+<div class="mov" id="mc">
+  <div class="mbox">
+    <div class="mhdr">
+      <span id="mc-t">?</span>
+      <button class="mhdr-close" onclick="closeM('mc')">✕</button>
+    </div>
+    <div class="mbody"><p id="mc-m" style="font-size:9px;line-height:2;color:var(--t1)"></p></div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeM('mc')">ANNULER</button>
+      <button class="btn red" id="mc-ok">CONFIRMER</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add node -->
+
+<div class="mov" id="man">
+  <div class="mbox">
+    <div class="mhdr">
+      <span>NOUVELLE FENÊTRE</span>
+      <button class="mhdr-close" onclick="closeM('man')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="mfield">
+        <div class="mlbl">NOM</div>
+        <input class="minput" id="ann" type="text" placeholder="Ex: Americana..." maxlength="60">
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeM('man')">ANNULER</button>
+      <button class="btn green" onclick="SFX.add();confirmAN()">CRÉER</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename -->
+
+<div class="mov" id="mrn">
+  <div class="mbox">
+    <div class="mhdr">
+      <span>MODIFIER</span>
+      <button class="mhdr-close" onclick="closeM('mrn')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="mfield">
+        <div class="mlbl">NOUVEAU NOM</div>
+        <input class="minput" id="rni" type="text" maxlength="60">
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeM('mrn')">ANNULER</button>
+      <button class="btn green" onclick="SFX.click();confirmRN()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add video -->
+
+<div class="mov" id="mav">
+  <div class="mbox">
+    <div class="mhdr">
+      <span>AJOUTER UNE VIDÉO</span>
+      <button class="mhdr-close" onclick="closeM('mav')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="mfield">
+        <div class="mlbl">TYPE</div>
+        <div class="vtbtns" style="margin-top:6px">
+          <button class="vtbtn sel" id="vt-v" onclick="selVT('video')">🎬 VIDÉO YOUTUBE</button>
+          <button class="vtbtn"     id="vt-s" onclick="selVT('short')">⚡ SHORT / LIEN</button>
+        </div>
+      </div>
+      <div class="mfield">
+        <div class="mlbl">URL</div>
+        <input class="minput" id="vurl" type="url" placeholder="https://youtube.com/watch?v=..." style="margin-top:6px">
+      </div>
+      <div class="mfield" id="tcsec">
+        <div class="mlbl">TIMECODE DE DÉPART</div>
+        <div class="tcwrap" style="margin-top:8px">
+          <div class="tcdrum">
+            <div class="tclbl">H</div>
+            <button class="tcbtn" onclick="aTC('h',1)">▲</button>
+            <div class="tcdis" id="tch">00</div>
+            <button class="tcbtn" onclick="aTC('h',-1)">▼</button>
+          </div>
+          <div class="tcsep">:</div>
+          <div class="tcdrum">
+            <div class="tclbl">M</div>
+            <button class="tcbtn" onclick="aTC('m',1)">▲</button>
+            <div class="tcdis" id="tcm">00</div>
+            <button class="tcbtn" onclick="aTC('m',-1)">▼</button>
+          </div>
+          <div class="tcsep">:</div>
+          <div class="tcdrum">
+            <div class="tclbl">S</div>
+            <button class="tcbtn" onclick="aTC('s',1)">▲</button>
+            <div class="tcdis" id="tcs">00</div>
+            <button class="tcbtn" onclick="aTC('s',-1)">▼</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeM('mav')">ANNULER</button>
+      <button class="btn green" onclick="SFX.click();confirmAV()">AJOUTER</button>
+    </div>
+  </div>
 </div>
 
 <script>
-    const tree = {
-        "Grappling": { type: "folder", order: ["Top", "Bottom", "Submissions"], children: {
-            "Top": { type: "folder", order: ["Pin", "Passing"], children: {
-                "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { "Mount":{}, "Side Control":{}, "Ride":{} }},
-                "Passing": { type: "folder", order: ["Half Guard Pass", "Outside Pass"], children: {
-                    "Half Guard Pass": { type: "folder", order: ["Chest-to-Chest", "Half Guard", "Knee Shield Half Guard"], children: {
-                        "Knee Shield Half Guard": { type: "folder", order: ["High Knee Shield", "Medium Knee Shield", "Low Knee Shield"], children: {
-                            "Medium Knee Shield": { type: "folder", order: ["Knee Elbow Open", "Knee Elbow Close"], children: { "Knee Elbow Open":{}, "Knee Elbow Close":{} }}
-                        }}
-                    }}
-                }}
-            }},
-            "Bottom": { type: "folder", order: ["Closed Guard", "Half Guard", "Open Seated", "Open Supine", "Pin Escape"], children: {
-                "Pin Escape": { type: "folder", order: ["Side Control Escape", "Mount Escape", "Back Escape", "Ride Escape", "Turtle Escape", "Dogfight"], children: {} }
-            }},
-            "Submissions": { type: "folder", order: ["Submissions (global)", "Submission Defense (global)"], children: {} }
-        }},
-        "Wrestling": { type: "folder", order: ["Underhook", "2-on-1", "Collar Tie", "Single Leg", "Double Leg", "50-50"], children: {
-            "Underhook": { type: "folder", order: ["Underhook Attack", "Underhook Defense"], children: {
-                "Underhook Attack": { type: "tech", status: "on_test", notes: {on_test:"",already:"",future:""}, videos:{on_test:[],already:[],future:[]} }
-            }}
-        }}
-    };
+/* ══════════════════════════════════════════
+   AUDIO — Web Audio API 16-bit SFX
+══════════════════════════════════════════ */
+const SFX = (() => {
+  let ctx = null, enabled = true;
+  const gc = () => {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  };
+  const beep = (freq, dur, type = 'square', vol = 0.1) => {
+    if (!enabled) return;
+    try {
+      const c = gc(), o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, c.currentTime);
+      g.gain.linearRampToValueAtTime(vol, c.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.01 + dur);
+      o.start(); o.stop(c.currentTime + 0.01 + dur + 0.02);
+    } catch(e) {}
+  };
+  const intro = () => {
+    if (!enabled) return;
+    const seq = [[261,.08],[330,.08],[392,.08],[523,.1],[659,.08],[784,.08],[1047,.18],[784,.06],[880,.2]];
+    let t = 0;
+    seq.forEach(([f,d]) => { setTimeout(() => beep(f, d, 'square', .1), t * 1000); t += d * .85; });
+    setTimeout(() => { beep(392,.45,'triangle',.05); beep(523,.45,'triangle',.05); }, 650);
+  };
+  return {
+    click: () => beep(660, .05, 'square', .1),
+    back:  () => { beep(440,.04,'square',.08); setTimeout(()=>beep(330,.07,'square',.08),50); },
+    tab:   () => beep(880, .05, 'square', .08),
+    nav:   () => beep(523, .05, 'square', .09),
+    add:   () => { beep(523,.05,'square',.09); setTimeout(()=>beep(659,.07,'square',.09),65); },
+    del:   () => { beep(220,.08,'sawtooth',.1); setTimeout(()=>beep(165,.1,'sawtooth',.08),80); },
+    intro,
+    set:   v  => { enabled = v; },
+    isOn:  () => enabled
+  };
+})();
 
-    function initNode(obj) {
-        Object.keys(obj).forEach(k => {
-            if(!obj[k].type) obj[k].type = "folder";
-            if(obj[k].type === "folder") {
-                if(!obj[k].order) obj[k].order = [];
-                if(!obj[k].children) obj[k].children = {};
-                initNode(obj[k].children);
-            } else if(obj[k].type === "tech") {
-                if(!obj[k].notes) obj[k].notes = {on_test:"",already:"",future:""};
-                if(!obj[k].videos) obj[k].videos = {on_test:[],already:[],future:[]};
-                if(!obj[k].status) obj[k].status = "on_test";
-            }
-        });
+/* ══════════════════════════════════════════
+   DEFAULT TREE
+══════════════════════════════════════════ */
+const DT = {id:'root',name:'DATA',isFinal:false,category:null,children:[
+  {id:'grappling',name:'Grappling',isFinal:false,category:'grappling',children:[
+    {id:'top',name:'Top',isFinal:false,category:'grappling',children:[
+      {id:'pin',name:'Pin',isFinal:false,category:'grappling',children:[
+        {id:'mount',name:'Mount',isFinal:false,category:'grappling',children:[]},
+        {id:'sc',name:'Side Control',isFinal:false,category:'grappling',children:[]},
+        {id:'ride',name:'Ride',isFinal:false,category:'grappling',children:[]},
+      ]},
+      {id:'passing',name:'Passing',isFinal:false,category:'grappling',children:[
+        {id:'hgp',name:'Half Guard Pass',isFinal:false,category:'grappling',children:[
+          {id:'c2c',name:'Chest-to-Chest',isFinal:false,category:'grappling',children:[]},
+          {id:'hg',name:'Half Guard',isFinal:false,category:'grappling',children:[]},
+          {id:'ks',name:'Knee Shield Half Guard',isFinal:false,category:'grappling',children:[
+            {id:'hks',name:'High Knee Shield',isFinal:false,category:'grappling',children:[]},
+            {id:'mks',name:'Medium Knee Shield',isFinal:false,category:'grappling',children:[
+              {id:'keo',name:'Knee Elbow Open',isFinal:false,category:'grappling',children:[]},
+              {id:'kec',name:'Knee Elbow Close',isFinal:false,category:'grappling',children:[]},
+            ]},
+            {id:'lks',name:'Low Knee Shield',isFinal:false,category:'grappling',children:[]},
+          ]},
+        ]},
+        {id:'op',name:'Outside Pass',isFinal:false,category:'grappling',children:[]},
+      ]},
+    ]},
+    {id:'bottom',name:'Bottom',isFinal:false,category:'grappling',children:[
+      {id:'cg',name:'Closed Guard',isFinal:false,category:'grappling',children:[]},
+      {id:'hgb',name:'Half Guard',isFinal:false,category:'grappling',children:[]},
+      {id:'ose',name:'Open Seated',isFinal:false,category:'grappling',children:[]},
+      {id:'osu',name:'Open Supine',isFinal:false,category:'grappling',children:[]},
+      {id:'pe',name:'Pin Escape',isFinal:false,category:'grappling',children:[
+        {id:'sce',name:'Side Control Escape',isFinal:false,category:'grappling',children:[]},
+        {id:'me',name:'Mount Escape',isFinal:false,category:'grappling',children:[]},
+        {id:'be',name:'Back Escape',isFinal:false,category:'grappling',children:[]},
+        {id:'re',name:'Ride Escape',isFinal:false,category:'grappling',children:[]},
+        {id:'te',name:'Turtle Escape',isFinal:false,category:'grappling',children:[]},
+        {id:'dog',name:'Dogfight / Scrambles',isFinal:false,category:'grappling',children:[]},
+      ]},
+    ]},
+    {id:'sub',name:'Submissions / Defense',isFinal:false,category:'grappling',children:[
+      {id:'subg',name:'Submissions (global)',isFinal:false,category:'grappling',children:[]},
+      {id:'subd',name:'Submission Defense (global)',isFinal:false,category:'grappling',children:[]},
+    ]},
+  ]},
+  {id:'wrestling',name:'Wrestling',isFinal:false,category:'wrestling',children:[
+    {id:'uh',name:'Underhook / Overhook',isFinal:false,category:'wrestling',children:[
+      {id:'uha',name:'Underhook Attack',isFinal:false,category:'wrestling',children:[]},
+      {id:'uhd',name:'Underhook Defense',isFinal:false,category:'wrestling',children:[
+        {id:'oh',name:'Overhook',isFinal:false,category:'wrestling',children:[]},
+      ]},
+    ]},
+    {id:'2o1',name:'2-on-1',isFinal:false,category:'wrestling',children:[
+      {id:'2oa',name:'Attack',isFinal:false,category:'wrestling',children:[]},
+      {id:'2od',name:'Defense',isFinal:false,category:'wrestling',children:[]},
+    ]},
+    {id:'ct',name:'Collar Tie',isFinal:false,category:'wrestling',children:[
+      {id:'cta',name:'Attack',isFinal:false,category:'wrestling',children:[]},
+      {id:'ctd',name:'Defense',isFinal:false,category:'wrestling',children:[]},
+    ]},
+    {id:'sl',name:'Single Leg',isFinal:false,category:'wrestling',children:[
+      {id:'sla',name:'Attack',isFinal:false,category:'wrestling',children:[]},
+      {id:'sld',name:'Defense',isFinal:false,category:'wrestling',children:[]},
+    ]},
+    {id:'dl',name:'Double Leg',isFinal:false,category:'wrestling',children:[
+      {id:'dla',name:'Attack',isFinal:false,category:'wrestling',children:[]},
+      {id:'dld',name:'Defense',isFinal:false,category:'wrestling',children:[]},
+    ]},
+    {id:'5050',name:'50-50',isFinal:false,category:'wrestling',children:[
+      {id:'50a',name:'Attack',isFinal:false,category:'wrestling',children:[]},
+      {id:'50d',name:'Defense',isFinal:false,category:'wrestling',children:[]},
+    ]},
+    {id:'og',name:'Other Grip',isFinal:false,category:'wrestling',children:[
+      {id:'oth',name:'Other',isFinal:false,category:'wrestling',children:[]},
+    ]},
+  ]},
+]};
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let S = { tree: null, notes: {}, snd: true };
+
+function loadS() {
+  try {
+    const d = localStorage.getItem('jjb_v4');
+    if (d) {
+      S = JSON.parse(d);
+      if (!S.tree)  S.tree  = cl(DT);
+      if (!S.notes) S.notes = {};
+      if (S.snd === undefined) S.snd = true;
+    } else {
+      S.tree = cl(DT);
     }
-    initNode(tree);
+  } catch(e) { S.tree = cl(DT); S.notes = {}; }
+  SFX.set(S.snd !== false);
+  updSndUI();
+}
+function saveS() { try { localStorage.setItem('jjb_v4', JSON.stringify(S)); } catch(e) {} }
+function cl(o)   { return JSON.parse(JSON.stringify(o)); }
 
-    let db = JSON.parse(localStorage.getItem('jjb_v28_2')) || { journalier: [], data: { order: ["Grappling", "Wrestling"], children: tree } };
-    let currentPath = [];
-    let activeTech = null;
+function nd(id) {
+  if (!S.notes[id]) S.notes[id] = { on:'', already:'', future:'', mode:'on', videos:{ on:[], already:[], future:[] }, inJournalier:false };
+  // migrate old flat videos array
+  if (Array.isArray(S.notes[id].videos)) {
+    const v = S.notes[id].videos;
+    S.notes[id].videos = { on: v, already: [], future: [] };
+  }
+  return S.notes[id];
+}
 
-    function save() { localStorage.setItem('jjb_v28_2', JSON.stringify(db)); render(); }
-    function goHome() { currentPath = []; render(); }
-    function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1]==='children') currentPath.pop(); render(); }
-    function closeModal(id) { document.getElementById(id).style.display='none'; }
+/* ══════════════════════════════════════════
+   TREE HELPERS
+══════════════════════════════════════════ */
+function fn(id, n) {
+  if (!n) n = S.tree;
+  if (n.id === id) return n;
+  for (const c of (n.children||[])) { const r = fn(id, c); if (r) return r; }
+  return null;
+}
+function fp(id, n, p) {
+  if (!n) n = S.tree;
+  if (n.id === id) return p;
+  for (const c of (n.children||[])) { const r = fp(id, c, n); if (r) return r; }
+  return null;
+}
+function gid() { return 'n' + Date.now() + '_' + Math.random().toString(36).slice(2,5); }
 
-    function render() {
-        const content = document.getElementById('app-content');
-        content.innerHTML = "";
-        const isHome = currentPath.length === 0;
-        const isJournalier = currentPath[0] === 'journalier';
-        
-        document.getElementById('btn-back').style.visibility = isHome ? "hidden" : "visible";
-        document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p=>p!=='children').join(" > ").toUpperCase();
+/* ══════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════ */
+let navStack = [], curFinalId = null, prevScr = 'home';
 
-        if(isHome) {
-            content.innerHTML = `
-                <div class="item-wrapper"><div class="item-main" onclick="currentPath=['journalier'];render()"><strong>Journalier</strong><span>〉</span></div></div>
-                <div class="item-wrapper"><div class="item-main" onclick="currentPath=['data'];render()"><strong>Data</strong><span>〉</span></div></div>`;
-            return;
-        }
+function scr(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+function goHome()       { scr('home'); navStack = []; }
+function goJournalier() { renderJour(); scr('journalier'); }
+function goData()       { navStack = ['root']; renderData(); scr('data'); }
+function dataBack() {
+  if (navStack.length <= 1) { goHome(); return; }
+  navStack.pop(); renderData();
+}
+function finalBack() { saveNote(); scr('data'); }
+function openSettings() {
+  prevScr = document.querySelector('.screen.active')?.id?.replace('screen-','') || 'home';
+  scr('settings');
+}
+function closeSettings() { scr(prevScr || 'home'); }
 
-        if(!isJournalier) content.innerHTML += `<button class="btn-add" onclick="openAdd()">+ AJOUTER</button>`;
+/* ══════════════════════════════════════════
+   RENDER DATA
+══════════════════════════════════════════ */
+let aSlide = null;
 
-        let cur = db; currentPath.forEach(p => cur = cur[p]);
-        const list = document.createElement('div');
-        list.id = "sortable-list";
-        content.appendChild(list);
+function renderData() {
+  const cid  = navStack[navStack.length - 1];
+  const node = fn(cid);
 
-        const items = isJournalier ? db.journalier : (cur.order || []);
-        items.forEach(obj => {
-            const name = isJournalier ? obj.name : obj;
-            const path = isJournalier ? obj.path : currentPath;
-            let target = db; path.forEach(p => target = target[p]);
-            const item = target.children[name];
-            if(item) {
-                const wrap = document.createElement('div');
-                const isFav = db.journalier.some(f => f.name === name);
-                wrap.className = `item-wrapper ${item.status ? 'status-'+item.status : ''}`;
-                wrap.innerHTML = `
-                    <div class="item-actions">
-                        <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${name}', ${JSON.stringify(path)})">${isFav?'🚫':'⭐'}</button>
-                        <button class="action-btn" style="background:var(--edit)" onclick="openRename('${name}', ${JSON.stringify(path)})">✏️</button>
-                        <button class="action-btn" style="background:var(--danger)" onclick="delItem('${name}', ${JSON.stringify(path)})">🗑️</button>
-                    </div>
-                    <div class="item-main" onclick="openNode('${name}', ${JSON.stringify(path)})">
-                        <strong class="item-name">${name}</strong><span>〉</span>
-                    </div>`;
-                setupSwipe(wrap);
-                list.appendChild(wrap);
-            }
-        });
+  document.getElementById('dpath').textContent = cid === 'root' ? 'DATA' : (node?.name?.toUpperCase() || 'DATA');
+  document.getElementById('dbk').style.visibility = navStack.length > 1 ? 'visible' : 'hidden';
 
-        new Sortable(list, { 
-            animation: 150, 
-            onEnd: () => {
-                const names = Array.from(list.querySelectorAll('.item-name')).map(el => el.innerText);
-                if(isJournalier) db.journalier = names.map(n => db.journalier.find(f => f.name === n));
-                else cur.order = names;
-                localStorage.setItem('jjb_v28_2', JSON.stringify(db));
-            }
-        });
+  // reset search
+  document.getElementById('dsearch').style.display = 'none';
+  document.getElementById('dcontent').style.display = '';
+  document.getElementById('sinput').value = '';
+  document.getElementById('swrap').classList.remove('vis');
+  document.getElementById('dscroll').scrollTop = 0;
+
+  const cont = document.getElementById('dcontent');
+  cont.innerHTML = '';
+  if (!node) return;
+
+  buildList(node.children, cont, cid === 'root');
+
+  // add buttons (not at root)
+  if (cid !== 'root') {
+    const ab = document.createElement('div'); ab.className = 'addb';
+    const b1 = document.createElement('button'); b1.className = 'btn';
+    b1.textContent = '+ SOUS-FENÊTRE';
+    b1.onclick = () => { SFX.click(); openAN(cid, false); };
+    const b2 = document.createElement('button'); b2.className = 'btn green';
+    b2.textContent = '★ FENÊTRE FINALE';
+    b2.onclick = () => { SFX.click(); openAN(cid, true); };
+    ab.appendChild(b1); ab.appendChild(b2);
+    cont.appendChild(ab);
+  }
+}
+
+function buildList(children, container, isRoot) {
+  if (!children || !children.length) return;
+  children.forEach(child => {
+    if (isRoot) {
+      const h = document.createElement('div');
+      h.className = 'cath ' + (child.category === 'wrestling' ? 'cath-w' : 'cath-g');
+      h.textContent = child.name.toUpperCase();
+      container.appendChild(h);
     }
+    container.appendChild(mkCard(child));
+  });
+}
 
-    function setupSwipe(el) {
-        let startX;
-        el.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive:true});
-        el.addEventListener('touchend', e => {
-            let diff = startX - e.changedTouches[0].clientX;
-            if(diff > 60) el.classList.add('swiped');
-            else if(diff < -60) el.classList.remove('swiped');
-        });
+function mkCard(child) {
+  const w = document.createElement('div');
+  w.className = 'ncw'; w.dataset.id = child.id;
+  const ndata = nd(child.id);
+
+  // slide actions
+  const sa = document.createElement('div'); sa.className = 'sla';
+  if (ndata.inJournalier) {
+    const b = mksb('slb-uj','🗂 RETIRER\nJOURNAL'); b.onclick = e => { e.stopPropagation(); SFX.click(); rmJour(child.id); closeSlide(); }; sa.appendChild(b);
+  } else {
+    const b = mksb('slb-j','📋 AJOUTER\nJOURNAL'); b.onclick = e => { e.stopPropagation(); SFX.click(); addJour(child.id); closeSlide(); }; sa.appendChild(b);
+  }
+  const br = mksb('slb-r','✏ MODIFIER'); br.onclick = e => { e.stopPropagation(); SFX.click(); openRN(child.id,child.name); closeSlide(); }; sa.appendChild(br);
+  const bd = mksb('slb-d','🗑 SUPPR');   bd.onclick = e => { e.stopPropagation(); SFX.del();   confirmDel(child.id); closeSlide(); };    sa.appendChild(bd);
+  w.appendChild(sa);
+
+  // card
+  const card = document.createElement('div'); card.className = 'nc';
+
+  const strip = document.createElement('div'); strip.className = 'strip';
+  if (child.isFinal) {
+    const m = ndata.mode || 'on';
+    strip.classList.add(m==='on' ? 's-on' : m==='already' ? 's-al' : 's-fu');
+  } else { strip.classList.add('s-no'); }
+  card.appendChild(strip);
+
+  const body = document.createElement('div'); body.className = 'nbody';
+  const t = document.createElement('div'); t.className = 'ntitle'; t.textContent = child.name; body.appendChild(t);
+  const meta = document.createElement('div'); meta.className = 'nmeta';
+  if (child.isFinal) {
+    const b = document.createElement('span'); b.className = 'badge badge-fin'; b.textContent = '★ FINALE'; meta.appendChild(b);
+  } else if (child.children?.length) {
+    const s = document.createElement('span'); s.className = 'badge badge-sub'; s.textContent = child.children.length + ' fenêtres'; meta.appendChild(s);
+  }
+  if (ndata.inJournalier) {
+    const b = document.createElement('span'); b.className = 'badge badge-jour'; b.textContent = '📋 JOURNALIER'; meta.appendChild(b);
+  }
+  body.appendChild(meta);
+  card.appendChild(body);
+
+  const arr = document.createElement('div'); arr.className = 'narrow'; arr.textContent = '›'; card.appendChild(arr);
+
+  // touch/click
+  let tx=0, ty=0, sw=false, lpt=null, dlp=false;
+  card.addEventListener('touchstart', e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;sw=false;dlp=false;lpt=setTimeout(()=>{dlp=true;card.style.outline='1px solid var(--acc)';setTimeout(()=>card.style.outline='',500);},600);},{passive:true});
+  card.addEventListener('touchmove',  e=>{if(Math.abs(e.touches[0].clientX-tx)>10||Math.abs(e.touches[0].clientY-ty)>10)clearTimeout(lpt);if(Math.abs(e.touches[0].clientX-tx)>30&&Math.abs(e.touches[0].clientY-ty)<40)sw=true;},{passive:true});
+  card.addEventListener('touchend',   ()=>{clearTimeout(lpt);if(dlp)return;if(sw){if(aSlide===sa)closeSlide();else{closeSlide();sa.classList.add('vis');aSlide=sa;}return;}navTo(child);});
+  card.addEventListener('click',      ()=>{if(!sw&&!dlp)navTo(child);});
+
+  // drag reorder
+  w.draggable = true;
+  w.addEventListener('dragstart', e=>{ dragSrc=w; w.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+  w.addEventListener('dragover',  e=>{ e.preventDefault(); document.querySelectorAll('.ncw').forEach(x=>x.classList.remove('drag-over')); if(w!==dragSrc)w.classList.add('drag-over'); });
+  w.addEventListener('drop',      e=>{ e.preventDefault(); if(w!==dragSrc)doReorder(dragSrc.dataset.id, w.dataset.id); });
+  w.addEventListener('dragend',   ()=>{ document.querySelectorAll('.ncw').forEach(x=>x.classList.remove('drag-over','dragging')); });
+
+  w.appendChild(card);
+  return w;
+}
+
+let dragSrc = null;
+function doReorder(si, ti) {
+  const cid = navStack[navStack.length-1];
+  const p = fn(cid); if (!p) return;
+  const c = p.children;
+  const a = c.findIndex(x=>x.id===si), b = c.findIndex(x=>x.id===ti);
+  if (a<0||b<0) return;
+  const [it] = c.splice(a,1); c.splice(b,0,it);
+  saveS(); renderData();
+}
+
+function mksb(cls, html) {
+  const b = document.createElement('button');
+  b.className = 'slb ' + cls;
+  b.innerHTML = html.replace(/\n/g,'<br>');
+  return b;
+}
+function navTo(node) { SFX.nav(); if(node.isFinal) openFinal(node.id); else { navStack.push(node.id); renderData(); } }
+function closeSlide() { if(aSlide){ aSlide.classList.remove('vis'); aSlide=null; } }
+document.addEventListener('touchstart', e=>{ if(!e.target.closest('.nc')&&!e.target.closest('.sla')) closeSlide(); },{passive:true});
+
+/* ── SCROLL → reveal search ── */
+function onDScroll(el) {
+  document.getElementById('swrap').classList.toggle('vis', el.scrollTop > 50);
+}
+
+/* ══════════════════════════════════════════
+   ADD / RENAME / DELETE NODES
+══════════════════════════════════════════ */
+let anPid=null, anFinal=false;
+function openAN(pid, isFinal) { anPid=pid; anFinal=isFinal; document.getElementById('ann').value=''; openM('man'); setTimeout(()=>document.getElementById('ann').focus(),120); }
+function confirmAN() {
+  const name = document.getElementById('ann').value.trim(); if(!name) return;
+  const p = fn(anPid); if(!p) return;
+  // inherit category
+  let cat = p.category;
+  if (!cat) { function gc(n,id){if(n.id===id)return n.category;for(const c of(n.children||[])){const r=gc(c,id);if(r)return r;}return null;} cat=gc(S.tree,anPid)||'grappling'; }
+  p.children.push({id:gid(), name, isFinal:anFinal, category:cat, children:[]});
+  saveS(); closeM('man'); renderData();
+}
+
+let rnId=null;
+function openRN(id,cur) { rnId=id; document.getElementById('rni').value=cur; openM('mrn'); setTimeout(()=>document.getElementById('rni').focus(),120); }
+function confirmRN() {
+  const name = document.getElementById('rni').value.trim(); if(!name||!rnId) return;
+  const node = fn(rnId); if(node){ node.name=name; saveS(); renderData(); renderJour(); }
+  closeM('mrn');
+}
+
+let delId=null;
+function confirmDel(id) { delId=id; const n=fn(id); showConfirm('SUPPRIMER ?',`Supprimer "${n?.name}" et tout son contenu ?`,doDel); }
+function doDel() {
+  const p=fp(delId); if(!p) return;
+  p.children=p.children.filter(c=>c.id!==delId);
+  delete S.notes[delId];
+  saveS(); renderData(); renderJour(); closeM('mc');
+}
+
+/* ══════════════════════════════════════════
+   FINAL NODE
+══════════════════════════════════════════ */
+function openFinal(id) {
+  curFinalId = id;
+  const node = fn(id); const ndata = nd(id);
+  document.getElementById('ftitle').textContent = node?.name?.toUpperCase() || '';
+  switchMode(ndata.mode || 'on', true);
+  renderVids();
+  scr('final');
+}
+
+function switchMode(mode, skipSave) {
+  if (!skipSave && curFinalId) saveNote();
+  if (curFinalId) { nd(curFinalId).mode = mode; saveS(); }
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
+  document.getElementById('tab-'+mode).classList.add('act');
+  if (curFinalId) {
+    const ndata = nd(curFinalId);
+    ndata.mode = mode;
+    document.getElementById('ntarea').value = ndata[mode] || '';
+    renderVids();
+  }
+}
+
+function saveNote() {
+  if (!curFinalId) return;
+  const ndata = nd(curFinalId);
+  ndata[ndata.mode||'on'] = document.getElementById('ntarea').value;
+  saveS();
+}
+document.getElementById('ntarea').addEventListener('input', saveNote);
+document.getElementById('ntarea').addEventListener('blur',  saveNote);
+
+/* ══════════════════════════════════════════
+   JOURNALIER
+══════════════════════════════════════════ */
+function addJour(id) { nd(id).inJournalier=true;  saveS(); renderData(); renderJour(); }
+function rmJour(id)  { nd(id).inJournalier=false; saveS(); renderData(); renderJour(); }
+
+function renderJour() {
+  const g=document.getElementById('jour-g'), w=document.getElementById('jour-w');
+  g.innerHTML=''; w.innerHTML='';
+  collectJour(S.tree, g, w);
+  if(!g.children.length) g.innerHTML='<div class="jempty">Aucun raccourci Grappling<br>Slide ← sur une fenêtre dans Data</div>';
+  if(!w.children.length) w.innerHTML='<div class="jempty">Aucun raccourci Wrestling<br>Slide ← sur une fenêtre dans Data</div>';
+}
+
+function collectJour(node, g, w) {
+  if (!node) return;
+  const ndata = S.notes[node.id];
+  if (ndata?.inJournalier) (node.category==='wrestling' ? w : g).appendChild(mkJCard(node));
+  for (const c of (node.children||[])) collectJour(c, g, w);
+}
+
+function mkJCard(node) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText='position:relative;overflow:hidden;border-radius:10px;';
+  const sa = document.createElement('div'); sa.className='sla';
+  const b  = mksb('slb-uj','🗂 RETIRER\nJOURNAL'); b.onclick=e=>{e.stopPropagation();SFX.click();rmJour(node.id);closeSlide();}; sa.appendChild(b);
+  wrap.appendChild(sa);
+
+  const card = document.createElement('div'); card.className='nc';
+  const strip = document.createElement('div'); strip.className='strip';
+  if (node.isFinal){ const m=nd(node.id).mode||'on'; strip.classList.add(m==='on'?'s-on':m==='already'?'s-al':'s-fu'); }
+  else strip.classList.add('s-no');
+  card.appendChild(strip);
+  const body = document.createElement('div'); body.className='nbody';
+  const t = document.createElement('div'); t.className='ntitle'; t.textContent=node.name; body.appendChild(t);
+  card.appendChild(body);
+
+  let tx=0,sw=false;
+  card.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;sw=false;},{passive:true});
+  card.addEventListener('touchmove', e=>{if(Math.abs(e.touches[0].clientX-tx)>30)sw=true;},{passive:true});
+  card.addEventListener('touchend',  ()=>{if(sw){if(aSlide===sa)closeSlide();else{closeSlide();sa.classList.add('vis');aSlide=sa;}return;}SFX.nav();if(node.isFinal)openFinal(node.id);else{buildNav(node.id);renderData();scr('data');}});
+  card.addEventListener('click',     ()=>{if(!sw){SFX.nav();if(node.isFinal)openFinal(node.id);else{buildNav(node.id);renderData();scr('data');}}});
+  wrap.appendChild(card);
+  return wrap;
+}
+
+function buildNav(id) {
+  const path=[];
+  function dfs(n){ path.push(n.id); if(n.id===id)return true; for(const c of(n.children||[])){if(dfs(c))return true;} path.pop(); return false; }
+  dfs(S.tree); navStack=path;
+}
+
+/* ══════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════ */
+function doSearch() {
+  const q = document.getElementById('sinput').value.trim().toLowerCase(); if(!q) return;
+  const res=[];
+  function srch(n,path){
+    const p=path.join(' › ');
+    if(n.id!=='root'&&n.name.toLowerCase().includes(q)) res.push({node:n,path:p});
+    if(n.isFinal){const ndata=nd(n.id);if((ndata.on+' '+ndata.already+' '+ndata.future).toLowerCase().includes(q)&&!res.find(r=>r.node.id===n.id))res.push({node:n,path:p+' [NOTES]'});}
+    for(const c of(n.children||[]))srch(c,[...path,n.name]);
+  }
+  srch(S.tree,[]);
+  const sr=document.getElementById('dsearch');
+  document.getElementById('dcontent').style.display='none';
+  sr.style.display='block';
+  sr.innerHTML=`<div style="font-size:8px;color:var(--t2);padding:0 0 14px;letter-spacing:2px;">${res.length} RÉSULTAT(S) POUR "${q.toUpperCase()}"</div>`;
+  if(!res.length){sr.innerHTML+='<div style="font-size:9px;color:var(--t3)">Aucun résultat.</div>';}
+  else res.forEach(r=>{
+    const w=document.createElement('div');w.className='ncw';
+    const c=document.createElement('div');c.className='nc';c.style.cursor='pointer';
+    const s=document.createElement('div');s.className='strip s-no';c.appendChild(s);
+    const bd=document.createElement('div');bd.className='nbody';
+    const t=document.createElement('div');t.className='ntitle';t.textContent=r.node.name;bd.appendChild(t);
+    const p=document.createElement('div');p.className='spath';p.textContent=r.path;bd.appendChild(p);
+    c.appendChild(bd);
+    c.onclick=()=>{if(r.node.isFinal)openFinal(r.node.id);else{buildNav(r.node.id);sr.style.display='none';document.getElementById('dcontent').style.display='';renderData();}};
+    w.appendChild(c);sr.appendChild(w);
+  });
+  const bk=document.createElement('button');bk.className='btn';bk.style.marginTop='14px';bk.textContent='◄ RETOUR';
+  bk.onclick=()=>{sr.style.display='none';document.getElementById('dcontent').style.display='';};
+  sr.appendChild(bk);
+}
+document.getElementById('sinput').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+
+/* ══════════════════════════════════════════
+   VIDEOS — stored per mode
+   YouTube embed via nocookie + origin param
+══════════════════════════════════════════ */
+let cvt='video', tch_=0, tcm_=0, tcs_=0;
+
+function selVT(t) {
+  cvt=t;
+  document.getElementById('vt-v').classList.toggle('sel',t==='video');
+  document.getElementById('vt-s').classList.toggle('sel',t==='short');
+  document.getElementById('tcsec').style.display=t==='video'?'flex':'none';
+}
+function aTC(u,d){
+  if(u==='h'){tch_=Math.max(0,Math.min(23,tch_+d));document.getElementById('tch').textContent=String(tch_).padStart(2,'0');}
+  if(u==='m'){tcm_=Math.max(0,Math.min(59,tcm_+d));document.getElementById('tcm').textContent=String(tcm_).padStart(2,'0');}
+  if(u==='s'){tcs_=Math.max(0,Math.min(59,tcs_+d));document.getElementById('tcs').textContent=String(tcs_).padStart(2,'0');}
+}
+function openAddVid() {
+  cvt='video'; tch_=0; tcm_=0; tcs_=0;
+  ['tch','tcm','tcs'].forEach(id=>document.getElementById(id).textContent='00');
+  document.getElementById('vurl').value='';
+  selVT('video');
+  openM('mav');
+}
+function getYTId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtu.be'))  return u.pathname.slice(1).split('?')[0];
+    if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+  } catch(e) {}
+  // fallback regex
+  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function confirmAV() {
+  const url = document.getElementById('vurl').value.trim(); if(!url||!curFinalId) return;
+  const ndata = nd(curFinalId); const mode = ndata.mode||'on';
+  const sec = tch_*3600 + tcm_*60 + tcs_;
+  if (cvt === 'video') {
+    const ytId = getYTId(url);
+    if (!ytId) { alert('Lien YouTube invalide.\nFormats acceptés:\nyoutube.com/watch?v=ID\nyoutu.be/ID'); return; }
+    ndata.videos[mode].push({ type:'youtube', ytId, sec, url });
+  } else {
+    ndata.videos[mode].push({ type:'short', url });
+  }
+  saveS(); renderVids(); closeM('mav');
+}
+
+function renderVids() {
+  if (!curFinalId) return;
+  const ndata = nd(curFinalId); const mode = ndata.mode||'on';
+  const list  = document.getElementById('vlist');
+  list.innerHTML = '';
+  const vids = ndata.videos[mode] || [];
+  if (!vids.length) {
+    list.innerHTML='<div style="font-size:8px;color:var(--t3);text-align:center;padding:20px">Aucune vidéo — appuie sur + ADD</div>';
+    return;
+  }
+  vids.forEach((v,i) => {
+    const item = document.createElement('div'); item.className='vitem';
+    const hdr  = document.createElement('div'); hdr.className='vihdr';
+    const lbl  = document.createElement('div'); lbl.className='vlbl';
+    lbl.textContent = v.type==='youtube' ? '▶ YOUTUBE' : '⚡ SHORT / LIEN';
+    const del  = document.createElement('button'); del.className='btn red sm'; del.textContent='🗑';
+    del.onclick = () => { SFX.del(); confirmDelVid(i); };
+    hdr.appendChild(lbl); hdr.appendChild(del); item.appendChild(hdr);
+
+    if (v.type === 'youtube') {
+      // Use youtube-nocookie.com to avoid cookie/CORS issues
+      // enablejsapi=0 keeps it simple; origin must match page origin
+      const startSec = v.sec || 0;
+      const embedUrl = `https://www.youtube-nocookie.com/embed/${v.ytId}?start=${startSec}&rel=0&modestbranding=1`;
+      const wrap = document.createElement('div'); wrap.className='viframe';
+      const iframe = document.createElement('iframe');
+      iframe.src = embedUrl;
+      iframe.setAttribute('allowfullscreen','');
+      iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+      iframe.setAttribute('loading','lazy');
+      wrap.appendChild(iframe);
+      item.appendChild(wrap);
+    } else {
+      const lw = document.createElement('div'); lw.className='shlink';
+      lw.innerHTML=`<span>⚡</span><a href="${v.url}" target="_blank" rel="noopener noreferrer">${v.url}</a>`;
+      item.appendChild(lw);
     }
+    list.appendChild(item);
+  });
+}
 
-    function openNode(name, path) {
-        let t = db; path.forEach(p => t = t[p]);
-        const node = t.children[name];
-        if(node.type === 'folder') { currentPath = [...path, 'children', name]; render(); }
-        else { openEditor(name, path); }
-    }
+let dvIdx=null;
+function confirmDelVid(i) { dvIdx=i; showConfirm('SUPPRIMER LA VIDÉO ?','Confirmer la suppression ?',doDelVid); }
+function doDelVid() {
+  if(!curFinalId) return;
+  const ndata=nd(curFinalId); ndata.videos[ndata.mode||'on'].splice(dvIdx,1);
+  saveS(); renderVids(); closeM('mc');
+}
 
-    function toggleFav(n, path) {
-        const idx = db.journalier.findIndex(f => f.name === n);
-        if(idx > -1) db.journalier.splice(idx, 1);
-        else db.journalier.push({name: n, path: [...path]});
-        save();
-    }
+// touch scroll on timecode drums
+['tch','tcm','tcs'].forEach(id=>{
+  const el=document.getElementById(id); let sy=0;
+  el.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});
+  el.addEventListener('touchmove', e=>{const dy=sy-e.touches[0].clientY;if(Math.abs(dy)>15){aTC(id==='tch'?'h':id==='tcm'?'m':'s',dy>0?1:-1);sy=e.touches[0].clientY;}},{passive:true});
+});
 
-    function openAdd() {
-        document.getElementById('modal-title').innerText = "Ajouter";
-        document.getElementById('tech-opt').style.display = "block";
-        document.getElementById('item-input').value = "";
-        document.getElementById('item-modal').style.display = "flex";
-        document.getElementById('modal-confirm').onclick = () => {
-            const n = document.getElementById('item-input').value.trim();
-            if(!n) return;
-            let cur = db; currentPath.forEach(p => cur = cur[p]);
-            cur.children[n] = document.getElementById('is-tech').checked ? 
-                { type:"tech", status:"on_test", notes:{on_test:"",already:"",future:""}, videos:{on_test:[],already:[],future:[]} } : 
-                { type:"folder", order:[], children:{} };
-            cur.order.push(n);
-            save(); closeModal('item-modal');
-        };
-    }
+/* ══════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════ */
+function openM(id)  { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
 
-    function openRename(old, path) {
-        document.getElementById('modal-title').innerText = "Renommer";
-        document.getElementById('tech-opt').style.display = "none";
-        document.getElementById('item-input').value = old;
-        document.getElementById('item-modal').style.display = "flex";
-        document.getElementById('modal-confirm').onclick = () => {
-            const n = document.getElementById('item-input').value.trim();
-            if(!n || n === old) return;
-            let target = db; path.forEach(p => target = target[p]);
-            target.children[n] = target.children[old];
-            delete target.children[old];
-            target.order = target.order.map(x => x === old ? n : x);
-            db.journalier.forEach(f => { if(f.name === old) f.name = n; });
-            save(); closeModal('item-modal');
-        };
-    }
+let ccb=null;
+function showConfirm(title,msg,cb){
+  document.getElementById('mc-t').textContent=title;
+  document.getElementById('mc-m').textContent=msg;
+  ccb=cb;
+  document.getElementById('mc-ok').onclick=()=>{ if(ccb) ccb(); };
+  openM('mc');
+}
+document.querySelectorAll('.mov').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+document.getElementById('ann').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmAN(); });
+document.getElementById('rni').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmRN(); });
 
-    function delItem(n, path) {
-        if(confirm(`Supprimer ${n} ?`)) {
-            let target = db; path.forEach(p => target = target[p]);
-            delete target.children[n];
-            target.order = target.order.filter(x => x !== n);
-            db.journalier = db.journalier.filter(f => f.name !== n);
-            save();
-        }
-    }
+/* ══════════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════════ */
+function toggleSnd() { S.snd=!S.snd; SFX.set(S.snd); updSndUI(); saveS(); }
+function updSndUI()  { const t=document.getElementById('stoggle'); if(t) t.classList.toggle('on',S.snd!==false); }
+function exportD() {
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='jjb_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function importClick() { document.getElementById('ifile').click(); }
+function importD(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{const d=JSON.parse(ev.target.result);if(!d.tree)throw 0;
+      showConfirm('IMPORTER ?','Remplacer toutes les données actuelles ?',()=>{ S=d; saveS(); closeM('mc'); location.reload(); });
+    }catch(e2){alert('Fichier JSON invalide.');}
+  };
+  r.readAsText(f); e.target.value='';
+}
+function resetTree() {
+  showConfirm('RESET ARBRE ?','Réinitialiser l\'arbre JJB ? Notes et vidéos conservées.',()=>{ S.tree=cl(DT); saveS(); closeM('mc'); renderData(); });
+}
 
-    function openEditor(name, path) {
-        let t = db; path.forEach(p => t = t[p]);
-        activeTech = t.children[name];
-        document.getElementById('editor-title').innerText = name;
-        document.getElementById('note-editor').style.display = 'flex';
-        switchTab(activeTech.status || 'on_test');
-    }
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+loadS();
+renderJour();
 
-    function switchTab(s) {
-        activeTech.status = s;
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-'+s).classList.add('active');
-        document.getElementById('note-textarea').value = activeTech.notes[s] || "";
-        document.getElementById('note-display').innerText = activeTech.notes[s] || "";
-        renderVids();
-    }
-
-    function renderVids() {
-        const container = document.getElementById('video-list');
-        container.innerHTML = `<button style="width:100%; padding:15px; background:#111; color:#888; border:1px dashed #444; border-radius:10px; margin-bottom:10px;">➕ AJOUTER VIDÉO</button>`;
-        (activeTech.videos[activeTech.status] || []).forEach((v, i) => {
-            container.innerHTML += `<div style="background:#1c1c1e; border-radius:10px; margin-bottom:10px; overflow:hidden;">
-                <iframe src="${v.url}" style="width:100%; height:180px; border:none;"></iframe>
-                <div style="padding:10px; display:flex; justify-content:space-between;">
-                    <span style="font-size:10px;">${v.type}</span>
-                    <button onclick="delVid(${i})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px;">MOINS (-)</button>
-                </div>
-            </div>`;
-        });
-    }
-
-    function handleInput() {
-        activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
-        document.getElementById('note-display').innerText = activeTech.notes[activeTech.status];
-        localStorage.setItem('jjb_v28_2', JSON.stringify(db));
-    }
-    function syncScroll() { document.getElementById('note-display').scrollTop = document.getElementById('note-textarea').scrollTop; }
-    function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
-
-    render();
+let introPlayed = false;
+const playIntro = () => { if (!introPlayed) { introPlayed=true; SFX.intro(); } };
+document.addEventListener('touchstart', playIntro, {once:true, passive:true});
+document.addEventListener('click',      playIntro, {once:true});
 </script>
+
 </body>
 </html>
