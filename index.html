@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V11</title>
+    <title>JJB Vault V12</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -14,27 +14,25 @@
         * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        /* Header & Navigation */
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
         .version-tag { position: absolute; top: 5px; right: 10px; font-size: 9px; color: var(--turquoise); opacity: 0.5; }
-        .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; height: 30px; }
-        .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; padding: 0; }
+        .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; height: 30px; }
+        .back-btn { color: var(--turquoise); font-weight: bold; font-size: 16px; background: none; border: none; padding: 0; cursor: pointer; }
         
-        /* Search Bar */
-        .search-container { margin-bottom: 15px; }
-        .search-input { width: 100%; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px 15px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; outline: none; }
+        .search-bar-wrap { display: flex; gap: 8px; margin-bottom: 15px; }
+        .search-input { flex: 1; background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; }
+        .search-go { background: var(--turquoise); border: none; border-radius: 10px; padding: 0 15px; font-weight: bold; color: #000; }
 
         .container { padding: 15px; }
         .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
         
-        /* Items */
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: none; }
-        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; border-left: 0px solid transparent; }
-        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; transform: translateX(100%); transition: transform 0.3s; z-index: 1; }
-        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
+        .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; transition: transform 0.3s ease; }
+        .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; z-index: 1; }
+        .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        
         .swiped .item-main { transform: translateX(-195px); }
 
-        /* Bars & Tabs */
         .status-on_test { border-left: 5px solid var(--on-test) !important; }
         .status-already { border-left: 5px solid var(--already) !important; }
         .status-future { border-left: 5px solid var(--future) !important; }
@@ -54,7 +52,7 @@
 
 <div id="main-view">
     <div class="header">
-        <span class="version-tag">V11</span>
+        <span class="version-tag">V12</span>
         <div class="nav-top">
             <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
             <span id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing: 1px;">ACCUEIL</span>
@@ -86,9 +84,11 @@
 <div id="modal" class="modal">
     <div class="modal-content">
         <h3 id="modal-title" style="color:var(--turquoise);">Action</h3>
-        <input type="text" id="input-name" style="width:100%; padding:12px; background:#2c2c2e; border:1px solid #444; color:#fff; border-radius:8px; -webkit-user-select: text;">
+        <input type="text" id="input-name" style="width:100%; padding:12px; background:#2c2c2e; border:1px solid #444; color:#fff; border-radius:8px; -webkit-user-select: text;" placeholder="Nom de l'élément">
         <div id="tech-toggle-area" style="margin:20px 0;">
-            <label style="color:#aaa;"><input type="checkbox" id="is-final"> Technique Finale</label>
+            <label style="color:#aaa; display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="is-final" style="width: 20px; height: 20px;"> Technique Finale (Notes)
+            </label>
         </div>
         <div style="display:flex; gap:12px;">
             <button onclick="closeModal()" style="flex:1; padding:12px; background:#333; color:#fff; border-radius:8px; border:none;">Annuler</button>
@@ -98,7 +98,7 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v11')) || {
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v12')) || {
         journalier: [],
         data: { order: ["Grappling", "Wrestling"], children: { 
             "Grappling": { type: "folder", children: {}, order: [] }, 
@@ -111,7 +111,7 @@
     let activeTech = null;
     let searchQuery = "";
 
-    function saveDB() { localStorage.setItem('jjb_vault_v11', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v12', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
@@ -121,7 +121,6 @@
         content.innerHTML = "";
         const isHome = currentPath.length === 0;
         const isJournalier = currentPath[0] === 'journalier';
-        const isDataRoot = currentPath.length === 1 && currentPath[0] === 'data';
 
         document.getElementById('btn-back').style.visibility = isHome ? "hidden" : "visible";
         document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p => p !== "children").join(" > ").toUpperCase();
@@ -134,11 +133,12 @@
             return;
         }
 
-        // Search Bar (Seulement dans Data)
         if (!isJournalier) {
             const searchDiv = document.createElement('div');
-            searchDiv.className = "search-container";
-            searchDiv.innerHTML = `<input type="text" class="search-input" placeholder="Rechercher une technique..." value="${searchQuery}" oninput="search(this.value)">`;
+            searchDiv.className = "search-bar-wrap";
+            searchDiv.innerHTML = `
+                <input type="text" id="search-input" class="search-input" placeholder="Rechercher..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()">
+                <button class="search-go" onclick="execSearch()">OK</button>`;
             content.appendChild(searchDiv);
         }
 
@@ -183,8 +183,8 @@
         }});
     }
 
-    function search(val) {
-        searchQuery = val.toLowerCase();
+    function execSearch() {
+        searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
         render();
     }
 
@@ -199,7 +199,7 @@
             }
         }
         scan(db.data, ['data']);
-
+        if(results.length === 0) container.innerHTML += "<p style='text-align:center; color:#666;'>Aucun résultat</p>";
         results.forEach(res => {
             const wrap = createItemUI(res.name, res.name, () => {
                 searchQuery = "";
@@ -217,9 +217,9 @@
         wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
         wrap.innerHTML = `
             <div class="item-actions">
-                <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="event.stopPropagation(); toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>
-                <button class="action-btn" style="background:var(--edit)" onclick="event.stopPropagation(); openEditModal('${id}')">✏️</button>
-                <button class="action-btn" style="background:var(--danger)" onclick="event.stopPropagation(); deleteItem('${id}', ${isJournalier})">🗑️</button>
+                <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>
+                <button class="action-btn" style="background:var(--edit)" onclick="openEditModal('${id}')">✏️</button>
+                <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${id}', ${isJournalier})">🗑️</button>
             </div>
             <div class="item-main"><strong>${label}</strong><span>〉</span></div>`;
         wrap.querySelector('.item-main').onclick = onclick;
@@ -256,13 +256,25 @@
 
     function autoSaveNote() {
         activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
-        localStorage.setItem('jjb_vault_v11', JSON.stringify(db));
+        localStorage.setItem('jjb_vault_v12', JSON.stringify(db));
     }
 
     function closeEditor() { document.getElementById('note-editor').style.display = 'none'; render(); }
 
-    function openAddModal() { editingItem = null; document.getElementById('modal').style.display = 'flex'; }
-    function openEditModal(id) { editingItem = { id, path: [...currentPath] }; document.getElementById('input-name').value = id; document.getElementById('modal').style.display = 'flex'; }
+    function openAddModal() { 
+        editingItem = null; 
+        document.getElementById('modal-title').innerText = "Ajouter";
+        document.getElementById('input-name').value = ""; // Vide le titre
+        document.getElementById('is-final').checked = false;
+        document.getElementById('modal').style.display = 'flex'; 
+    }
+    
+    function openEditModal(id) { 
+        editingItem = { id, path: [...currentPath] }; 
+        document.getElementById('modal-title').innerText = "Renommer";
+        document.getElementById('input-name').value = id; 
+        document.getElementById('modal').style.display = 'flex'; 
+    }
 
     function saveItem() {
         const name = document.getElementById('input-name').value.trim();
