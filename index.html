@@ -27,7 +27,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;
 
 /* ── SCREENS ── */
 .screen{position:fixed;inset:0;display:none;flex-direction:column;
-background:var(–bg0);padding-top:var(–th);padding-bottom:var(–hh);overflow:hidden;z-index:1;}
+background:var(–bg0);padding-top:var(–th);padding-bottom:calc(var(–hh) + env(safe-area-inset-bottom,0px));overflow:hidden;z-index:1;}
 .screen.active{display:flex;animation:sIn .18s ease;}
 @keyframes sIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 #screen-home{padding:0;}
@@ -41,9 +41,12 @@ border-bottom:1px solid var(–b1);z-index:500;}
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 /* ── HOMEBAR ── */
-#gh{position:fixed;bottom:0;left:0;right:0;height:var(–hh);display:none;
+#gh{position:fixed;bottom:0;left:0;right:0;min-height:var(–hh);display:none;
 align-items:center;justify-content:center;background:var(–bg1);
-border-top:1px solid var(–b1);padding-bottom:env(safe-area-inset-bottom,0);z-index:500;}
+border-top:1px solid var(–b1);
+padding-top:10px;
+padding-bottom:max(10px,env(safe-area-inset-bottom,10px));
+z-index:500;}
 #gh.on{display:flex;}
 
 /* ── BUTTONS ── */
@@ -730,20 +733,32 @@ function renderJour(){
   });
 }
 function mkJCard(node){
-  const w=document.createElement('div');w.className='ncw';w.dataset.id=node.id;w.style.flexShrink='0';
+  const C={bg2:'#222120',bg3:'#2c2b29',b1:'#302e2c',t1:'#e8e0d0',t2:'#a09880',t3:'#504840',acc:'#c8a96e',accOn:'#6dbb8a',accAl:'#c47a5a',accFu:'#7aaec8',b2:'#252320'};
+  const w=document.createElement('div');w.className='ncw';w.dataset.id=node.id;
+  w.style.cssText='position:relative;margin-bottom:8px;border-radius:14px;overflow:hidden;flex-shrink:0;';
   const sa=document.createElement('div');sa.className='sla';
   const buj=mkSlb('sl-uj','🗂','Retirer\nJournal');buj.onclick=e=>{e.stopPropagation();SFX.click();rmJour(node.id);closeSlide();};sa.appendChild(buj);
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(node.id,node.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(node.id);closeSlide();};sa.appendChild(bd);
   w.appendChild(sa);
   const card=document.createElement('div');card.className='nc';
-  const strip=document.createElement('div');strip.className='strip';
-  if(node.isFinal){const m=nd(node.id).mode||'on';strip.classList.add(m==='on'?'s-on':m==='already'?'s-al':'s-fu');}else strip.classList.add('s-no');
+  card.style.cssText=`display:flex;align-items:stretch;background:${C.bg2};border:1px solid ${C.b1};border-radius:14px;min-height:72px;position:relative;`;
+  /* color strip */
+  const strip=document.createElement('div');
+  let stripColor=C.b2;
+  if(node.isFinal){const m=nd(node.id).mode||'on';stripColor=m==='on'?C.accOn:m==='already'?C.accAl:C.accFu;}
+  strip.style.cssText=`width:4px;align-self:stretch;flex-shrink:0;border-radius:14px 0 0 14px;background:${stripColor};`;
   card.appendChild(strip);
-  const body=document.createElement('div');body.className='nbody';
-  const ttEl=document.createElement('div');ttEl.className='ntitle';ttEl.textContent=node.name;body.appendChild(ttEl);
+  /* body */
+  const body=document.createElement('div');
+  body.style.cssText='flex:1;padding:14px 16px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px;';
+  const ttEl=document.createElement('div');
+  ttEl.style.cssText=`font-size:15px;font-weight:600;color:${C.t1};line-height:1.4;`;
+  ttEl.textContent=node.name;body.appendChild(ttEl);
   card.appendChild(body);
-  card.appendChild(Object.assign(document.createElement('div'),{className:'narrow',textContent:'›'}));
+  const arrow=document.createElement('div');
+  arrow.style.cssText=`display:flex;align-items:center;padding:0 16px;font-size:20px;color:${C.t3};flex-shrink:0;`;
+  arrow.textContent='›';card.appendChild(arrow);
   w.appendChild(card);
   attachTouch(card,w,sa,node,true);
   return w;
