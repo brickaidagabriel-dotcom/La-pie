@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JJB Vault V24.0.0</title>
+    <title>JJB Vault V25.0.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -14,6 +14,7 @@
         * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
+        /* DESIGN V15 RESTAURÉ */
         .header { padding: 20px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top:0; z-index: 100; }
         .version-tag { position: absolute; top: 5px; left: 10px; font-size: 8px; color: #555; font-weight: bold; }
         .nav-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; height: 30px; }
@@ -24,56 +25,56 @@
         .search-go { background: var(--turquoise); border: none; border-radius: 10px; padding: 0 15px; font-weight: bold; color: #000; }
 
         .container { padding: 15px; }
-        .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
+        .btn-add { background: var(--turquoise); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 20px; font-size: 16px; box-shadow: 0 4px 15px rgba(0,242,255,0.2); }
         
-        .item-wrapper { position: relative; margin-bottom: 10px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
-        /* Correction clic : item-main est maintenant le conteneur de clic principal */
+        .item-wrapper { position: relative; margin-bottom: 12px; background: #333; border-radius: 12px; overflow: hidden; touch-action: pan-y; }
         .item-main { background: var(--card); padding: 22px 20px; position: relative; z-index: 10; display: flex; flex-direction: column; transition: transform 0.3s ease; cursor: pointer; }
-        .item-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .item-snippet { font-size: 12px; color: #888; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+        .item-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; pointer-events: none; }
+        .item-snippet { font-size: 11px; color: #888; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
         .item-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; z-index: 1; }
         .action-btn { width: 65px; border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         .swiped .item-main { transform: translateX(-195px); }
 
-        .status-on_test { border-left: 5px solid var(--on-test) !important; }
-        .status-already { border-left: 5px solid var(--already) !important; }
-        .status-future { border-left: 5px solid var(--future) !important; }
+        .status-on_test { border-left: 6px solid var(--on-test) !important; }
+        .status-already { border-left: 6px solid var(--already) !important; }
+        .status-future { border-left: 6px solid var(--future) !important; }
 
-        /* EDITOR & SPLIT SCREEN */
+        /* SPLIT SCREEN EDITOR */
         #note-editor { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction:column; }
         .editor-split-container { display: flex; flex-direction: column; height: 100%; }
-        .tabs { display: flex; gap: 8px; padding: 15px; background: #111; }
+        .tabs { display: flex; gap: 8px; padding: 12px; background: #111; }
         .tab { flex: 1; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; text-align: center; opacity: 0.4; color: #000; }
         .tab.active { opacity: 1; border: 2px solid white; }
         
-        .text-pane { flex: 1; position: relative; border-bottom: 2px solid #333; overflow: hidden; }
-        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; overflow-y: auto; }
-        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: white; padding: 20px; font-size: 17px; line-height: 1.5; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
+        .text-pane { flex: 1; position: relative; border-bottom: 2px solid #333; overflow: hidden; background: #000; }
+        #note-display { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; color: white; font-size: 17px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 1; overflow-y: auto; }
+        #note-textarea { width: 100%; height: 100%; background: transparent; border: none; color: transparent; caret-color: var(--turquoise); padding: 20px; font-size: 17px; line-height: 1.6; resize: none; outline: none; -webkit-user-select: text; user-select: text; z-index: 2; position: relative; }
         
-        .video-pane { flex: 1; background: #000; overflow-y: auto; padding: 10px; }
+        .video-pane { flex: 1; background: #0a0a0a; overflow-y: auto; padding: 10px; }
         .video-wrapper-inner { position: relative; margin-bottom: 15px; background: var(--danger); border-radius: 12px; overflow: hidden; }
         .video-card { background: #1c1c1e; position: relative; z-index: 10; transition: transform 0.3s ease; }
-        .video-card iframe { width: 100%; height: 200px; border: none; }
-        .video-meta { padding: 10px; font-size: 12px; color: var(--turquoise); display: flex; justify-content: space-between; }
+        .video-card iframe { width: 100%; height: 210px; border: none; }
+        .video-meta { padding: 12px; font-size: 13px; color: var(--turquoise); display: flex; justify-content: space-between; align-items: center; }
         .swiped-video { transform: translateX(-80px); }
         .del-vid-btn { position: absolute; right: 0; top: 0; width: 80px; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
 
-        .time-picker { display: flex; justify-content: center; align-items: center; gap: 8px; background: #2c2c2e; padding: 10px; border-radius: 10px; margin: 10px 0; }
-        .time-picker select { background: #1c1c1e; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 5px; }
+        /* TIME PICKER UI */
+        .time-picker { display: flex; justify-content: center; align-items: center; gap: 8px; background: #2c2c2e; padding: 15px; border-radius: 12px; margin: 15px 0; }
+        .time-picker select { background: #1c1c1e; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; outline: none; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; justify-content:center; align-items:center; }
-        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:85%; border: 1px solid var(--turquoise); }
+        .modal-content { background:var(--card); padding:25px; border-radius:20px; width:88%; border: 1px solid var(--turquoise); }
     </style>
 </head>
 <body>
 
 <div id="main-view">
     <div class="header">
-        <div class="version-tag">V24.0.0</div>
+        <div class="version-tag">V25.0.0 FULL POWER</div>
         <div class="nav-top">
             <button id="btn-back" class="back-btn" onclick="goBack()" style="visibility: hidden;">〈 Retour</button>
-            <span id="path-display" style="font-size:10px; color:var(--turquoise);">ACCUEIL</span>
+            <span id="path-display" style="font-size:10px; color:var(--turquoise); letter-spacing:1px;">ACCUEIL</span>
         </div>
         <h2 id="view-title" style="margin:0; font-weight: 800;">JJB Vault</h2>
     </div>
@@ -85,9 +86,9 @@
 
 <div id="note-editor">
     <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="version-tag">V24.0.0</div>
+        <div class="version-tag">EDITOR V25</div>
         <button onclick="closeEditor()" class="back-btn">〈 Retour</button>
-        <h3 id="editor-title" style="margin:0; font-size:16px;">Note</h3>
+        <h3 id="editor-title" style="margin:0; font-size:16px; color:var(--turquoise);">Note</h3>
         <div style="width:50px;"></div>
     </div>
     <div class="editor-split-container">
@@ -104,87 +105,100 @@
     </div>
 </div>
 
+<div id="item-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title" style="color:var(--turquoise); margin-top:0;">Nouvel Élément</h3>
+        <input type="text" id="input-name" class="search-input" style="width:100%; margin-bottom:15px;" placeholder="Nom (ex: Underhook Attack)">
+        <div style="margin-bottom:20px;">
+            <label style="color:#fff; display:flex; align-items:center; gap:10px; font-size:14px;">
+                <input type="checkbox" id="is-tech" style="width:22px; height:22px;"> C'est une Technique Finale
+            </label>
+            <p style="font-size:10px; color:#666; margin-left:32px;">(Permet d'écrire des notes et mettre des vidéos)</p>
+        </div>
+        <div style="display:flex; gap:12px;">
+            <button onclick="closeModal('item-modal')" style="flex:1; padding:15px; background:#333; color:#fff; border-radius:10px; border:none;">Annuler</button>
+            <button id="btn-save-item" style="flex:1; padding:15px; background:var(--turquoise); color:#000; border-radius:10px; border:none; font-weight:bold;">Sauver</button>
+        </div>
+    </div>
+</div>
+
 <div id="video-modal" class="modal">
     <div class="modal-content">
-        <h3 style="color:var(--turquoise); margin:0 0 15px 0;">Ajouter Vidéo</h3>
+        <h3 style="color:var(--turquoise); margin:0 0 15px 0;">Importer Vidéo</h3>
         <input type="text" id="vid-url" class="search-input" style="width:100%;" placeholder="Lien YouTube ou Short">
+        <p style="font-size:11px; color:#888; margin:15px 0 5px 0;">Démarrer à :</p>
         <div class="time-picker">
-            <select id="p-h"><option value="0">00h</option><option value="1">01h</option></select>
+            <select id="p-h"><option value="0">00h</option><option value="1">01h</option><option value="2">02h</option></select>
             <select id="p-m"></select>
             <select id="p-s"></select>
         </div>
         <div style="display:flex; gap:12px; margin-top:20px;">
-            <button onclick="closeVideoModal()" style="flex:1; padding:12px; background:#333; color:#fff; border-radius:8px; border:none;">Annuler</button>
+            <button onclick="closeModal('video-modal')" style="flex:1; padding:12px; background:#333; color:#fff; border-radius:8px; border:none;">Annuler</button>
             <button onclick="addVideo()" style="flex:1; padding:12px; background:var(--turquoise); color:#000; border-radius:8px; border:none; font-weight:bold;">Ajouter</button>
         </div>
     </div>
 </div>
 
 <script>
-    // INIT TIME SELECTORS
+    // INIT
     const mS = document.getElementById('p-m'); const sS = document.getElementById('p-s');
     for(let i=0; i<60; i++){
         let o = `<option value="${i}">${i < 10 ? '0'+i : i}</option>`;
         mS.innerHTML += o; sS.innerHTML += o;
     }
 
-    const initialData = {
-        journalier: [],
-        data: { 
-            order: ["Grappling", "Wrestling"], 
-            children: { 
-                "Grappling": { type: "folder", order: ["Top", "Bottom", "Submissions / Submission Defense"], children: {
-                    "Top": { type: "folder", order: ["Pin", "Passing"], children: {
-                        "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { 
-                            "Mount": {type:"folder", order:[], children:{}}, 
-                            "Side Control": {type:"folder", children:{}, order:[]}, 
-                            "Ride": {type:"folder", children:{}, order:[]} 
-                        } },
-                        "Passing": { type: "folder", order: ["Half Guard Pass", "Outside Pass"], children: {
-                            "Half Guard Pass": { type: "folder", order: ["Chest-to-Chest", "Half Guard", "Knee Shield Half Guard"], children: {
-                                "Chest-to-Chest": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]},
-                                "Knee Shield Half Guard": { type: "folder", order: ["High Knee Shield", "Medium Knee Shield", "Low Knee Shield"], children: {
-                                    "High Knee Shield": {type:"folder", children:{}, order:[]}, "Low Knee Shield": {type:"folder", children:{}, order:[]},
-                                    "Medium Knee Shield": { type: "folder", order: ["Knee Elbow Open", "Knee Elbow Close"], children: { "Knee Elbow Open": {type:"folder", children:{}, order:[]}, "Knee Elbow Close": {type:"folder", children:{}, order:[]} } }
-                                }}
-                            }},
-                            "Outside Pass": {type:"folder", children:{}, order:[]}
+    // ARBORESCENCE COMPLÈTE
+    const fullTree = {
+        "Grappling": { type: "folder", order: ["Top", "Bottom", "Submissions / Submission Defense"], children: {
+            "Top": { type: "folder", order: ["Pin", "Passing"], children: {
+                "Pin": { type: "folder", order: ["Mount", "Side Control", "Ride"], children: { 
+                    "Mount":{type:"folder", order:[], children:{}}, "Side Control":{type:"folder", order:[], children:{}}, "Ride":{type:"folder", order:[], children:{}} 
+                }},
+                "Passing": { type: "folder", order: ["Half Guard Pass", "Outside Pass"], children: {
+                    "Half Guard Pass": { type: "folder", order: ["Chest-to-Chest", "Half Guard", "Knee Shield Half Guard"], children: {
+                        "Chest-to-Chest":{type:"folder", order:[], children:{}}, "Half Guard":{type:"folder", order:[], children:{}},
+                        "Knee Shield Half Guard": { type: "folder", order: ["High Knee Shield", "Medium Knee Shield", "Low Knee Shield"], children: {
+                            "High Knee Shield":{type:"folder", order:[], children:{}}, "Low Knee Shield":{type:"folder", order:[], children:{}},
+                            "Medium Knee Shield": { type: "folder", order: ["Knee Elbow Open", "Knee Elbow Close"], children: { "Knee Elbow Open":{type:"folder", order:[], children:{}}, "Knee Elbow Close":{type:"folder", order:[], children:{}} } }
                         }}
                     }},
-                    "Bottom": { type: "folder", order: ["Closed Guard", "Half Guard", "Open Seated", "Open Supine", "Pin Escape"], children: {
-                        "Closed Guard": {type:"folder", children:{}, order:[]}, "Half Guard": {type:"folder", children:{}, order:[]}, "Open Seated": {type:"folder", children:{}, order:[]}, "Open Supine": {type:"folder", children:{}, order:[]},
-                        "Pin Escape": { type: "folder", order: ["Side Control Escape", "Mount Escape", "Back Escape", "Ride Escape", "Turtle Escape", "Dogfight / Scrambles"], children: { "Side Control Escape":{type:"folder", children:{}, order:[]},"Mount Escape":{type:"folder", children:{}, order:[]},"Back Escape":{type:"folder", children:{}, order:[]},"Ride Escape":{type:"folder", children:{}, order:[]},"Turtle Escape":{type:"folder", children:{}, order:[]},"Dogfight / Scrambles":{type:"folder", children:{}, order:[]} } }
-                    }},
-                    "Submissions / Submission Defense": { type: "folder", order: ["Submissions (global)", "Submission Defense (global)"], children: { "Submissions (global)":{type:"folder", children:{}, order:[]}, "Submission Defense (global)":{type:"folder", children:{}, order:[]} } }
-                }},
-                "Wrestling": { type: "folder", order: ["Underhook / Overhook", "2-on-1", "Collar Tie", "Single Leg", "Double Leg", "50-50", "Other Grip"], children: {
-                    "Underhook / Overhook": { type: "folder", order: ["Underhook Attack", "Underhook Defense"], children: { "Underhook Attack":{type:"folder", children:{}, order:[]}, "Underhook Defense":{type:"folder", order:["Overhook"], children:{"Overhook":{type:"folder", children:{}, order:[]}}} } },
-                    "2-on-1": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Collar Tie": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Single Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Double Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "50-50": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", children:{}, order:[]}, "Defense":{type:"folder", children:{}, order:[]} } },
-                    "Other Grip": { type: "folder", order: ["Other"], children: { "Other":{type:"folder", children:{}, order:[]}} }
+                    "Outside Pass":{type:"folder", order:[], children:{}}
                 }}
-            } 
-        }
+            }},
+            "Bottom": { type: "folder", order: ["Closed Guard", "Half Guard", "Open Seated", "Open Supine", "Pin Escape"], children: {
+                "Closed Guard":{type:"folder", order:[], children:{}}, "Half Guard":{type:"folder", order:[], children:{}}, "Open Seated":{type:"folder", order:[], children:{}}, "Open Supine":{type:"folder", order:[], children:{}},
+                "Pin Escape": { type: "folder", order: ["Side Control Escape", "Mount Escape", "Back Escape", "Ride Escape", "Turtle Escape", "Dogfight / Scrambles"], children: { "Side Control Escape":{type:"folder", order:[], children:{}}, "Mount Escape":{type:"folder", order:[], children:{}}, "Back Escape":{type:"folder", order:[], children:{}}, "Ride Escape":{type:"folder", order:[], children:{}}, "Turtle Escape":{type:"folder", order:[], children:{}}, "Dogfight / Scrambles":{type:"folder", order:[], children:{}} } }
+            }},
+            "Submissions / Submission Defense": { type: "folder", order: ["Submissions (global)", "Submission Defense (global)"], children: { "Submissions (global)":{type:"folder", order:[], children:{}}, "Submission Defense (global)":{type:"folder", order:[], children:{}} } }
+        }},
+        "Wrestling": { type: "folder", order: ["Underhook / Overhook", "2-on-1", "Collar Tie", "Single Leg", "Double Leg", "50-50", "Other Grip"], children: {
+            "Underhook / Overhook": { type: "folder", order: ["Underhook Attack", "Underhook Defense"], children: { "Underhook Attack":{type:"folder", order:[], children:{}}, "Underhook Defense": { type: "folder", order: ["Overhook"], children: { "Overhook":{type:"folder", order:[], children:{}} } } } },
+            "2-on-1": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", order:[], children:{}}, "Defense":{type:"folder", order:[], children:{}} } },
+            "Collar Tie": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", order:[], children:{}}, "Defense":{type:"folder", order:[], children:{}} } },
+            "Single Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", order:[], children:{}}, "Defense":{type:"folder", order:[], children:{}} } },
+            "Double Leg": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", order:[], children:{}}, "Defense":{type:"folder", order:[], children:{}} } },
+            "50-50": { type: "folder", order: ["Attack", "Defense"], children: { "Attack":{type:"folder", order:[], children:{}}, "Defense":{type:"folder", order:[], children:{}} } },
+            "Other Grip": { type: "folder", order: ["Other"], children: { "Other":{type:"folder", order:[], children:{}} } }
+        }}
     };
 
-    let db = JSON.parse(localStorage.getItem('jjb_vault_v24')) || initialData;
+    let db = JSON.parse(localStorage.getItem('jjb_vault_v25')) || { journalier: [], data: { order: ["Grappling", "Wrestling"], children: fullTree } };
     let currentPath = [];
     let activeTech = null;
     let searchQuery = "";
+    let editingItem = null;
 
-    function saveDB() { localStorage.setItem('jjb_vault_v24', JSON.stringify(db)); render(); }
+    function saveDB() { localStorage.setItem('jjb_vault_v25', JSON.stringify(db)); render(); }
     function goHome() { currentPath = []; searchQuery = ""; render(); }
     function goBack() { currentPath.pop(); if(currentPath[currentPath.length-1] === "children") currentPath.pop(); render(); }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     function render() {
         const content = document.getElementById('app-content');
         content.innerHTML = "";
         const isHome = currentPath.length === 0;
         const isJournalier = currentPath[0] === 'journalier';
-        document.getElementById('btn-back').style.visibility = (isHome) ? "hidden" : "visible";
+        document.getElementById('btn-back').style.visibility = isHome ? "hidden" : "visible";
         document.getElementById('path-display').innerText = isHome ? "ACCUEIL" : currentPath.filter(p => p !== "children").join(" > ").toUpperCase();
 
         if (isHome) {
@@ -198,29 +212,32 @@
         if (!isJournalier) {
             const sDiv = document.createElement('div');
             sDiv.className = "search-bar-wrap";
-            sDiv.innerHTML = `<input type="text" id="search-input" class="search-input" placeholder="Titre ou contenu..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()"><button class="search-go" onclick="execSearch()">OK</button>`;
+            sDiv.innerHTML = `<input type="text" id="search-input" class="search-input" placeholder="Titre ou note..." value="${searchQuery}" onkeydown="if(event.key==='Enter') execSearch()"><button class="search-go" onclick="execSearch()">OK</button>`;
             content.appendChild(sDiv);
+            if(!searchQuery) content.innerHTML += `<button class="btn-add" onclick="openAddModal()">+ AJOUTER</button>`;
         }
 
         if (searchQuery) { renderSearchResults(content); return; }
 
         let current = db; currentPath.forEach(p => current = current[p]);
-        document.getElementById('view-title').innerText = isJournalier ? "Journalier" : (currentPath[currentPath.length-1]);
+        document.getElementById('view-title').innerText = isJournalier ? "Journalier" : currentPath[currentPath.length-1];
         
         const list = document.createElement('div');
         list.id = "sortable-list";
         content.appendChild(list);
 
         const items = isJournalier ? db.journalier : (current.order || []);
-        items.forEach((obj, idx) => {
+        items.forEach((obj) => {
             const key = isJournalier ? obj.name : obj;
-            let item;
-            if(isJournalier) { let t = db; obj.path.forEach(p => t = t[p]); item = t.children[key]; }
-            else { item = current.children[key]; }
+            let target = db; 
+            const path = isJournalier ? obj.path : currentPath;
+            path.forEach(p => target = target[p]);
+            const item = target.children[key];
             if(!item) return;
+
             const wrap = createItemUI(key, key, () => {
-                if(item.type === 'folder') { currentPath = isJournalier ? [...obj.path, 'children', key] : [...currentPath, 'children', key]; render(); }
-                else { openEditor(key, isJournalier ? obj.path : currentPath); }
+                if(item.type === 'folder') { currentPath = [...path, 'children', key]; render(); }
+                else { openEditor(key, path); }
             }, isJournalier, item.status);
             list.appendChild(wrap);
         });
@@ -228,10 +245,12 @@
 
     function createItemUI(id, label, onclick, isJournalier, status, snippet) {
         const wrap = document.createElement('div');
+        const isFav = db.journalier.some(f => f.name === id);
         wrap.className = `item-wrapper ${status ? 'status-'+status : ''}`;
         wrap.innerHTML = `
             <div class="item-actions">
-                <button class="action-btn" style="background:var(--edit)" onclick="openEditorFromSearch('${id}')">✏️</button>
+                <button class="action-btn" style="background:${isFav?'var(--danger)':'var(--accent)'}" onclick="toggleFav('${id}')">${isFav?'🚫':'⭐'}</button>
+                <button class="action-btn" style="background:var(--edit)" onclick="openRenameModal('${id}')">✏️</button>
                 <button class="action-btn" style="background:var(--danger)" onclick="deleteItem('${id}')">🗑️</button>
             </div>
             <div class="item-main">
@@ -261,14 +280,13 @@
             if(obj.children) {
                 Object.keys(obj.children).forEach(key => {
                     const item = obj.children[key];
-                    let match = false;
+                    let match = key.toLowerCase().includes(searchQuery);
                     let snippet = "";
-                    if(key.toLowerCase().includes(searchQuery)) match = true;
-                    if(item.notes) {
+                    if(!match && item.notes) {
                         for(let s in item.notes) {
                             if(item.notes[s].toLowerCase().includes(searchQuery)) {
                                 match = true;
-                                snippet = item.notes[s].substring(0, 40) + "...";
+                                snippet = item.notes[s].substring(0, 50).replace(/\n/g, " ") + "...";
                                 break;
                             }
                         }
@@ -289,12 +307,65 @@
         });
     }
 
-    // EDITOR & VIDEO
+    // ARBORESCENCE LOGIC (RESTAURÉ)
+    function openAddModal() {
+        editingItem = null;
+        document.getElementById('modal-title').innerText = "Ajouter Élément";
+        document.getElementById('input-name').value = "";
+        document.getElementById('is-tech').checked = false;
+        document.getElementById('item-modal').style.display = 'flex';
+        document.getElementById('btn-save-item').onclick = saveNewItem;
+    }
+
+    function openRenameModal(id) {
+        editingItem = id;
+        document.getElementById('modal-title').innerText = "Renommer";
+        document.getElementById('input-name').value = id;
+        document.getElementById('item-modal').style.display = 'flex';
+        document.getElementById('btn-save-item').onclick = renameItem;
+    }
+
+    function saveNewItem() {
+        const name = document.getElementById('input-name').value.trim();
+        if(!name) return;
+        let t = db; currentPath.forEach(p => t = t[p]);
+        const isTech = document.getElementById('is-tech').checked;
+        t.children[name] = isTech ? { type:'tech', status:'on_test', notes:{on_test:"",already:"",future:""}, videos:{on_test:[],already:[],future:[]} } : { type:'folder', order:[], children:{} };
+        t.order.push(name);
+        saveDB(); closeModal('item-modal');
+    }
+
+    function renameItem() {
+        const newName = document.getElementById('input-name').value.trim();
+        if(!newName || newName === editingItem) return;
+        let t = db; currentPath.forEach(p => t = t[p]);
+        t.children[newName] = t.children[editingItem];
+        delete t.children[editingItem];
+        t.order = t.order.map(n => n === editingItem ? newName : n);
+        saveDB(); closeModal('item-modal');
+    }
+
+    function deleteItem(id) {
+        if(confirm(`Supprimer "${id}" et tout son contenu ?`)) {
+            let t = db; currentPath.forEach(p => t = t[p]);
+            delete t.children[id];
+            t.order = t.order.filter(n => n !== id);
+            db.journalier = db.journalier.filter(f => f.name !== id);
+            saveDB();
+        }
+    }
+
+    function toggleFav(id) {
+        const idx = db.journalier.findIndex(f => f.name === id);
+        if(idx > -1) db.journalier.splice(idx, 1);
+        else db.journalier.push({name: id, path: [...currentPath]});
+        saveDB();
+    }
+
+    // EDITOR & VIDEO (RESTAURÉ)
     function openEditor(key, path) {
         let t = db; path.forEach(p => t = t[p]);
         activeTech = t.children[key];
-        if(!activeTech.videos) activeTech.videos = { on_test: [], already: [], future: [] };
-        if(!activeTech.notes) activeTech.notes = { on_test: "", already: "", future: "" };
         document.getElementById('editor-title').innerText = key;
         document.getElementById('note-editor').style.display = 'flex';
         switchTab(activeTech.status || 'on_test');
@@ -317,7 +388,7 @@
             const wrapper = document.createElement('div');
             wrapper.className = "video-wrapper-inner";
             wrapper.innerHTML = `
-                <div class="del-vid-btn" onclick="deleteVideo(${idx})">SUPPRIMER</div>
+                <div class="del-vid-btn" onclick="deleteVideo(${idx})">EFFACER</div>
                 <div class="video-card">
                     <iframe src="${v.embedUrl}" allowfullscreen></iframe>
                     <div class="video-meta"><strong>${v.label}</strong><span>⬅️ Glisser</span></div>
@@ -340,30 +411,31 @@
     function addVideo() {
         let url = document.getElementById('vid-url').value.trim();
         if(!url) return;
-        const totalSec = (parseInt(document.getElementById('p-h').value)*3600) + (parseInt(document.getElementById('p-m').value)*60) + parseInt(document.getElementById('p-s').value);
-        let id = "", embedUrl = "", label = "Vidéo";
+        const h = parseInt(document.getElementById('p-h').value);
+        const m = parseInt(document.getElementById('p-m').value);
+        const s = parseInt(document.getElementById('p-s').value);
+        const totalSec = (h*3600) + (m*60) + s;
+        let id = "", embedUrl = "", label = "Ressource";
 
         if(url.includes("shorts/")) {
             id = url.split("shorts/")[1].split(/[?&]/)[0];
-            embedUrl = `https://www.youtube.com/embed/${id}`; label = "Short YouTube";
+            embedUrl = `https://www.youtube.com/embed/${id}`; label = "YouTube Short";
         } else if(url.includes("v=") || url.includes("youtu.be/")) {
             id = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.split("be/")[1].split(/[?&]/)[0];
             embedUrl = `https://www.youtube.com/embed/${id}?start=${totalSec}`;
-            label = totalSec > 0 ? "Vidéo @ Timecode" : "Vidéo YouTube";
+            label = totalSec > 0 ? `Vidéo @ ${h}h${m}m${s}s` : "Vidéo YouTube";
         }
         activeTech.videos[activeTech.status].push({ embedUrl, label });
-        saveDB(); renderVideos(); closeVideoModal();
+        saveDB(); renderVideos(); closeModal('video-modal');
     }
 
     function deleteVideo(idx) { activeTech.videos[activeTech.status].splice(idx, 1); saveDB(); renderVideos(); }
     function openVideoModal() { document.getElementById('video-modal').style.display = 'flex'; }
-    function closeVideoModal() { document.getElementById('video-modal').style.display = 'none'; }
 
     function handleInput() {
-        const text = document.getElementById('note-textarea').value;
-        activeTech.notes[activeTech.status] = text;
-        document.getElementById('note-display').innerText = text;
-        localStorage.setItem('jjb_vault_v24', JSON.stringify(db));
+        activeTech.notes[activeTech.status] = document.getElementById('note-textarea').value;
+        document.getElementById('note-display').innerText = activeTech.notes[activeTech.status];
+        localStorage.setItem('jjb_vault_v25', JSON.stringify(db));
     }
 
     function syncScroll() { document.getElementById('note-display').scrollTop = document.getElementById('note-textarea').scrollTop; }
@@ -373,3 +445,4 @@
 </script>
 </body>
 </html>
+
