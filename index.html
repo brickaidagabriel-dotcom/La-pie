@@ -112,8 +112,17 @@ border-radius:var(–r);cursor:pointer;touch-action:pan-y;min-height:78px;
 transition:background .1s;position:relative;}
 .nc:active{background:#2c2b29;}
 .ncw.lp-active .nc{border-color:#c8a96e;background:#2c2b29;}
-.ncw.drag-src .nc{opacity:.35;}
-.ncw.drag-over{border-top:3px solid #c8a96e;}
+.ncw.drag-src .nc{opacity:.2;}
+.ncw.drag-over-above .nc{border-top:3px solid #c8a96e;margin-top:-1px;}
+.ncw.drag-over-above::before{content:‘▲ déposer ici’;position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+font-size:10px;font-weight:700;color:#c8a96e;white-space:nowrap;letter-spacing:1px;pointer-events:none;}
+.ncw.drag-over-below .nc{border-bottom:3px solid #c8a96e;}
+.ncw.drag-over-below::after{content:‘▼ déposer ici’;position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+font-size:10px;font-weight:700;color:#c8a96e;white-space:nowrap;letter-spacing:1px;pointer-events:none;}
+.ncw.drag-over-inside .nc{border:2px solid #4db8a0;background:#0e2420;box-shadow:0 0 0 4px rgba(77,184,160,.25);position:relative;}
+.ncw.drag-over-inside .nc::after{content:‘⤵ placer à l'intérieur’;position:absolute;inset:0;display:flex;align-items:center;
+justify-content:center;font-size:11px;font-weight:700;color:#4db8a0;letter-spacing:.5px;
+background:rgba(10,30,26,.6);border-radius:inherit;pointer-events:none;}
 .nstrip{width:4px;align-self:stretch;flex-shrink:0;border-radius:var(–r) 0 0 var(–r);}
 .s-on{background:#6dbb8a;}.s-al{background:#c47a5a;}.s-fu{background:#7aaec8;}.s-no{background:#252320;}
 .nbody{flex:1;padding:16px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;}
@@ -135,6 +144,7 @@ box-shadow:0 8px 32px rgba(0,0,0,.8);overflow:hidden;min-width:200px;animation:s
 .dots-pop-item:active{background:#252320;}
 .addb{margin-top:16px;}
 
+/* SEARCH BAR */
 /* BIBLIO TOOLBAR */
 .biblio-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px 10px;background:#111110;flex-shrink:0;}
 .biblio-add-btn{font-size:20px;padding:8px 14px;flex-shrink:0;}
@@ -220,9 +230,11 @@ cursor:pointer;border-bottom:1px solid #252320;}
 .mov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;
 display:none;align-items:flex-end;justify-content:center;}
 .mov.open{display:flex;animation:shIn .18s ease;}
+.mov.centered{align-items:center;}
 @keyframes shIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .mbox{background:#1a1917;border:1px solid #302e2c;border-radius:20px 20px 0 0;
 width:100%;max-width:540px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.mov.centered .mbox{border-radius:20px;width:calc(100% - 40px);max-width:360px;}
 .mhdr{padding:18px 20px;border-bottom:1px solid #302e2c;font-size:16px;font-weight:700;
 color:#e8e0d0;display:flex;align-items:center;justify-content:space-between;}
 .mhdr-x{background:none;border:none;color:#a09880;font-size:24px;cursor:pointer;line-height:1;padding:2px;}
@@ -277,9 +289,9 @@ width:62px;padding:7px 0;cursor:pointer;text-align:center;border-radius:6px;font
 .tog.on::after{transform:translateX(21px);background:#6dbb8a;}
 
 /* DRAG GHOST */
-#dgh{position:fixed;pointer-events:none;z-index:9999;opacity:.88;
+#dgh{position:fixed;pointer-events:none;z-index:9999;opacity:1;
 transform:scale(1.03) rotate(.8deg);border-radius:var(–r);overflow:hidden;
-box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
+box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:none;}
 </style>
 
 </head>
@@ -768,7 +780,6 @@ function renderBiblio(){
   document.getElementById('sinput').value='';
   const bscroll=document.getElementById('bscroll');
   bscroll.scrollTop=0;
-  // Wire toolbar + button to current level
   document.getElementById('biblio-add-btn').onclick=()=>{SFX.click();openAN(cid);};
   const cont=document.getElementById('bcont');
   cont.innerHTML='';
@@ -880,46 +891,105 @@ function navTo(node){
 
 
 /* ══ DRAG REORDER ══ */
-let dragId=null,dragOverId=null,dragGEl=null,dragOX=0,dragOY=0,dragCat=null,dragLockedScroll=null;
+let dragId=null,dragOverId=null,dragInsideId=null,dragGEl=null,dragOX=0,dragOY=0,dragCat=null,dragLockedScroll=null;
+
 function startDrag(nodeId,wrapper,touch,cat){
-  dragId=nodeId;dragCat=cat;
+  dragId=nodeId;dragCat=cat;dragInsideId=null;
   const rect=wrapper.getBoundingClientRect();dragOX=touch.clientX-rect.left;dragOY=touch.clientY-rect.top;
   const ghost=document.getElementById('dgh');ghost.innerHTML='';
   const clone=wrapper.cloneNode(true);clone.querySelector('.sla')?.remove();clone.style.width=rect.width+'px';
   ghost.appendChild(clone);ghost.style.cssText=`display:block;width:${rect.width}px;top:${rect.top}px;left:${rect.left}px;`;
   dragGEl=ghost;wrapper.classList.add('drag-src');
-  // lock scroll on biblio scroller so touchmove isn't eaten
   const sc=document.getElementById('bscroll')||document.getElementById('carnet-split');
   if(sc){sc.style.overflow='hidden';dragLockedScroll=sc;}
   document.addEventListener('touchmove',onDragMove,{passive:false});
   document.addEventListener('touchend',onDragEnd,{passive:true});
 }
+
 function onDragMove(e){
   if(!dragGEl)return;e.preventDefault();const t=e.touches[0];
   dragGEl.style.top=(t.clientY-dragOY)+'px';dragGEl.style.left=(t.clientX-dragOX)+'px';
   dragGEl.style.visibility='hidden';const el=document.elementFromPoint(t.clientX,t.clientY);dragGEl.style.visibility='';
-  document.querySelectorAll('.ncw.drag-over,.rc-wrap .ncw.drag-over').forEach(w=>w.classList.remove('drag-over'));
+  document.querySelectorAll('.ncw.drag-over-above,.ncw.drag-over-below,.ncw.drag-over-inside').forEach(w=>{
+    w.classList.remove('drag-over-above');w.classList.remove('drag-over-below');w.classList.remove('drag-over-inside');
+  });
+  dragOverId=null;dragInsideId=null;
   const tgt=el?.closest('.ncw');
-  if(tgt&&tgt.dataset.id&&tgt.dataset.id!==dragId){
-    if(dragCat){if(getRootChildId(tgt.dataset.id)!==dragCat)return;}
-    dragOverId=tgt.dataset.id;tgt.classList.add('drag-over');
-  } else dragOverId=null;
+  if(!tgt||!tgt.dataset.id||tgt.dataset.id===dragId)return;
+  if(dragCat){if(getRootChildId(tgt.dataset.id)!==dragCat)return;}
+  const tgtNode=fn(tgt.dataset.id);
+  const canDropInside = tgtNode && !tgtNode.isFinal;
+  const rect=tgt.getBoundingClientRect();
+  const relY=(t.clientY-rect.top)/rect.height;
+  if(canDropInside && relY>0.25 && relY<0.75){
+    dragInsideId=tgt.dataset.id;
+    tgt.classList.add('drag-over-inside');
+  } else if(relY<=0.5){
+    dragOverId=tgt.dataset.id;
+    tgt.classList.add('drag-over-above');
+  } else {
+    dragOverId=tgt.dataset.id;
+    tgt.classList.add('drag-over-below');
+  }
 }
+
 function onDragEnd(){
   document.removeEventListener('touchmove',onDragMove);document.removeEventListener('touchend',onDragEnd);
   if(dragGEl){dragGEl.style.display='none';dragGEl.innerHTML='';}
   if(dragLockedScroll){dragLockedScroll.style.overflow='';dragLockedScroll=null;}
-  document.querySelectorAll('.drag-src').forEach(w=>w.classList.remove('drag-src'));
-  document.querySelectorAll('.drag-over').forEach(w=>w.classList.remove('drag-over'));
-  if(dragId&&dragOverId&&dragId!==dragOverId){
-    if(dragCat){reorderCarnet(dragId,dragOverId,dragCat);}
+  document.querySelectorAll('.drag-src,.drag-over-above,.drag-over-below,.drag-over-inside').forEach(w=>{
+    w.classList.remove('drag-src');w.classList.remove('drag-over-above');w.classList.remove('drag-over-below');w.classList.remove('drag-over-inside');
+  });
+  const didDrag=dragId;const didOver=dragOverId;const didInside=dragInsideId;const didCat=dragCat;
+  dragId=null;dragOverId=null;dragInsideId=null;dragCat=null;
+  if(!didDrag)return;
+  if(didInside&&didInside!==didDrag){
+    confirmDropInside(didDrag,didInside);
+  } else if(didOver&&didOver!==didDrag){
+    if(didCat){reorderCarnet(didDrag,didOver,didCat);}
     else{
-      // biblio or root reorder
       const cid=navStack[navStack.length-1];const p=fn(cid);
-      if(p){const c=p.children;const ai=c.findIndex(x=>x.id===dragId),bi=c.findIndex(x=>x.id===dragOverId);if(ai>=0&&bi>=0){const[it]=c.splice(ai,1);c.splice(bi,0,it);saveS();renderBiblio();}}
+      if(p){const c=p.children;const ai=c.findIndex(x=>x.id===didDrag),bi=c.findIndex(x=>x.id===didOver);if(ai>=0&&bi>=0){const[it]=c.splice(ai,1);c.splice(bi,0,it);saveS();renderBiblio();}}
     }
   }
-  dragId=null;dragOverId=null;dragCat=null;
+}
+
+function confirmDropInside(srcId,targetId){
+  const srcNode=fn(srcId);const tgtNode=fn(targetId);
+  if(!srcNode||!tgtNode)return;
+  const mo=document.getElementById('mc');
+  mo.classList.add('centered');
+  openM('mc');
+  document.getElementById('mc').innerHTML=`
+    <div class="mbox" style="border-radius:20px;width:calc(100% - 40px);max-width:360px;">
+      <div class="mhdr" style="border-radius:20px 20px 0 0;">
+        <span>Déplacer à l'intérieur ?</span>
+      </div>
+      <div class="mbody" style="gap:12px;">
+        <div style="font-size:13px;color:#a09880;line-height:1.6;">
+          Placer <span style="color:#c8a96e;font-weight:700;">${srcNode.name}</span>
+          à l'intérieur de <span style="color:#c8a96e;font-weight:700;">${tgtNode.name}</span> ?
+        </div>
+      </div>
+      <div class="mfoot" style="justify-content:space-between;">
+        <button class="btn bsm" style="flex:1" onclick="document.getElementById('mc').classList.remove('centered');closeM('mc')">Annuler</button>
+        <button class="btn bsm bacc" style="flex:1" onclick="doDropInside('${srcId}','${targetId}')">Déplacer</button>
+      </div>
+    </div>`;
+}
+
+function doDropInside(srcId,targetId){
+  document.getElementById('mc').classList.remove('centered');
+  closeM('mc');
+  const srcNode=fn(srcId);const tgtNode=fn(targetId);
+  if(!srcNode||!tgtNode||tgtNode.isFinal)return;
+  // Remove from current parent
+  const srcParent=fp(srcId);if(!srcParent)return;
+  srcParent.children=srcParent.children.filter(c=>c.id!==srcId);
+  // Add to target
+  if(!tgtNode.children)tgtNode.children=[];
+  tgtNode.children.push(srcNode);
+  saveS();renderBiblio();mmMaybeRefresh();
 }
 
 /* ══ CARNET ORDER ══ */
