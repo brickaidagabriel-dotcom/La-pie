@@ -1432,6 +1432,8 @@ function setMode(m){
 let S_mapMode=false;
 function setDispMode(m){
   S_mapMode=(m==='carte');
+  S.mapMode=S_mapMode?'carte':'biblio';
+  saveS();
   const bb=document.getElementById('btn-disp-biblio');
   const bc=document.getElementById('btn-disp-carte');
   if(!bb||!bc)return;
@@ -1859,7 +1861,7 @@ function mmContextMenu(n,sx,sy){
   // Supprimer (all nodes)
   acts.push({lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}});
   // + alias
-  acts.push({lbl:'+ Alias',fn:()=>{pop.remove();openAliasModal(n.node.id);}});
+  acts.push({lbl:'+',fn:()=>{pop.remove();openAliasModal(n.node.id);}});
 
   acts.forEach((a,idx)=>{
     const d=document.createElement('div');
@@ -1888,6 +1890,7 @@ function mmMaybeRefresh(){
 /* ══ INIT ══ */
 loadS();
 renderCarnet();
+if(S.mapMode==='carte')setDispMode('carte');
 goHome();
 let ip=false;
 const pi=()=>{if(!ip){ip=true;SFX.intro();}};
