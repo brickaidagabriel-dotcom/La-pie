@@ -924,10 +924,9 @@ function confirmAN(){
   const p=fn(anPid);if(!p)return;
   let cat;
   if(anPid==='root'){
-    // new root section: use its own id as category key
     const newId=gid();
     p.children.push({id:newId,name,isFinal:anIsFinal,category:newId,children:[]});
-    saveS();closeM('man');renderBiblio();renderCarnet();return;
+    saveS();closeM('man');renderBiblio();renderCarnet();mmMaybeRefresh();return;
   } else {
     cat=p.category||getCat(anPid);
   }
@@ -1449,12 +1448,15 @@ function mmDraw(){
     mmCtx.strokeStyle=e.color+'66';mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
   });
 
-  // Root+ lines to each root kid
+  // Root+ bezier lines to each root kid (same style as node edges)
   if(mmRootPlus){
     mmRootPlus.kids.forEach(rk=>{
-      mmCtx.beginPath();mmCtx.moveTo(mmRootPlus.x,mmRootPlus.y);
-      mmCtx.lineTo(rk.hitX,rk.y);
-      mmCtx.strokeStyle='#504840';mmCtx.lineWidth=1/mmScale;mmCtx.stroke();
+      const x1=mmRootPlus.x, y1=mmRootPlus.y;
+      const x2=rk.hitX, y2=rk.y;
+      const cpx=x1+(x2-x1)*0.5;
+      mmCtx.beginPath();mmCtx.moveTo(x1,y1);
+      mmCtx.bezierCurveTo(cpx,y1,cpx,y2,x2,y2);
+      mmCtx.strokeStyle='#a09880'+'66';mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
     });
   }
 
@@ -1698,8 +1700,8 @@ function mmContextMenu(n,sx,sy){
   }});
   // Renommer
   acts.push({lbl:'✏️ Renommer',fn:()=>{pop.remove();openRN(n.node.id,n.node.name);}});
-  // Supprimer (not root)
-  if(n.depth>1) acts.push({lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}});
+  // Supprimer (all nodes)
+  acts.push({lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}});
 
   acts.forEach((a,idx)=>{
     const d=document.createElement('div');
