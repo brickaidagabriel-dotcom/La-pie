@@ -1372,8 +1372,9 @@ function mmAssignPos(node,depth,cx,cy,color,parent){
   // center of node
   const nn={id:node.id,x:nx+sz.w/2,y:ny+sz.h/2,node,depth,color:c,isFinal:node.isFinal,
             hitX:nx,hitY:ny,hitW:sz.w,hitH:sz.h,
-            // + button: bottom-center of node
-            plusX:nx+sz.w/2, plusY:ny+sz.h+MM_GAP_Y*0.4};
+            // + button only for non-final nodes
+            plusX:node.isFinal?null:nx+sz.w/2,
+            plusY:node.isFinal?null:ny+sz.h+MM_GAP_Y*0.4};
   mmNodes.push(nn);
   if(parent){
     // edge from right-center of parent to left-center of child
@@ -1475,8 +1476,8 @@ function mmDraw(){
     mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(n.node.name,n.x,n.y);
-    // + button below node (world coords, scales with zoom)
-    mmDrawPlusBtn(n.plusX,n.plusY,n.color);
+    // + button only for non-final nodes
+    if(n.plusX!==null)mmDrawPlusBtn(n.plusX,n.plusY,n.color);
   });
 
   // Root + button (world coords)
@@ -1521,6 +1522,7 @@ function mmHitTestPlus(wx,wy){
   const hs=MM_PLUS_SZ/2+4/mmScale;
   for(let i=mmNodes.length-1;i>=0;i--){
     const n=mmNodes[i];
+    if(n.plusX===null)continue;
     if(Math.abs(wx-n.plusX)<=hs&&Math.abs(wy-n.plusY)<=hs)return n;
   }
   return null;
@@ -1540,7 +1542,7 @@ function mmHitTestNode(wx,wy){
   return null;
 }
 
-let mmTouchMoved=false,mmLpTimer=null,mmPt1=null,mmPt2=null;
+let mmTouchMoved=false,mmLpTimer=null,mmPt1=null,mmPt2=null,mmLongPressed=false;
 
 function mmAttachEvents(){
   // Attach directly — no clone needed since we use mmEventsAttached flag
@@ -1556,11 +1558,12 @@ function mmAttachEvents(){
       const t=e.touches[0];
       mmDragStart={x:t.clientX,y:t.clientY,tx:mmTx,ty:mmTy};
       mmTouchMoved=false;
+      mmLongPressed=false;
       mmLpTimer=setTimeout(()=>{
         if(!mmTouchMoved){
           const w=mmScreenToWorld(t.clientX,t.clientY);
           const hit=mmHitTestNode(w.x,w.y);
-          if(hit)mmContextMenu(hit,t.clientX,t.clientY);
+          if(hit){mmLongPressed=true;mmContextMenu(hit,t.clientX,t.clientY);}
         }
       },500);
     }
@@ -1606,7 +1609,7 @@ function mmAttachEvents(){
       }
       mmPinching=false;return;
     }
-    if(!mmTouchMoved&&e.changedTouches.length===1){
+    if(!mmTouchMoved&&!mmLongPressed&&e.changedTouches.length===1){
       const t=e.changedTouches[0];
       const w=mmScreenToWorld(t.clientX,t.clientY);
       if(mmHitTestRootPlus(w.x,w.y)){SFX.click();mmAddRootChildModal();return;}
