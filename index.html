@@ -126,7 +126,7 @@ transition:background .1s;position:relative;}
 .b-sub{color:#504840;border-color:#302e2c;}
 
 /* DOTS MENU */
-.dots-btn{background:none;border:none;cursor:pointer;padding:0 10px;font-size:20px;color:#504840;display:flex;align-items:center;flex-shrink:0;line-height:1;}
+.dots-btn{background:none;border:none;cursor:pointer;padding:0 14px;font-size:28px;color:#605850;display:flex;align-items:center;flex-shrink:0;line-height:1;min-width:44px;justify-content:center;}
 .dots-btn:active{color:#a09880;}
 .dots-pop{position:fixed;z-index:3000;background:#1a1917;border:1px solid #302e2c;border-radius:14px;
 box-shadow:0 8px 32px rgba(0,0,0,.8);overflow:hidden;min-width:200px;animation:sIn .15s ease;}
@@ -1518,7 +1518,7 @@ function mmResize(){
 // Node size constants
 const MM_NW_BASE=14; // font size for depth>1
 const MM_NW_ROOT=15; // font size for depth 1
-const MM_PAD_X=28;   // horizontal padding in node box
+const MM_PAD_X=56;   // horizontal padding in node box
 const MM_PAD_Y=16;   // vertical padding in node box
 const MM_GAP_X=90;   // horizontal gap between depth levels
 const MM_GAP_Y=14;   // minimum vertical gap between sibling nodes
@@ -1655,11 +1655,11 @@ function mmDraw(){
     mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(n.node.name,n.x,n.y);
-    // dots menu indicator (3 dots on right edge)
-    const dotsCx=nx+nw-7/mmScale;
-    const dotR=1.5/mmScale;
-    mmCtx.fillStyle='#605850';
-    [-4,0,4].forEach(dy=>{mmCtx.beginPath();mmCtx.arc(dotsCx,n.y+dy/mmScale,dotR,0,Math.PI*2);mmCtx.fill();});
+    // dots menu indicator (3 dots on right edge) — world coords, scale with zoom
+    const dotsCx=nx+nw-14;
+    const dotR=1.2;
+    mmCtx.fillStyle='#807060';
+    [-4.5,0,4.5].forEach(ddy=>{mmCtx.beginPath();mmCtx.arc(dotsCx,n.y+ddy,dotR,0,Math.PI*2);mmCtx.fill();});
     // + button only for non-final nodes
     if(n.plusX!==null)mmDrawPlusBtn(n.plusX,n.plusY,n.color);
   });
