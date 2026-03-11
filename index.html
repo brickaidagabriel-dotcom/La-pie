@@ -135,8 +135,9 @@ box-shadow:0 8px 32px rgba(0,0,0,.8);overflow:hidden;min-width:200px;animation:s
 .dots-pop-item:active{background:#252320;}
 .addb{margin-top:16px;}
 
-/* SEARCH BAR */
-.srch-wrap{padding:0 14px 14px;background:#111110;}
+/* BIBLIO TOOLBAR */
+.biblio-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px 10px;background:#111110;flex-shrink:0;}
+.biblio-add-btn{font-size:20px;padding:8px 14px;flex-shrink:0;}
 .srch-bar{display:flex;gap:10px;}
 .srch-in{flex:1;background:#222120;border:1px solid #302e2c;color:#e8e0d0;
 font-family:inherit;font-size:15px;padding:12px 15px;outline:none;border-radius:10px;
@@ -313,13 +314,12 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
 <!-- BIBLIOTHÈQUE -->
 
 <div id="sh-biblio" class="screen">
+  <div class="biblio-toolbar">
+    <button class="btn bsm biblio-add-btn" id="biblio-add-btn">+</button>
+    <input class="srch-in" id="sinput" placeholder="Rechercher..." type="text" style="flex:1">
+    <button class="btn bsm bacc" onclick="SFX.click();doSearch()">OK</button>
+  </div>
   <div class="scr" id="bscroll">
-    <div class="srch-wrap" id="srch-wrap">
-      <div class="srch-bar">
-        <input class="srch-in" id="sinput" placeholder="🔍  Rechercher..." type="text">
-        <button class="btn bsm bacc" onclick="SFX.click();doSearch()">OK</button>
-      </div>
-    </div>
     <div id="bcont"></div>
     <div id="bsrch" style="display:none"></div>
   </div>
@@ -352,20 +352,6 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
 
 <div id="sh-settings" class="screen">
   <div class="slist">
-    <div class="scard"><div class="slbl">🔊  Son</div><div class="trow"><div class="sdesc">Effets sonores</div><div class="tog on" id="stog" onclick="toggleSnd()"></div></div></div>
-    <div class="scard">
-      <div class="slbl">🧠  Mode</div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button id="btn-mode-orig" onclick="setMode('original')"
-          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #c8a96e;background:#211c12;color:#c8a96e;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
-          Original
-        </button>
-        <button id="btn-mode-aut" onclick="setMode('autistique')"
-          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #302e2c;background:#222120;color:#a09880;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
-          Autistique
-        </button>
-      </div>
-    </div>
     <div class="scard">
       <div class="slbl">🗺  Mode d'affichage</div>
       <div style="display:flex;gap:10px;margin-top:10px;">
@@ -379,6 +365,20 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
         </button>
       </div>
     </div>
+    <div class="scard">
+      <div class="slbl">🧠  Mode</div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button id="btn-mode-orig" onclick="setMode('original')"
+          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #c8a96e;background:#211c12;color:#c8a96e;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
+          Original
+        </button>
+        <button id="btn-mode-aut" onclick="setMode('autistique')"
+          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #302e2c;background:#222120;color:#a09880;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
+          Autistique
+        </button>
+      </div>
+    </div>
+    <div class="scard"><div class="slbl">🔊  Son</div><div class="trow"><div class="sdesc">Effets sonores</div><div class="tog on" id="stog" onclick="toggleSnd()"></div></div></div>
     <div class="scard"><div class="slbl">⬇  Exporter</div><div class="sdesc">Sauvegarde en JSON.</div><button class="btn bsm" onclick="SFX.click();exportD()" style="margin-top:4px">Exporter JSON</button></div>
     <div class="scard"><div class="slbl">⬆  Importer</div><div class="sdesc">Restaurer depuis JSON.</div><button class="btn bsm" onclick="SFX.click();importClick()" style="margin-top:4px">Importer JSON</button><input type="file" id="ifile" accept=".json" style="display:none" onchange="importD(event)"></div>
     <div class="scard"><div class="slbl">🔄  Reset arbre</div><div class="sdesc">Remet l'arbre par défaut. Notes conservées.</div><button class="btn bsm brd" onclick="SFX.click();resetTree()" style="margin-top:4px">Reset</button></div>
@@ -768,24 +768,16 @@ function renderBiblio(){
   document.getElementById('sinput').value='';
   const bscroll=document.getElementById('bscroll');
   bscroll.scrollTop=0;
+  // Wire toolbar + button to current level
+  document.getElementById('biblio-add-btn').onclick=()=>{SFX.click();openAN(cid);};
   const cont=document.getElementById('bcont');
   cont.innerHTML='';
   if(!node)return;
 
   if(cid==='root'){
-    // root children shown as normal cards (can go to carnet, rename, delete, drag)
     node.children.forEach(child=>cont.appendChild(mkCard(child)));
-    // add button at root level too
-    const ab=document.createElement('div');ab.className='addb';
-    const b1=document.createElement('button');b1.className='btn bsm';b1.textContent='+';
-    b1.onclick=()=>{SFX.click();openAN('root');};
-    ab.appendChild(b1);cont.appendChild(ab);
   } else {
     if(node.children&&node.children.length)node.children.forEach(c=>cont.appendChild(mkCard(c)));
-    const ab=document.createElement('div');ab.className='addb';
-    const b1=document.createElement('button');b1.className='btn bsm';b1.textContent='+';
-    b1.onclick=()=>{SFX.click();openAN(cid);};
-    ab.appendChild(b1);cont.appendChild(ab);
   }
 }
 
