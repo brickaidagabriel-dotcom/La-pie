@@ -112,7 +112,7 @@ border-radius:var(–r);cursor:pointer;touch-action:pan-y;min-height:78px;
 transition:background .1s;position:relative;}
 .nc:active{background:#2c2b29;}
 .ncw.lp-active .nc{border-color:#c8a96e;background:#2c2b29;}
-.ncw.drag-src .nc{opacity:.2;}
+.ncw.drag-src .nc{opacity:.7;}
 .ncw.drag-over-above .nc{border-top:3px solid #c8a96e;margin-top:-1px;}
 .ncw.drag-over-above::before{content:‘▲ déposer ici’;position:absolute;top:-18px;left:50%;transform:translateX(-50%);
 font-size:10px;font-weight:700;color:#c8a96e;white-space:nowrap;letter-spacing:1px;pointer-events:none;}
@@ -347,7 +347,7 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
   </div>
   <div class="fbody">
     <div class="narea">
-      <textarea class="ntarea" id="ntarea" placeholder="Notes..." spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off"></textarea>
+      <textarea class="ntarea" id="ntarea" placeholder="Notes..." spellcheck="true" autocorrect="on" autocomplete="off" autocapitalize="sentences"></textarea>
       <div class="nview" id="nview"></div>
     </div>
     <div class="vsec">
@@ -811,7 +811,7 @@ function mkCard(child){
 
   const dotsItems=()=>[
     {lbl:nd(child.id).inCarnet?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
-    {lbl:'✏️ Modifier',fn:()=>openRN(child.id,child.name)},
+    {lbl:'✏️ Renommer',fn:()=>openRN(child.id,child.name)},
     {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(child.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
   ];
@@ -891,7 +891,7 @@ function navTo(node){
 
 
 /* ══ DRAG REORDER ══ */
-let dragId=null,dragOverId=null,dragInsideId=null,dragGEl=null,dragOX=0,dragOY=0,dragCat=null,dragLockedScroll=null;
+let dragId=null,dragOverId=null,dragInsideId=null,dragGEl=null,dragOX=0,dragOY=0,dragCat=null,dragLockedScroll=null,dragLockedScrollTop=0;
 
 function startDrag(nodeId,wrapper,touch,cat){
   dragId=nodeId;dragCat=cat;dragInsideId=null;
@@ -901,19 +901,66 @@ function startDrag(nodeId,wrapper,touch,cat){
   ghost.appendChild(clone);ghost.style.cssText=`display:block;width:${rect.width}px;top:${rect.top}px;left:${rect.left}px;`;
   dragGEl=ghost;wrapper.classList.add('drag-src');
   const sc=document.getElementById('bscroll')||document.getElementById('carnet-split');
-  if(sc){sc.style.overflow='hidden';dragLockedScroll=sc;}
+  if(sc){dragLockedScrollTop=sc.scrollTop;dragLockedScroll=sc;}
+  // Inject ghost parent-drop card after the dragged wrapper
+  const cid=navStack[navStack.length-1];
+  if(cid!=='root'&&!cat){
+    const bdz=document.createElement('div');
+    bdz.id='back-drop-zone';
+    bdz.className='ncw';
+    bdz.innerHTML=`<div class="nc" style="border:2px dashed #504840;background:transparent;display:flex;align-items:center;justify-content:center;min-height:78px;">
+      <span style="font-size:13px;font-weight:700;color:#a09880;">déposer dans l'embranchement parent</span>
+    </div>`;
+    bdz.style.transition='border-color .15s';
+    wrapper.after(bdz);
+  }
   document.addEventListener('touchmove',onDragMove,{passive:false});
   document.addEventListener('touchend',onDragEnd,{passive:true});
+}
+
+
+let dragScrollRAF=null;
+function stopDragScroll(){if(dragScrollRAF){cancelAnimationFrame(dragScrollRAF);dragScrollRAF=null;}}
+function startDragScroll(sc,speed){
+  stopDragScroll();
+  function step(){sc.scrollTop+=speed;dragScrollRAF=requestAnimationFrame(step);}
+  dragScrollRAF=requestAnimationFrame(step);
 }
 
 function onDragMove(e){
   if(!dragGEl)return;e.preventDefault();const t=e.touches[0];
   dragGEl.style.top=(t.clientY-dragOY)+'px';dragGEl.style.left=(t.clientX-dragOX)+'px';
+  // Edge auto-scroll
+  const sc=document.getElementById('bscroll')||document.getElementById('carnet-split');
+  if(sc){
+    const sr=sc.getBoundingClientRect();
+    const edgeZone=80;
+    if(t.clientY<sr.top+edgeZone){
+      const speed=-Math.ceil((edgeZone-(t.clientY-sr.top))/10);
+      startDragScroll(sc,speed);
+    } else if(t.clientY>sr.bottom-edgeZone){
+      const speed=Math.ceil((edgeZone-(sr.bottom-t.clientY))/10);
+      startDragScroll(sc,speed);
+    } else {
+      stopDragScroll();
+    }
+  }
   dragGEl.style.visibility='hidden';const el=document.elementFromPoint(t.clientX,t.clientY);dragGEl.style.visibility='';
   document.querySelectorAll('.ncw.drag-over-above,.ncw.drag-over-below,.ncw.drag-over-inside').forEach(w=>{
     w.classList.remove('drag-over-above');w.classList.remove('drag-over-below');w.classList.remove('drag-over-inside');
   });
   dragOverId=null;dragInsideId=null;
+  // Check back-drop zone hover
+  const bdz=document.getElementById('back-drop-zone');
+  if(bdz){
+    const br=bdz.getBoundingClientRect();
+    const overBdz=t.clientX>=br.left&&t.clientX<=br.right&&t.clientY>=br.top&&t.clientY<=br.bottom;
+    const nc=bdz.querySelector('.nc');
+    if(nc){nc.style.borderColor=overBdz?'#c8a96e':'#504840';nc.style.color=overBdz?'#c8a96e':'#a09880';}
+    const sp=bdz.querySelector('span');
+    if(sp)sp.style.color=overBdz?'#c8a96e':'#a09880';
+    if(overBdz)return;
+  }
   const tgt=el?.closest('.ncw');
   if(!tgt||!tgt.dataset.id||tgt.dataset.id===dragId)return;
   if(dragCat){if(getRootChildId(tgt.dataset.id)!==dragCat)return;}
@@ -934,16 +981,36 @@ function onDragMove(e){
 }
 
 function onDragEnd(){
+  stopDragScroll();
   document.removeEventListener('touchmove',onDragMove);document.removeEventListener('touchend',onDragEnd);
   if(dragGEl){dragGEl.style.display='none';dragGEl.innerHTML='';}
-  if(dragLockedScroll){dragLockedScroll.style.overflow='';dragLockedScroll=null;}
+  if(dragLockedScroll){dragLockedScroll=null;dragLockedScrollTop=0;}
   document.querySelectorAll('.drag-src,.drag-over-above,.drag-over-below,.drag-over-inside').forEach(w=>{
     w.classList.remove('drag-src');w.classList.remove('drag-over-above');w.classList.remove('drag-over-below');w.classList.remove('drag-over-inside');
   });
+  // Check if dropped on back-drop zone
+  const bdz=document.getElementById('back-drop-zone');
+  const nc=bdz?.querySelector('.nc');
+  const droppedOnBack = nc && nc.style.borderColor==='rgb(200, 169, 110)';
+  if(bdz)bdz.remove();
   const didDrag=dragId;const didOver=dragOverId;const didInside=dragInsideId;const didCat=dragCat;
   dragId=null;dragOverId=null;dragInsideId=null;dragCat=null;
   if(!didDrag)return;
-  if(didInside&&didInside!==didDrag){
+  if(droppedOnBack){
+    // Move to parent folder
+    const cid=navStack[navStack.length-1];
+    const parentOfCurrent=fp(cid);
+    if(parentOfCurrent){
+      const srcParent=fp(didDrag);
+      if(srcParent){
+        const srcNode=fn(didDrag);
+        srcParent.children=srcParent.children.filter(c=>c.id!==didDrag);
+        if(!parentOfCurrent.children)parentOfCurrent.children=[];
+        parentOfCurrent.children.push(srcNode);
+        saveS();renderBiblio();mmMaybeRefresh();
+      }
+    }
+  } else if(didInside&&didInside!==didDrag){
     confirmDropInside(didDrag,didInside);
   } else if(didOver&&didOver!==didDrag){
     if(didCat){reorderCarnet(didDrag,didOver,didCat);}
@@ -1040,7 +1107,7 @@ function mkCarnetCard(node){
 
   const dotsItems=()=>[
     {lbl:'📋 Retirer du Carnet',fn:()=>rmCarnet(node.id)},
-    {lbl:'✏️ Modifier',fn:()=>openRN(node.id,node.name)},
+    {lbl:'✏️ Renommer',fn:()=>openRN(node.id,node.name)},
     {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(node.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
   ];
