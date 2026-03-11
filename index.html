@@ -386,12 +386,6 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
     <div class="scard"><div class="slbl">⬇  Exporter</div><div class="sdesc">Sauvegarde en JSON.</div><button class="btn bsm" onclick="SFX.click();exportD()" style="margin-top:4px">Exporter JSON</button></div>
     <div class="scard"><div class="slbl">⬆  Importer</div><div class="sdesc">Restaurer depuis JSON.</div><button class="btn bsm" onclick="SFX.click();importClick()" style="margin-top:4px">Importer JSON</button><input type="file" id="ifile" accept=".json" style="display:none" onchange="importD(event)"></div>
     <div class="scard"><div class="slbl">🔄  Reset arbre</div><div class="sdesc">Remet l'arbre par défaut. Notes conservées.</div><button class="btn bsm brd" onclick="SFX.click();resetTree()" style="margin-top:4px">Reset</button></div>
-    <div class="scard" id="syn-card">
-      <div class="slbl">🔗  Synonymes</div>
-      <div class="sdesc" style="margin-bottom:10px">Les mots d'un groupe sont détectés ensemble dans les textes.</div>
-      <div id="syn-list"></div>
-      <button class="btn bsm bgr" style="margin-top:10px;width:100%" onclick="SFX.click();synAddGroup()">+ Nouveau groupe</button>
-    </div>
   </div>
 </div>
 
@@ -442,6 +436,20 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
     <div class="mhdr"><span>Modifier le titre</span><button class="mhdr-x" onclick="closeM('mrn')">×</button></div>
     <div class="mbody"><div class="mfield"><div class="mlbl">Nouveau nom</div><input class="min" id="rni" type="text" maxlength="60"></div></div>
     <div class="mfoot"><button class="btn" onclick="closeM('mrn')">Annuler</button><button class="btn bgr" onclick="SFX.click();confirmRN()">OK</button></div>
+  </div>
+</div>
+<div class="mov" id="maliases">
+  <div class="mbox">
+    <div class="mhdr"><span id="malias-title">Alias</span><button class="mhdr-x" onclick="closeM('maliases')">×</button></div>
+    <div class="mbody">
+      <div class="sdesc" style="margin-bottom:12px;font-size:13px;color:#a09880">Les alias permettent de détecter des mots supplémentaires dans les textes et de les associer à cette fenêtre.</div>
+      <div id="malias-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:28px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="min" id="malias-inp" type="text" placeholder="Ajouter un alias…" maxlength="60" style="flex:1">
+        <button class="btn bsm bgr" onclick="aliasAdd()">+</button>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn bgr" onclick="closeM('maliases')">Fermer</button></div>
   </div>
 </div>
 <div class="mov" id="mav">
@@ -670,64 +678,57 @@ function topBack(){
 function goHome(){historyStack=[];navStack=[];scr('home');}
 function goCarnet(){pushHistory('home');renderCarnet();scr('carnet');}
 function goBiblio(){pushHistory('home');navStack=['root'];renderBiblio();scr('biblio');}
-function openSettings(){prevScr=document.querySelector('.screen.active')?.id?.replace('sh-','')||'home';scr('settings');renderSynList();}
+function openSettings(){prevScr=document.querySelector('.screen.active')?.id?.replace('sh-','')||'home';scr('settings');}
 
 /* ══ SYNONYMES ══ */
-function synAddGroup(){
-  if(!S.syn)S.syn=[];
-  S.syn.push({id:gid(),words:[]});
-  saveS();renderSynList();
+function closeSettings(){scr(prevScr||'home');}
+
+/* ══ ALIAS MODAL ══ */
+let aliasNodeId=null;
+function openAliasModal(id){
+  aliasNodeId=id;
+  const node=fn(id);
+  document.getElementById('malias-title').textContent='Alias — '+(node?.name||'');
+  document.getElementById('malias-inp').value='';
+  renderAliasChips();
+  openM('maliases');
+  setTimeout(()=>document.getElementById('malias-inp').focus(),120);
 }
-function synDelGroup(id){
-  S.syn=S.syn.filter(g=>g.id!==id);
-  saveS();renderSynList();
-}
-function synAddWord(groupId,word){
-  const w=word.trim();if(!w)return;
-  const g=S.syn.find(g=>g.id===groupId);if(!g)return;
-  const wn=norm(w);
-  if(g.words.some(x=>norm(x)===wn))return; // no duplicate
-  g.words.push(w);
-  saveS();renderSynList();
-}
-function synDelWord(groupId,word){
-  const g=S.syn.find(g=>g.id===groupId);if(!g)return;
-  g.words=g.words.filter(x=>x!==word);
-  saveS();renderSynList();
-}
-function renderSynList(){
-  const el=document.getElementById('syn-list');if(!el)return;
-  if(!S.syn)S.syn=[];
+function renderAliasChips(){
+  const el=document.getElementById('malias-chips');if(!el)return;
   el.innerHTML='';
-  S.syn.forEach(g=>{
-    const wrap=document.createElement('div');wrap.className='syn-group';
-    // words
-    const ww=document.createElement('div');ww.className='syn-words';
-    g.words.forEach(w=>{
-      const chip=document.createElement('div');chip.className='syn-word';
-      const lbl=document.createElement('span');lbl.textContent=w;
-      const del=document.createElement('button');del.textContent='×';
-      del.onclick=()=>synDelWord(g.id,w);
-      chip.appendChild(lbl);chip.appendChild(del);ww.appendChild(chip);
-    });
-    if(!g.words.length){const ph=document.createElement('span');ph.style.cssText='font-size:12px;color:#504840';ph.textContent='Aucun mot — ajoutez-en ci-dessous';ww.appendChild(ph);}
-    wrap.appendChild(ww);
-    // add word row
-    const row=document.createElement('div');row.className='syn-add-row';
-    const inp=document.createElement('input');inp.placeholder='Ajouter un mot…';inp.maxLength=60;
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){synAddWord(g.id,inp.value);inp.value='';}});
-    const addBtn=document.createElement('button');addBtn.className='btn bsm bgr';addBtn.textContent='+';
-    addBtn.onclick=()=>{synAddWord(g.id,inp.value);inp.value='';};
-    row.appendChild(inp);row.appendChild(addBtn);
-    wrap.appendChild(row);
-    // delete group
-    const delG=document.createElement('button');delG.className='syn-del-group';delG.textContent='🗑 Supprimer ce groupe';
-    delG.onclick=()=>synDelGroup(g.id);
-    wrap.appendChild(delG);
-    el.appendChild(wrap);
+  const aliases=S.notes[aliasNodeId]?.aliases||[];
+  if(!aliases.length){
+    const ph=document.createElement('span');
+    ph.style.cssText='font-size:12px;color:#504840';
+    ph.textContent='Aucun alias';
+    el.appendChild(ph);return;
+  }
+  aliases.forEach(a=>{
+    const chip=document.createElement('div');chip.className='syn-word';
+    const lbl=document.createElement('span');lbl.textContent=a;
+    const del=document.createElement('button');del.textContent='×';
+    del.onclick=()=>aliasDel(a);
+    chip.appendChild(lbl);chip.appendChild(del);
+    el.appendChild(chip);
   });
 }
-function closeSettings(){scr(prevScr||'home');}
+function aliasAdd(){
+  const inp=document.getElementById('malias-inp');
+  const w=inp.value.trim();if(!w||!aliasNodeId)return;
+  const ndata=nd(aliasNodeId);
+  if(!ndata.aliases)ndata.aliases=[];
+  if(!ndata.aliases.some(x=>norm(x)===norm(w))){
+    ndata.aliases.push(w);saveS();
+  }
+  inp.value='';renderAliasChips();
+}
+function aliasDel(word){
+  if(!aliasNodeId)return;
+  const ndata=nd(aliasNodeId);
+  ndata.aliases=(ndata.aliases||[]).filter(x=>x!==word);
+  saveS();renderAliasChips();
+}
 
 /* carnet header colors cycle for extra sections */
 const CAT_COLORS=['#c8a96e','#c47a5a','#7aaec8','#6dbb8a','#b09ee0','#a09880'];
@@ -799,6 +800,7 @@ function mkCard(child){
   } else {
     const b=mkSlb('sl-j','📋','Ajouter\nCarnet');b.onclick=e=>{e.stopPropagation();SFX.click();addCarnet(child.id);closeSlide();};sa.appendChild(b);
   }
+  const ba=mkSlb('sl-a','🔗','Alias');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(child.id,child.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(child.id);closeSlide();};sa.appendChild(bd);
   w.appendChild(sa);
@@ -1084,9 +1086,11 @@ function showTA(){
 }
 function showView(){
   renderView();
-  if(document.getElementById('nview').innerHTML.trim()){
+  const vw=document.getElementById('nview');
+  // Show nview if it has any content (text or spans)
+  if(vw.childNodes.length>0){
     document.getElementById('ntarea').style.display='none';
-    document.getElementById('nview').style.display='block';
+    vw.style.display='block';
   }
 }
 
@@ -1114,18 +1118,6 @@ function saveNote(){
 
 /* ══ RENDER VIEW WITH LINKED TERMS ══ */
 // Build synonym map: word → all words in same group (normed)
-function buildSynMap(){
-  const map={}; // normed word → Set of normed words in same group
-  (S.syn||[]).forEach(g=>{
-    const normed=g.words.map(w=>norm(w)).filter(Boolean);
-    normed.forEach(w=>{
-      if(!map[w])map[w]=new Set();
-      normed.forEach(w2=>{if(w2!==w)map[w].add(w2);});
-    });
-  });
-  return map;
-}
-
 function renderView(){
   const vw=document.getElementById('nview');
   if(!curFinalId){vw.innerHTML='';return;}
@@ -1135,67 +1127,113 @@ function renderView(){
   if(!text.trim()){vw.innerHTML='';return;}
 
   const nodes=allNodes().filter(n=>n.id!==curFinalId);
-  nodes.sort((a,b)=>b.name.length-a.name.length);
-  if(!nodes.length){vw.innerHTML='';vw.textContent=text;return;}
+  nodes.sort((a,b)=>b.name.length-a.name.length); // longest first
 
-  const synMap=buildSynMap();
+  if(!nodes.length){
+    vw.innerHTML='';
+    const t=document.createTextNode(text);vw.appendChild(t);return;
+  }
 
-  // Map normed node name → matching nodes list
+  // Map normed token → matching nodes list
   const byNormed={};
+  function addToken(token,node){
+    if(!token||token.length<3)return;
+    if(!byNormed[token])byNormed[token]=[];
+    if(!byNormed[token].includes(node))byNormed[token].push(node);
+  }
   nodes.forEach(n=>{
-    const k=norm(n.name);
-    if(!byNormed[k])byNormed[k]=[];
-    byNormed[k].push(n);
+    const full=norm(n.name);
+    addToken(full,n);
+    full.split(/[\s\/]+/).forEach(w=>addToken(w,n));
+    // Also index aliases stored on this node
+    (S.notes[n.id]?.aliases||[]).forEach(a=>{
+      const an=norm(a);
+      addToken(an,n);
+      an.split(/[\s\/]+/).forEach(w=>addToken(w,n));
+    });
   });
 
-  // For each pattern, also find nodes matching via synonyms
   function getMatchingNodes(matchedNorm){
-    const direct=byNormed[matchedNorm]||[];
-    const syns=synMap[matchedNorm]||new Set();
-    const extra=[];
-    syns.forEach(sw=>{(byNormed[sw]||[]).forEach(n=>{if(!direct.includes(n))extra.push(n);});});
-    return [...direct,...extra];
+    return byNormed[matchedNorm]||[];
   }
 
-  // Build patterns for all node names (word-boundary aware: allow punctuation around)
-  const seen=new Set();
-  const uniquePats=[];
-  nodes.forEach(n=>{
-    const k=norm(n.name);
-    if(seen.has(k))return;
-    seen.add(k);
-    const escaped=n.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    // boundary: start of string or non-letter, end of string or non-letter
-    uniquePats.push({re:'(?<![\\p{L}\\d])'+escaped+'(?![\\p{L}\\d])',normed:k});
+  // Build normed text and a map: normIndex → origIndex
+  // norm() may shorten text (diacritics stripped after NFD decomposition)
+  // We need to know where each normed char came from in the original text.
+  function buildNormMap(s){
+    const origChars=[...s]; // unicode-aware split
+    let normed='';
+    const normToOrig=[]; // normToOrig[i] = index in origChars where normed[i] came from
+    origChars.forEach((ch,oi)=>{
+      // norm this single char
+      const nc=ch.toLowerCase().replace(/[-_]/g,' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      for(let j=0;j<nc.length;j++){normToOrig.push(oi);}
+      normed+=nc;
+    });
+    // Convert origChars index to byte/string index
+    // Since JS strings are UTF-16, origChars index ≠ string index for surrogate pairs
+    // Build origCharToStrIdx
+    const origCharToStrIdx=[];
+    let si=0;
+    origChars.forEach((ch)=>{origCharToStrIdx.push(si);si+=ch.length;});
+    origCharToStrIdx.push(si); // sentinel
+    return{normed,normToOrig,origCharToStrIdx};
+  }
+
+  const{normed:normText,normToOrig,origCharToStrIdx}=buildNormMap(text);
+
+  // isWordChar: letter or digit (ASCII + extended latin via unicode range check)
+  function isWordChar(s,i){
+    if(i<0||i>=s.length)return false;
+    const c=s.charCodeAt(i);
+    // ASCII letters/digits
+    if((c>=65&&c<=90)||(c>=97&&c<=122)||(c>=48&&c<=57))return true;
+    // Extended latin / accented chars
+    if(c>=192)return true;
+    return false;
+  }
+
+  // Search every token in normText
+  const hits=[];
+  const usedTokens=new Set();
+
+  // Sort tokens longest first to prefer longer matches
+  const allTokens=Object.keys(byNormed).sort((a,b)=>b.length-a.length);
+
+  allTokens.forEach(k=>{
+    if(usedTokens.has(k))return;
+    const matchingNodes=getMatchingNodes(k);
+    if(!matchingNodes.length)return;
+    usedTokens.add(k);
+
+    let idx=0;
+    while(idx<=normText.length-k.length){
+      const pos=normText.indexOf(k,idx);
+      if(pos===-1)break;
+      const before=isWordChar(normText,pos-1);
+      const after=isWordChar(normText,pos+k.length);
+      if(!before&&!after){
+        const origStart=origCharToStrIdx[normToOrig[pos]];
+        const origEndCharIdx=normToOrig[pos+k.length-1];
+        const origEnd=origCharToStrIdx[origEndCharIdx+1];
+        hits.push({start:origStart,end:origEnd,nodes:matchingNodes});
+      }
+      idx=pos+1;
+    }
   });
 
-  let rx;
-  try{
-    rx=new RegExp('('+uniquePats.map(p=>p.re).join('|')+')','giu');
-  }catch(e){
-    // fallback without unicode property escapes
-    rx=new RegExp('('+uniquePats.map(p=>{
-      const escaped=p.normed.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      return '(?:^|(?<=[^a-zA-Z0-9]))'+escaped+'(?=[^a-zA-Z0-9]|$)';
-    }).join('|')+')','gi');
+  if(!hits.length){
+    vw.innerHTML='';
+    vw.appendChild(document.createTextNode(text));return;
   }
 
-  const hits=[];let m;
-  try{
-    while((m=rx.exec(text))!==null){
-      const start=m.index,end=m.index+m[0].length;
-      const matchedNorm=norm(m[0]);
-      const matchingNodes=getMatchingNodes(matchedNorm);
-      if(matchingNodes.length)hits.push({start,end,nodes:matchingNodes});
-    }
-  }catch(e){
-    vw.textContent=text;return;
-  }
-
-  // remove overlapping hits (keep first)
+  // Sort and remove overlaps
+  hits.sort((a,b)=>a.start-b.start);
   const clean=[];let lastEnd=-1;
   hits.forEach(h=>{if(h.start>=lastEnd){clean.push(h);lastEnd=h.end;}});
 
+  // Build DOM — positions in normText correspond 1:1 to original text chars
+  // (norm() only lowercases/strips diacritics/replaces -_ — doesn't change length)
   vw.innerHTML='';
   let pos=0;
   clean.forEach(h=>{
@@ -1204,6 +1242,7 @@ function renderView(){
     sp.textContent=text.slice(h.start,h.end);
     const mn=h.nodes;
     sp.addEventListener('click',e=>{e.stopPropagation();showLinkPopup(mn,sp.textContent,e);});
+    sp.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();showLinkPopup(mn,sp.textContent,e.changedTouches[0]||e);});
     vw.appendChild(sp);
     pos=h.end;
   });
@@ -1352,6 +1391,7 @@ function showConfirm(t,m,cb){document.getElementById('mc-t').textContent=t;docum
 document.querySelectorAll('.mov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 document.getElementById('ann').addEventListener('keydown',e=>{if(e.key==='Enter')confirmAN();});
 document.getElementById('rni').addEventListener('keydown',e=>{if(e.key==='Enter')confirmRN();});
+document.getElementById('malias-inp').addEventListener('keydown',e=>{if(e.key==='Enter')aliasAdd();});
 
 /* ══ SETTINGS ══ */
 function toggleSnd(){S.snd=!S.snd;SFX.set(S.snd);updSndUI();saveS();}
