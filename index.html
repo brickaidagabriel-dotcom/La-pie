@@ -807,8 +807,8 @@ function mkCard(child){
   const dotsItems=()=>[
     {lbl:nd(child.id).inCarnet?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
     {lbl:'✏️ Modifier',fn:()=>openRN(child.id,child.name)},
-    {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
     {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(child.id)},
+    {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
   ];
   const dots=mkDotsBtn(dotsItems());
   // refresh items on each open to reflect current carnet state
@@ -977,8 +977,8 @@ function mkCarnetCard(node){
   const dotsItems=()=>[
     {lbl:'📋 Retirer du Carnet',fn:()=>rmCarnet(node.id)},
     {lbl:'✏️ Modifier',fn:()=>openRN(node.id,node.name)},
-    {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
     {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(node.id)},
+    {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
   ];
   const dots=mkDotsBtn(dotsItems());
   card.appendChild(dots);
@@ -1731,7 +1731,7 @@ function mmHitTestNode(wx,wy){
 }
 // Hit-test the dots zone (right 16px screen-space of node)
 function mmHitTestDots(wx,wy){
-  const dotsW=16/mmScale;
+  const dotsW=28; // world coords — matches 14px margin on each side
   for(let i=mmNodes.length-1;i>=0;i--){
     const n=mmNodes[i];
     if(wx>=n.hitX+n.hitW-dotsW&&wx<=n.hitX+n.hitW&&wy>=n.hitY&&wy<=n.hitY+n.hitH)return n;
@@ -1752,8 +1752,8 @@ function mmShowDotsMenu(n,sx,sy){
   const items=[
     {lbl:inC?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
     {lbl:'✏️ Renommer',fn:()=>{anchor.remove();openRN(n.node.id,n.node.name);}},
-    {lbl:'🗑 Supprimer',fn:()=>{anchor.remove();confirmDel(n.node.id);}},
     {lbl:'＋ Ajouter synonymes',fn:()=>{anchor.remove();openAliasModal(n.node.id);}},
+    {lbl:'🗑 Supprimer',fn:()=>{anchor.remove();confirmDel(n.node.id);}},
   ];
   openDotsMenu(items,anchor);
 }
