@@ -135,8 +135,9 @@ box-shadow:0 8px 32px rgba(0,0,0,.8);overflow:hidden;min-width:200px;animation:s
 .dots-pop-item:active{background:#252320;}
 .addb{margin-top:16px;}
 
-/* SEARCH BAR — hidden at top, revealed on scroll down */
-.srch-wrap{padding:0 14px 14px;background:#111110;}
+/* SEARCH BAR — hidden at top, revealed on scroll up */
+.srch-wrap{padding:0 14px 14px;background:#111110;max-height:0;overflow:hidden;transition:max-height .25s ease;}
+.srch-wrap.srch-visible{max-height:60px;}
 .srch-bar{display:flex;gap:10px;}
 .srch-in{flex:1;background:#222120;border:1px solid #302e2c;color:#e8e0d0;
 font-family:inherit;font-size:15px;padding:12px 15px;outline:none;border-radius:10px;
@@ -313,13 +314,13 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
 <!-- BIBLIOTHÈQUE -->
 
 <div id="sh-biblio" class="screen">
-  <div class="scr" id="bscroll">
-    <div class="srch-wrap">
-      <div class="srch-bar">
-        <input class="srch-in" id="sinput" placeholder="🔍  Rechercher..." type="text">
-        <button class="btn bsm bacc" onclick="SFX.click();doSearch()">OK</button>
-      </div>
+  <div class="srch-wrap" id="srch-wrap">
+    <div class="srch-bar">
+      <input class="srch-in" id="sinput" placeholder="🔍  Rechercher..." type="text">
+      <button class="btn bsm bacc" onclick="SFX.click();doSearch()">OK</button>
     </div>
+  </div>
+  <div class="scr" id="bscroll">
     <div id="bcont"></div>
     <div id="bsrch" style="display:none"></div>
   </div>
@@ -762,10 +763,25 @@ function renderBiblio(){
   // Update topbar title
   document.getElementById('tbk').style.visibility=historyStack.length>0?'visible':'hidden';
   document.getElementById('tt').textContent=cid==='root'?'Bibliothèque':(node?.name||'Bibliothèque');
-  // Reset search
+  // Reset search bar — hide it
   document.getElementById('bsrch').style.display='none';
   document.getElementById('bcont').style.display='';
   document.getElementById('sinput').value='';
+  document.getElementById('srch-wrap').classList.remove('srch-visible');
+  // Scroll listener: reveal search on scroll up to top
+  const bscroll=document.getElementById('bscroll');
+  bscroll.scrollTop=0;
+  if(!bscroll._srchListenerAttached){
+    bscroll._srchListenerAttached=true;
+    let lastY=0;
+    bscroll.addEventListener('scroll',()=>{
+      const y=bscroll.scrollTop;
+      const wrap=document.getElementById('srch-wrap');
+      if(y===0)wrap.classList.add('srch-visible');
+      else if(y>40)wrap.classList.remove('srch-visible');
+      lastY=y;
+    },{passive:true});
+  }
   const cont=document.getElementById('bcont');
   cont.innerHTML='';
   if(!node)return;
