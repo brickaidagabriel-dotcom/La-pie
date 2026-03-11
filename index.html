@@ -812,7 +812,7 @@ function mkCard(child){
   const dotsItems=()=>[
     {lbl:nd(child.id).inCarnet?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
     {lbl:'✏️ Renommer',fn:()=>openRN(child.id,child.name)},
-    {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(child.id)},
+    {lbl:'Ajouter synonymes',fn:()=>openAliasModal(child.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
   ];
   const dots=mkDotsBtn(dotsItems());
@@ -1108,7 +1108,7 @@ function mkCarnetCard(node){
   const dotsItems=()=>[
     {lbl:'📋 Retirer du Carnet',fn:()=>rmCarnet(node.id)},
     {lbl:'✏️ Renommer',fn:()=>openRN(node.id,node.name)},
-    {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(node.id)},
+    {lbl:'Ajouter synonymes',fn:()=>openAliasModal(node.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
   ];
   const dots=mkDotsBtn(dotsItems());
@@ -1191,8 +1191,20 @@ function doSearch(){
   const res=[];
   function srch(n,path){
     const p=path.join(' › ');
-    if(n.id!=='root'&&norm(n.name).includes(q))res.push({node:n,path:p});
-    if(n.isFinal){const ndata=nd(n.id);if(norm(ndata.on+' '+ndata.already+' '+ndata.future).includes(q)&&!res.find(r=>r.node.id===n.id))res.push({node:n,path:p+' [notes]'});}
+    // Match node name
+    let matched=n.id!=='root'&&norm(n.name).includes(q);
+    // Match aliases — if query matches an alias, treat as if matched node name
+    if(!matched&&n.id!=='root'){
+      const aliases=(nd(n.id).aliases||[]);
+      if(aliases.some(a=>norm(a).includes(q)))matched=true;
+    }
+    if(matched)res.push({node:n,path:p});
+    // Match notes content for final nodes
+    if(n.isFinal){
+      const ndata=nd(n.id);
+      if(norm(ndata.on+' '+ndata.already+' '+ndata.future).includes(q)&&!res.find(r=>r.node.id===n.id))
+        res.push({node:n,path:p+' [notes]'});
+    }
     for(const c of(n.children||[]))srch(c,[...path,n.name]);
   }
   srch(S.tree,[]);
@@ -1883,7 +1895,7 @@ function mmShowDotsMenu(n,sx,sy){
   const items=[
     {lbl:inC?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
     {lbl:'✏️ Renommer',fn:()=>{anchor.remove();openRN(n.node.id,n.node.name);}},
-    {lbl:'＋ Ajouter synonymes',fn:()=>{anchor.remove();openAliasModal(n.node.id);}},
+    {lbl:'Ajouter synonymes',fn:()=>{anchor.remove();openAliasModal(n.node.id);}},
     {lbl:'🗑 Supprimer',fn:()=>{anchor.remove();confirmDel(n.node.id);}},
   ];
   openDotsMenu(items,anchor);
