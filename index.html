@@ -1300,6 +1300,7 @@ function homeBtnB(){
 // Shared tree with biblio — all ops mutate S.tree directly
 let mmTx=0,mmTy=0,mmScale=1;
 let mmPinching=false;
+let mmRootPlus=null;
 let mmDragStart={x:0,y:0,tx:0,ty:0};
 let mmPinchDist=0;
 let mmNodes=[];   // {id, x, y, w, h, node, depth, color}
@@ -1399,47 +1400,63 @@ function mmLayout(){
   mmNodes=[];mmEdges=[];
   mmTx=0;mmTy=0;mmScale=1;
   const rootKids=S.tree.children||[];
-  // First pass: measure total height needed
   const topPad=60;
-  let totalH=rootKids.reduce((s,rk)=>s+mmSubtreeH(rk,1),0)+(rootKids.length-1)*MM_GAP_Y*0.5;
-  const startY=topPad;
   const startX=40;
-  let cy=startY;
+  let cy=topPad;
+  // Place root kids
   rootKids.forEach((rk,ri)=>{
     const color=MM_COLORS[ri%MM_COLORS.length];
     const h=mmSubtreeH(rk,1);
     mmAssignPos(rk,1,startX,cy,color,null);
     cy+=h+MM_GAP_Y*0.5;
   });
+  // Virtual root + node: positioned to the left of all root kids, vertically centered
+  if(rootKids.length>0){
+    const rootKidNodes=mmNodes.filter(n=>n.depth===1);
+    const minY=Math.min(...rootKidNodes.map(n=>n.hitY));
+    const maxY=Math.max(...rootKidNodes.map(n=>n.hitY+n.hitH));
+    const rootPlusSz=MM_PLUS_SZ; // same size as other + buttons
+    const rpX=startX-MM_GAP_X*0.6; // left of first column
+    const rpY=(minY+maxY)/2;
+    // Store as special object (not in mmNodes, separate)
+    mmRootPlus={x:rpX,y:rpY,sz:rootPlusSz,
+                kids:rootKidNodes};
+  } else {
+    mmRootPlus=null;
+  }
 }
 
-const MM_PLUS_SZ=16; // fixed screen-pixel size of + button
+const MM_PLUS_SZ=16; // world-unit size of + button (scales with zoom)
 
 function mmDraw(){
   if(!mmCtx||!mmCanvas)return;
   const pw=window.innerWidth,ph=window.innerHeight;
   mmCtx.clearRect(0,0,pw,ph);
-
-  // ── Pass 1: zoomed world (nodes + edges) ──
   mmCtx.save();
   mmCtx.translate(pw/2+mmTx,ph/2+mmTy);
   mmCtx.scale(mmScale,mmScale);
   mmCtx.translate(-pw/2,-ph/2);
 
-  // Bezier edges
+  // Bezier edges (node→node)
   mmEdges.forEach(e=>{
     const x1=e.ex1!==undefined?e.ex1:e.x1;
     const y1=e.ey1!==undefined?e.ey1:e.y1;
     const x2=e.ex2!==undefined?e.ex2:e.x2;
     const y2=e.ey2!==undefined?e.ey2:e.y2;
     const cpx=x1+(x2-x1)*0.5;
-    mmCtx.beginPath();
-    mmCtx.moveTo(x1,y1);
+    mmCtx.beginPath();mmCtx.moveTo(x1,y1);
     mmCtx.bezierCurveTo(cpx,y1,cpx,y2,x2,y2);
-    mmCtx.strokeStyle=e.color+'66';
-    mmCtx.lineWidth=1.5/mmScale;
-    mmCtx.stroke();
+    mmCtx.strokeStyle=e.color+'66';mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
   });
+
+  // Root+ lines to each root kid
+  if(mmRootPlus){
+    mmRootPlus.kids.forEach(rk=>{
+      mmCtx.beginPath();mmCtx.moveTo(mmRootPlus.x,mmRootPlus.y);
+      mmCtx.lineTo(rk.hitX,rk.y);
+      mmCtx.strokeStyle='#504840';mmCtx.lineWidth=1/mmScale;mmCtx.stroke();
+    });
+  }
 
   // Nodes
   mmNodes.forEach(n=>{
@@ -1456,82 +1473,67 @@ function mmDraw(){
     mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(n.node.name,n.x,n.y);
+    // + button below node (world coords, scales with zoom)
+    mmDrawPlusBtn(n.plusX,n.plusY,n.color);
   });
-  mmCtx.restore();
 
-  // ── Pass 2: fixed-size + buttons in screen coords ──
-  mmNodes.forEach(n=>{
-    // Convert world plusX/plusY → screen coords
-    const sx=mmWorldToScreen(n.plusX,n.plusY);
+  // Root + button (world coords)
+  if(mmRootPlus){
     const hs=MM_PLUS_SZ/2;
-    mmCtx.fillStyle='#1a1917';
-    mmCtx.strokeStyle=n.color+'99';
-    mmCtx.lineWidth=1;
-    mmCtx.beginPath();mmCtx.roundRect(sx.x-hs,sx.y-hs,MM_PLUS_SZ,MM_PLUS_SZ,3);
+    mmCtx.fillStyle='#222120';
+    mmCtx.strokeStyle='#a09880';
+    mmCtx.lineWidth=1/mmScale;
+    mmCtx.beginPath();mmCtx.roundRect(mmRootPlus.x-hs,mmRootPlus.y-hs,MM_PLUS_SZ,MM_PLUS_SZ,3);
     mmCtx.fill();mmCtx.stroke();
     const ps=hs*0.55;
     mmCtx.beginPath();
-    mmCtx.moveTo(sx.x-ps,sx.y);mmCtx.lineTo(sx.x+ps,sx.y);
-    mmCtx.moveTo(sx.x,sx.y-ps);mmCtx.lineTo(sx.x,sx.y+ps);
-    mmCtx.strokeStyle=n.color;mmCtx.lineWidth=1.5;mmCtx.stroke();
-  });
-  // Root + button (top-left, always visible, connects root level)
-  mmDrawRootPlus();
+    mmCtx.moveTo(mmRootPlus.x-ps,mmRootPlus.y);mmCtx.lineTo(mmRootPlus.x+ps,mmRootPlus.y);
+    mmCtx.moveTo(mmRootPlus.x,mmRootPlus.y-ps);mmCtx.lineTo(mmRootPlus.x,mmRootPlus.y+ps);
+    mmCtx.strokeStyle='#a09880';mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
+  }
+
+  mmCtx.restore();
+}
+
+function mmDrawPlusBtn(px,py,color){
+  const hs=MM_PLUS_SZ/2;
+  mmCtx.fillStyle='#1a1917';
+  mmCtx.strokeStyle=color+'99';
+  mmCtx.lineWidth=1/mmScale;
+  mmCtx.beginPath();mmCtx.roundRect(px-hs,py-hs,MM_PLUS_SZ,MM_PLUS_SZ,3);
+  mmCtx.fill();mmCtx.stroke();
+  const ps=hs*0.55;
+  mmCtx.beginPath();
+  mmCtx.moveTo(px-ps,py);mmCtx.lineTo(px+ps,py);
+  mmCtx.moveTo(px,py-ps);mmCtx.lineTo(px,py+ps);
+  mmCtx.strokeStyle=color;mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
 }
 
 function mmScreenToWorld(sx,sy){
   const pw=window.innerWidth,ph=window.innerHeight;
   return{x:(sx-(pw/2+mmTx))/mmScale+pw/2,y:(sy-(ph/2+mmTy))/mmScale+ph/2};
 }
-function mmWorldToScreen(wx,wy){
-  const pw=window.innerWidth,ph=window.innerHeight;
-  return{x:(wx-pw/2)*mmScale+pw/2+mmTx, y:(wy-ph/2)*mmScale+ph/2+mmTy};
-}
 
-// Root + button: fixed position top-left of canvas (always visible)
-const MM_ROOT_PLUS_X=24, MM_ROOT_PLUS_Y=80, MM_ROOT_PLUS_SZ=22;
-function mmDrawRootPlus(){
-  const x=MM_ROOT_PLUS_X,y=MM_ROOT_PLUS_Y,sz=MM_ROOT_PLUS_SZ,hs=sz/2;
-  mmCtx.fillStyle='#222120';
-  mmCtx.strokeStyle='#c8a96e99';
-  mmCtx.lineWidth=1;
-  mmCtx.beginPath();mmCtx.roundRect(x-hs,y-hs,sz,sz,4);
-  mmCtx.fill();mmCtx.stroke();
-  const ps=hs*0.5;
-  mmCtx.beginPath();
-  mmCtx.moveTo(x-ps,y);mmCtx.lineTo(x+ps,y);
-  mmCtx.moveTo(x,y-ps);mmCtx.lineTo(x,y+ps);
-  mmCtx.strokeStyle='#c8a96e';mmCtx.lineWidth=2;mmCtx.stroke();
-}
-
-function mmHitTestPlus(sx,sy){
-  // Test in screen coords (+ buttons are fixed size)
-  const hs=MM_PLUS_SZ/2+4; // hit margin
+// Hit-test + buttons (world coords)
+function mmHitTestPlus(wx,wy){
+  const hs=MM_PLUS_SZ/2+4/mmScale;
   for(let i=mmNodes.length-1;i>=0;i--){
     const n=mmNodes[i];
-    const s=mmWorldToScreen(n.plusX,n.plusY);
-    if(Math.abs(sx-s.x)<=hs&&Math.abs(sy-s.y)<=hs)return{type:'node',node:n};
+    if(Math.abs(wx-n.plusX)<=hs&&Math.abs(wy-n.plusY)<=hs)return n;
   }
   return null;
 }
-function mmHitTestRootPlus(sx,sy){
-  const hs=MM_ROOT_PLUS_SZ/2+4;
-  return Math.abs(sx-MM_ROOT_PLUS_X)<=hs&&Math.abs(sy-MM_ROOT_PLUS_Y)<=hs;
+// Hit-test root + (world coords)
+function mmHitTestRootPlus(wx,wy){
+  if(!mmRootPlus)return false;
+  const hs=MM_PLUS_SZ/2+4/mmScale;
+  return Math.abs(wx-mmRootPlus.x)<=hs&&Math.abs(wy-mmRootPlus.y)<=hs;
 }
 
 function mmHitTestNode(wx,wy){
   for(let i=mmNodes.length-1;i>=0;i--){
     const n=mmNodes[i];
     if(wx>=n.hitX&&wx<=n.hitX+n.hitW&&wy>=n.hitY&&wy<=n.hitY+n.hitH)return n;
-  }
-  return null;
-}
-
-function mmHitTestPlus(wx,wy){
-  const pr=MM_PLUS_R/mmScale+6;
-  for(let i=mmNodes.length-1;i>=0;i--){
-    const n=mmNodes[i];
-    if(Math.hypot(wx-n.plusX,wy-n.plusY)<=pr)return n;
   }
   return null;
 }
@@ -1604,14 +1606,10 @@ function mmAttachEvents(){
     }
     if(!mmTouchMoved&&e.changedTouches.length===1){
       const t=e.changedTouches[0];
-      const sx=t.clientX,sy=t.clientY;
-      // root + button (screen coords)
-      if(mmHitTestRootPlus(sx,sy)){SFX.click();mmAddRootChildModal();return;}
-      // node + buttons (screen coords)
-      const ph2=mmHitTestPlus(sx,sy);
-      if(ph2){SFX.click();mmAddChildModal(ph2.node.node.id);return;}
-      // node tap (world coords)
-      const w=mmScreenToWorld(sx,sy);
+      const w=mmScreenToWorld(t.clientX,t.clientY);
+      if(mmHitTestRootPlus(w.x,w.y)){SFX.click();mmAddRootChildModal();return;}
+      const ph2=mmHitTestPlus(w.x,w.y);
+      if(ph2){SFX.click();mmAddChildModal(ph2.node.id);return;}
       const hit=mmHitTestNode(w.x,w.y);
       if(hit&&!hit.node.isFinal){SFX.nav();mmZoomTo(hit);}
     }
@@ -1629,11 +1627,10 @@ function mmAttachEvents(){
   mmCanvas.addEventListener('mouseup',e=>{
     mmMD=false;
     if(!mmMM){
-      const sx=e.clientX,sy=e.clientY;
-      if(mmHitTestRootPlus(sx,sy)){SFX.click();mmAddRootChildModal();return;}
-      const ph2=mmHitTestPlus(sx,sy);
-      if(ph2){SFX.click();mmAddChildModal(ph2.node.node.id);return;}
-      const w=mmScreenToWorld(sx,sy);
+      const w=mmScreenToWorld(e.clientX,e.clientY);
+      if(mmHitTestRootPlus(w.x,w.y)){SFX.click();mmAddRootChildModal();return;}
+      const ph2=mmHitTestPlus(w.x,w.y);
+      if(ph2){SFX.click();mmAddChildModal(ph2.node.id);return;}
       const hit=mmHitTestNode(w.x,w.y);
       if(hit&&!hit.node.isFinal){SFX.nav();mmZoomTo(hit);}
     }
