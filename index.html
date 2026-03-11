@@ -825,19 +825,23 @@ function mkCard(child){
 }
 
 function attachTouch(card,w,sa,child,isCarnet){
-  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false;
+  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false,swLeft=false;
   card.addEventListener('touchstart',e=>{
-    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;
+    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;swLeft=false;
     lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;w.classList.add('lp-active');SFX.click();
       startDrag(child.id,w,t,isCarnet?getRootChildId(child.id):null);
       setTimeout(()=>w.classList.remove('lp-active'),300);
     },500);
   },{passive:true});
-  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=Math.abs(t.clientX-t0x),dy=Math.abs(t.clientY-t0y);if(dx>6||dy>6){moved=true;clearTimeout(lpTimer);}if(dx>28&&dy<40)swOK=true;},{passive:true});
+  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=t.clientX-t0x,dy=Math.abs(t.clientY-t0y);if(Math.abs(dx)>6||dy>6){moved=true;clearTimeout(lpTimer);}if(Math.abs(dx)>28&&dy<40){swOK=true;swLeft=dx<0;}},{passive:true});
   card.addEventListener('touchend',()=>{
     clearTimeout(lpTimer);w.classList.remove('lp-active');
     if(lpFired)return;
-    if(swOK){if(aSlide===sa)closeSlide();else{closeSlide();sa.classList.add('vis');aSlide=sa;}return;}
+    if(swOK){
+      if(!swLeft){closeSlide();return;}       // swipe right → close
+      if(aSlide===sa){closeSlide();return;}   // swipe left on open → close
+      closeSlide();sa.classList.add('vis');aSlide=sa;return;
+    }
     if(!moved)navTo(child);
   });
   card.addEventListener('click',()=>{if(!moved&&!lpFired)navTo(child);});
@@ -963,16 +967,20 @@ function mkCarnetCard(node){
   w.appendChild(card);
 
   // touch: swipe for actions, tap to navigate, long press to reorder (within same category)
-  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false;
+  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false,swLeft=false;
   card.addEventListener('touchstart',e=>{
-    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;
+    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;swLeft=false;
     lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;SFX.click();startDrag(node.id,w,t,getRootChildId(node.id));setTimeout(()=>w.classList.remove('lp-active'),300);},500);
   },{passive:true});
-  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=Math.abs(t.clientX-t0x),dy=Math.abs(t.clientY-t0y);if(dx>6||dy>6){moved=true;clearTimeout(lpTimer);}if(dx>28&&dy<40)swOK=true;},{passive:true});
+  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=t.clientX-t0x,dy=Math.abs(t.clientY-t0y);if(Math.abs(dx)>6||dy>6){moved=true;clearTimeout(lpTimer);}if(Math.abs(dx)>28&&dy<40){swOK=true;swLeft=dx<0;}},{passive:true});
   card.addEventListener('touchend',()=>{
     clearTimeout(lpTimer);
     if(lpFired)return;
-    if(swOK){if(aSlide===sa)closeSlide();else{closeSlide();sa.classList.add('vis');aSlide=sa;}return;}
+    if(swOK){
+      if(!swLeft){closeSlide();return;}
+      if(aSlide===sa){closeSlide();return;}
+      closeSlide();sa.classList.add('vis');aSlide=sa;return;
+    }
     if(!moved){SFX.nav();carnetNavTo(node);}
   });
   card.addEventListener('click',()=>{if(!moved&&!lpFired)carnetNavTo(node);});
@@ -1631,6 +1639,19 @@ function mmDraw(){
     mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(n.node.name,n.x,n.y);
+    // slide handle: thick bar on right edge of node
+    const hbW=6/mmScale; // handle width in world coords (constant screen size)
+    const hbR=4; // border-radius
+    mmCtx.fillStyle='#3a3830';
+    mmCtx.beginPath();mmCtx.roundRect(nx+nw-hbW-2/mmScale,ny+2/mmScale,hbW,nh-4/mmScale,hbR/mmScale);mmCtx.fill();
+    mmCtx.strokeStyle='#605850';
+    mmCtx.lineWidth=0.5/mmScale;
+    mmCtx.beginPath();mmCtx.roundRect(nx+nw-hbW-2/mmScale,ny+2/mmScale,hbW,nh-4/mmScale,hbR/mmScale);mmCtx.stroke();
+    // draw 3 dots on the handle
+    const hbCx=nx+nw-hbW/2-2/mmScale;
+    const dotR=0.8/mmScale;
+    mmCtx.fillStyle='#807060';
+    [-3,0,3].forEach(dy=>{mmCtx.beginPath();mmCtx.arc(hbCx,n.y+dy/mmScale,dotR,0,Math.PI*2);mmCtx.fill();});
     // + button only for non-final nodes
     if(n.plusX!==null)mmDrawPlusBtn(n.plusX,n.plusY,n.color);
   });
@@ -1700,6 +1721,16 @@ function mmHitTestNode(wx,wy){
   }
   return null;
 }
+// Hit-test the slide handle bar (right edge of node, 14px screen width)
+function mmHitTestHandle(wx,wy){
+  const handleScreenW=14;
+  const handleW=handleScreenW/mmScale;
+  for(let i=mmNodes.length-1;i>=0;i--){
+    const n=mmNodes[i];
+    if(wx>=n.hitX+n.hitW-handleW&&wx<=n.hitX+n.hitW&&wy>=n.hitY&&wy<=n.hitY+n.hitH)return n;
+  }
+  return null;
+}
 
 let mmTouchMoved=false,mmLpTimer=null,mmPt1=null,mmPt2=null,mmLongPressed=false;
 let mmSwipeNode=null; // node being swiped
@@ -1766,9 +1797,9 @@ function mmAttachEvents(){
       mmDragStart={x:t.clientX,y:t.clientY,tx:mmTx,ty:mmTy};
       mmTouchMoved=false;
       mmLongPressed=false;
-      // detect swipe start on a node
+      // detect if touch starts on a handle
       const w=mmScreenToWorld(t.clientX,t.clientY);
-      mmSwipeNode=mmHitTestNode(w.x,w.y)||null;
+      mmSwipeNode=mmHitTestHandle(w.x,w.y)||null;
     }
   },{passive:false});
 
@@ -1793,12 +1824,7 @@ function mmAttachEvents(){
     } else if(e.touches.length===1&&!mmPinching){
       const t=e.touches[0];
       const dx=t.clientX-mmDragStart.x,dy=t.clientY-mmDragStart.y;
-      if(Math.abs(dx)>5||Math.abs(dy)>5){mmTouchMoved=true;}
-      // if swiping left on a node, show slide (don't pan)
-      if(mmSwipeNode&&Math.abs(dx)>28&&Math.abs(dy)<40&&dx<0){
-        // swipe left on node → show slide, block pan
-        return;
-      }
+      if(Math.abs(dx)>5||Math.abs(dy)>5){mmTouchMoved=true;mmSwipeNode=null;}
       mmCloseSlide();
       mmTx=mmDragStart.tx+dx;mmTy=mmDragStart.ty+dy;
       mmDraw();
@@ -1814,9 +1840,8 @@ function mmAttachEvents(){
       mmPinching=false;return;
     }
     const t=e.changedTouches[0];
-    const dx=t.clientX-mmDragStart.x,dy=t.clientY-mmDragStart.y;
-    // swipe left on node → show slide
-    if(mmSwipeNode&&Math.abs(dx)>28&&Math.abs(dy)<40&&dx<0){
+    // tap on handle → show slide
+    if(mmSwipeNode&&!mmTouchMoved){
       mmShowSlide(mmSwipeNode);
       mmSwipeNode=null;return;
     }
