@@ -1179,11 +1179,8 @@ function renderVids(){
     arrows.appendChild(btnUp);arrows.appendChild(btnDn);
     hdr.appendChild(arrows);
 
-    const lbl=document.createElement('div');lbl.className='vlbl';lbl.style.flex='1';
-    const typeLbls={youtube:'▶ YouTube',dailymotion:'▶ Dailymotion',long:'▶ Vidéo',instagram:'📷 Instagram',tiktok:'🎵 TikTok',court:'⚡ Court',short:'⚡ Court'};
-    lbl.textContent=typeLbls[v.type]||'🔗 Lien';
     const del=document.createElement('button');del.className='btn bsm brd';del.style.padding='8px 12px';del.textContent='🗑';del.onclick=()=>{SFX.del();confirmDelVid(i);};
-    hdr.appendChild(lbl);hdr.appendChild(del);item.appendChild(hdr);
+    hdr.appendChild(del);item.appendChild(hdr);
 
     if(v.type==='youtube'){
       const wr=document.createElement('div');wr.className='viframe';
@@ -1416,18 +1413,20 @@ function mmLayout(){
   });
 }
 
-const MM_PLUS_R=9;
+const MM_PLUS_SZ=16; // fixed screen-pixel size of + button
 
 function mmDraw(){
   if(!mmCtx||!mmCanvas)return;
   const pw=window.innerWidth,ph=window.innerHeight;
   mmCtx.clearRect(0,0,pw,ph);
+
+  // ── Pass 1: zoomed world (nodes + edges) ──
   mmCtx.save();
   mmCtx.translate(pw/2+mmTx,ph/2+mmTy);
   mmCtx.scale(mmScale,mmScale);
   mmCtx.translate(-pw/2,-ph/2);
 
-  // Draw bezier edges
+  // Bezier edges
   mmEdges.forEach(e=>{
     const x1=e.ex1!==undefined?e.ex1:e.x1;
     const y1=e.ey1!==undefined?e.ey1:e.y1;
@@ -1442,7 +1441,7 @@ function mmDraw(){
     mmCtx.stroke();
   });
 
-  // Draw nodes
+  // Nodes
   mmNodes.forEach(n=>{
     const fs=n.depth===1?MM_NW_ROOT:MM_NW_BASE;
     mmCtx.font=`${n.depth===1?700:600} ${fs}px -apple-system,BlinkMacSystemFont,sans-serif`;
@@ -1457,23 +1456,67 @@ function mmDraw(){
     mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(n.node.name,n.x,n.y);
-    // + button below node
-    const pr=MM_PLUS_R/mmScale;
-    mmCtx.beginPath();mmCtx.arc(n.plusX,n.plusY,pr,0,Math.PI*2);
-    mmCtx.fillStyle='#1a1917';mmCtx.fill();
-    mmCtx.strokeStyle=n.color+'99';mmCtx.lineWidth=1/mmScale;mmCtx.stroke();
-    const ps=pr*0.55;
-    mmCtx.beginPath();
-    mmCtx.moveTo(n.plusX-ps,n.plusY);mmCtx.lineTo(n.plusX+ps,n.plusY);
-    mmCtx.moveTo(n.plusX,n.plusY-ps);mmCtx.lineTo(n.plusX,n.plusY+ps);
-    mmCtx.strokeStyle=n.color;mmCtx.lineWidth=1.5/mmScale;mmCtx.stroke();
   });
   mmCtx.restore();
+
+  // ── Pass 2: fixed-size + buttons in screen coords ──
+  mmNodes.forEach(n=>{
+    // Convert world plusX/plusY → screen coords
+    const sx=mmWorldToScreen(n.plusX,n.plusY);
+    const hs=MM_PLUS_SZ/2;
+    mmCtx.fillStyle='#1a1917';
+    mmCtx.strokeStyle=n.color+'99';
+    mmCtx.lineWidth=1;
+    mmCtx.beginPath();mmCtx.roundRect(sx.x-hs,sx.y-hs,MM_PLUS_SZ,MM_PLUS_SZ,3);
+    mmCtx.fill();mmCtx.stroke();
+    const ps=hs*0.55;
+    mmCtx.beginPath();
+    mmCtx.moveTo(sx.x-ps,sx.y);mmCtx.lineTo(sx.x+ps,sx.y);
+    mmCtx.moveTo(sx.x,sx.y-ps);mmCtx.lineTo(sx.x,sx.y+ps);
+    mmCtx.strokeStyle=n.color;mmCtx.lineWidth=1.5;mmCtx.stroke();
+  });
+  // Root + button (top-left, always visible, connects root level)
+  mmDrawRootPlus();
 }
 
 function mmScreenToWorld(sx,sy){
   const pw=window.innerWidth,ph=window.innerHeight;
   return{x:(sx-(pw/2+mmTx))/mmScale+pw/2,y:(sy-(ph/2+mmTy))/mmScale+ph/2};
+}
+function mmWorldToScreen(wx,wy){
+  const pw=window.innerWidth,ph=window.innerHeight;
+  return{x:(wx-pw/2)*mmScale+pw/2+mmTx, y:(wy-ph/2)*mmScale+ph/2+mmTy};
+}
+
+// Root + button: fixed position top-left of canvas (always visible)
+const MM_ROOT_PLUS_X=24, MM_ROOT_PLUS_Y=80, MM_ROOT_PLUS_SZ=22;
+function mmDrawRootPlus(){
+  const x=MM_ROOT_PLUS_X,y=MM_ROOT_PLUS_Y,sz=MM_ROOT_PLUS_SZ,hs=sz/2;
+  mmCtx.fillStyle='#222120';
+  mmCtx.strokeStyle='#c8a96e99';
+  mmCtx.lineWidth=1;
+  mmCtx.beginPath();mmCtx.roundRect(x-hs,y-hs,sz,sz,4);
+  mmCtx.fill();mmCtx.stroke();
+  const ps=hs*0.5;
+  mmCtx.beginPath();
+  mmCtx.moveTo(x-ps,y);mmCtx.lineTo(x+ps,y);
+  mmCtx.moveTo(x,y-ps);mmCtx.lineTo(x,y+ps);
+  mmCtx.strokeStyle='#c8a96e';mmCtx.lineWidth=2;mmCtx.stroke();
+}
+
+function mmHitTestPlus(sx,sy){
+  // Test in screen coords (+ buttons are fixed size)
+  const hs=MM_PLUS_SZ/2+4; // hit margin
+  for(let i=mmNodes.length-1;i>=0;i--){
+    const n=mmNodes[i];
+    const s=mmWorldToScreen(n.plusX,n.plusY);
+    if(Math.abs(sx-s.x)<=hs&&Math.abs(sy-s.y)<=hs)return{type:'node',node:n};
+  }
+  return null;
+}
+function mmHitTestRootPlus(sx,sy){
+  const hs=MM_ROOT_PLUS_SZ/2+4;
+  return Math.abs(sx-MM_ROOT_PLUS_X)<=hs&&Math.abs(sy-MM_ROOT_PLUS_Y)<=hs;
 }
 
 function mmHitTestNode(wx,wy){
@@ -1553,7 +1596,6 @@ function mmAttachEvents(){
   mmCanvas.addEventListener('touchend',e=>{
     clearTimeout(mmLpTimer);
     if(mmPinching&&e.touches.length<2){
-      // when releasing pinch, reset drag start to avoid jump
       if(e.touches.length===1){
         const t=e.touches[0];
         mmDragStart={x:t.clientX,y:t.clientY,tx:mmTx,ty:mmTy};
@@ -1562,14 +1604,16 @@ function mmAttachEvents(){
     }
     if(!mmTouchMoved&&e.changedTouches.length===1){
       const t=e.changedTouches[0];
-      const w=mmScreenToWorld(t.clientX,t.clientY);
-      // check + button first
-      const ph=mmHitTestPlus(w.x,w.y);
-      if(ph){SFX.click();mmAddChildModal(ph.node.id);return;}
-      // tap on non-final node = pan to center on it
+      const sx=t.clientX,sy=t.clientY;
+      // root + button (screen coords)
+      if(mmHitTestRootPlus(sx,sy)){SFX.click();mmAddRootChildModal();return;}
+      // node + buttons (screen coords)
+      const ph2=mmHitTestPlus(sx,sy);
+      if(ph2){SFX.click();mmAddChildModal(ph2.node.node.id);return;}
+      // node tap (world coords)
+      const w=mmScreenToWorld(sx,sy);
       const hit=mmHitTestNode(w.x,w.y);
       if(hit&&!hit.node.isFinal){SFX.nav();mmZoomTo(hit);}
-      // tap on final = nothing (long-press to get menu with Lire)
     }
   },{passive:true});
 
@@ -1585,9 +1629,11 @@ function mmAttachEvents(){
   mmCanvas.addEventListener('mouseup',e=>{
     mmMD=false;
     if(!mmMM){
-      const w=mmScreenToWorld(e.clientX,e.clientY);
-      const ph=mmHitTestPlus(w.x,w.y);
-      if(ph){SFX.click();mmAddChildModal(ph.node.id);return;}
+      const sx=e.clientX,sy=e.clientY;
+      if(mmHitTestRootPlus(sx,sy)){SFX.click();mmAddRootChildModal();return;}
+      const ph2=mmHitTestPlus(sx,sy);
+      if(ph2){SFX.click();mmAddChildModal(ph2.node.node.id);return;}
+      const w=mmScreenToWorld(sx,sy);
       const hit=mmHitTestNode(w.x,w.y);
       if(hit&&!hit.node.isFinal){SFX.nav();mmZoomTo(hit);}
     }
@@ -1610,7 +1656,16 @@ function mmZoomTo(n){
 }
 function mmReset(){mmTx=0;mmTy=0;mmScale=1;mmDraw();}
 
-/* Add child via + button on edge — opens the modal with parent pre-set */
+/* Add child of root (from the root + button) */
+function mmAddRootChildModal(){
+  anPid=S.tree.id; // root
+  selType('nod');
+  document.getElementById('ann').value='';
+  openM('man');
+  setTimeout(()=>document.getElementById('ann').focus(),120);
+}
+
+/* Add child via + button below node */
 function mmAddChildModal(parentId){
   anPid=parentId;selType('fin');
   document.getElementById('ann').value='';
