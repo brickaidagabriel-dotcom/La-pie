@@ -803,7 +803,7 @@ function mkCard(child){
   }
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(child.id,child.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(child.id);closeSlide();};sa.appendChild(bd);
-  const ba=mkSlb('sl-a','+','');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
+  const ba=mkSlb('sl-a','＋','Ajouter\nsynonymes');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
   w.appendChild(sa);
 
   const card=document.createElement('div');card.className='nc';
@@ -941,6 +941,7 @@ function mkCarnetCard(node){
   const buj=mkSlb('sl-uj','📋','Retirer\nCarnet');buj.onclick=e=>{e.stopPropagation();SFX.click();rmCarnet(node.id);closeSlide();};sa.appendChild(buj);
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(node.id,node.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(node.id);closeSlide();};sa.appendChild(bd);
+  const bas=mkSlb('sl-a','＋','Ajouter\nsynonymes');bas.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(node.id);closeSlide();};sa.appendChild(bas);
   w.appendChild(sa);
 
   const card=document.createElement('div');
@@ -1860,7 +1861,7 @@ function mmContextMenu(n,sx,sy){
   // Supprimer (all nodes)
   acts.push({lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}});
   // + alias
-  acts.push({lbl:'+',fn:()=>{pop.remove();openAliasModal(n.node.id);}});
+  acts.push({lbl:'＋ Ajouter synonymes',fn:()=>{pop.remove();openAliasModal(n.node.id);}});
 
   acts.forEach((a,idx)=>{
     const d=document.createElement('div');
