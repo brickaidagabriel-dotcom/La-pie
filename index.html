@@ -1148,8 +1148,7 @@ function renderView(){
   nodes.forEach(n=>{
     const full=norm(n.name);
     addToken(full,n);
-    full.split(/[\s\/]+/).forEach(w=>addToken(w,n));
-    // Also index aliases stored on this node
+    // Also index aliases stored on this node (manual aliases can be single words)
     (S.notes[n.id]?.aliases||[]).forEach(a=>{
       const an=norm(a);
       addToken(an,n);
