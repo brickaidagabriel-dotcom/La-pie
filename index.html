@@ -137,6 +137,7 @@ gap:5px;min-width:68px;text-align:center;line-height:1.4;}
 .sl-uj{background:#1e1530;color:#b09ee0;}
 .sl-r{background:#201a0a;color:#c8a96e;}
 .sl-d{background:#200c0c;color:#c47a5a;}
+.sl-a{background:#0d1a15;color:#6dbb8a;}
 .addb{margin-top:16px;}
 
 /* SEARCH BAR — hidden at top, revealed on scroll down */
@@ -800,9 +801,9 @@ function mkCard(child){
   } else {
     const b=mkSlb('sl-j','📋','Ajouter\nCarnet');b.onclick=e=>{e.stopPropagation();SFX.click();addCarnet(child.id);closeSlide();};sa.appendChild(b);
   }
-  const ba=mkSlb('sl-a','🔗','Alias');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(child.id,child.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(child.id);closeSlide();};sa.appendChild(bd);
+  const ba=mkSlb('sl-a','+','');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
   w.appendChild(sa);
 
   const card=document.createElement('div');card.className='nc';
@@ -1854,6 +1855,8 @@ function mmContextMenu(n,sx,sy){
   acts.push({lbl:'✏️ Renommer',fn:()=>{pop.remove();openRN(n.node.id,n.node.name);}});
   // Supprimer (all nodes)
   acts.push({lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}});
+  // + alias
+  acts.push({lbl:'+ Alias',fn:()=>{pop.remove();openAliasModal(n.node.id);}});
 
   acts.forEach((a,idx)=>{
     const d=document.createElement('div');
