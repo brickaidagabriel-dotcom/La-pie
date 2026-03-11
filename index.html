@@ -263,6 +263,16 @@ width:62px;padding:7px 0;cursor:pointer;text-align:center;border-radius:6px;font
 .scard{background:#222120;border:1px solid #302e2c;border-radius:var(–r);padding:18px;display:flex;flex-direction:column;gap:10px;}
 .slbl{font-size:14px;font-weight:700;color:#e8e0d0;}
 .sdesc{font-size:13px;color:#a09880;line-height:1.8;}
+/* Synonym UI */
+.syn-group{background:#1a1917;border:1px solid #302e2c;border-radius:10px;padding:12px;margin-bottom:8px;}
+.syn-words{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.syn-word{display:flex;align-items:center;gap:4px;background:#2c2b29;border:1px solid #3a3835;border-radius:6px;padding:5px 8px;}
+.syn-word span{font-size:13px;color:#e8e0d0;}
+.syn-word button{background:none;border:none;color:#c47a5a;font-size:14px;cursor:pointer;padding:0 2px;line-height:1;}
+.syn-add-row{display:flex;gap:6px;}
+.syn-add-row input{flex:1;background:#111110;border:1px solid #302e2c;border-radius:7px;color:#e8e0d0;font-family:inherit;font-size:13px;padding:7px 10px;outline:none;}
+.syn-add-row input:focus{border-color:#c8a96e;}
+.syn-del-group{background:none;border:none;color:#504840;font-size:12px;cursor:pointer;align-self:flex-end;padding:2px 4px;font-family:inherit;}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .tog{position:relative;width:48px;height:27px;flex-shrink:0;background:#111110;border:1px solid #302e2c;border-radius:14px;cursor:pointer;transition:background .2s,border-color .2s;}
 .tog.on{background:#0e1f14;border-color:#6dbb8a;}
@@ -376,6 +386,12 @@ box-shadow:0 10px 40px rgba(0,0,0,.7);display:none;}
     <div class="scard"><div class="slbl">⬇  Exporter</div><div class="sdesc">Sauvegarde en JSON.</div><button class="btn bsm" onclick="SFX.click();exportD()" style="margin-top:4px">Exporter JSON</button></div>
     <div class="scard"><div class="slbl">⬆  Importer</div><div class="sdesc">Restaurer depuis JSON.</div><button class="btn bsm" onclick="SFX.click();importClick()" style="margin-top:4px">Importer JSON</button><input type="file" id="ifile" accept=".json" style="display:none" onchange="importD(event)"></div>
     <div class="scard"><div class="slbl">🔄  Reset arbre</div><div class="sdesc">Remet l'arbre par défaut. Notes conservées.</div><button class="btn bsm brd" onclick="SFX.click();resetTree()" style="margin-top:4px">Reset</button></div>
+    <div class="scard" id="syn-card">
+      <div class="slbl">🔗  Synonymes</div>
+      <div class="sdesc" style="margin-bottom:10px">Les mots d'un groupe sont détectés ensemble dans les textes.</div>
+      <div id="syn-list"></div>
+      <button class="btn bsm bgr" style="margin-top:10px;width:100%" onclick="SFX.click();synAddGroup()">+ Nouveau groupe</button>
+    </div>
   </div>
 </div>
 
@@ -549,6 +565,7 @@ function loadS(){
     if(d){S=JSON.parse(d);if(!S.tree)S.tree=cl(DT);if(!S.notes)S.notes={};if(!S.jourOrder)S.jourOrder={};}
     else S.tree=cl(DT);
   }catch(e){S.tree=cl(DT);S.notes={};}
+  if(!S.syn)S.syn=[]; // synonym groups: [{id, words:[str,...]}]
   SFX.set(S.snd!==false);updSndUI();
 }
 function saveS(){try{localStorage.setItem('jjb_v9',JSON.stringify(S));}catch(e){}}
@@ -633,7 +650,7 @@ function topBack(){
   const s=prev.screen;
   if(s==='biblio'){renderBiblio();}
   else if(s==='carnet'){renderCarnet();}
-  else if(s==='mindmap'){mmCanvas=document.getElementById('mm-canvas');mmCtx=mmCanvas.getContext('2d');requestAnimationFrame(()=>requestAnimationFrame(()=>{mmResize();mmLayout();mmDraw();}));}
+  else if(s==='mindmap'){mmCanvas=document.getElementById('mm-canvas');mmCtx=mmCanvas.getContext('2d');requestAnimationFrame(()=>requestAnimationFrame(()=>{mmResize();mmTx=0;mmTy=0;mmScale=1;mmLayout();mmDraw();}));}
   else if(s==='final'){
     // re-open final with restored state
     const ndata=nd(curFinalId);
@@ -653,7 +670,63 @@ function topBack(){
 function goHome(){historyStack=[];navStack=[];scr('home');}
 function goCarnet(){pushHistory('home');renderCarnet();scr('carnet');}
 function goBiblio(){pushHistory('home');navStack=['root'];renderBiblio();scr('biblio');}
-function openSettings(){prevScr=document.querySelector('.screen.active')?.id?.replace('sh-','')||'home';scr('settings');}
+function openSettings(){prevScr=document.querySelector('.screen.active')?.id?.replace('sh-','')||'home';scr('settings');renderSynList();}
+
+/* ══ SYNONYMES ══ */
+function synAddGroup(){
+  if(!S.syn)S.syn=[];
+  S.syn.push({id:gid(),words:[]});
+  saveS();renderSynList();
+}
+function synDelGroup(id){
+  S.syn=S.syn.filter(g=>g.id!==id);
+  saveS();renderSynList();
+}
+function synAddWord(groupId,word){
+  const w=word.trim();if(!w)return;
+  const g=S.syn.find(g=>g.id===groupId);if(!g)return;
+  const wn=norm(w);
+  if(g.words.some(x=>norm(x)===wn))return; // no duplicate
+  g.words.push(w);
+  saveS();renderSynList();
+}
+function synDelWord(groupId,word){
+  const g=S.syn.find(g=>g.id===groupId);if(!g)return;
+  g.words=g.words.filter(x=>x!==word);
+  saveS();renderSynList();
+}
+function renderSynList(){
+  const el=document.getElementById('syn-list');if(!el)return;
+  if(!S.syn)S.syn=[];
+  el.innerHTML='';
+  S.syn.forEach(g=>{
+    const wrap=document.createElement('div');wrap.className='syn-group';
+    // words
+    const ww=document.createElement('div');ww.className='syn-words';
+    g.words.forEach(w=>{
+      const chip=document.createElement('div');chip.className='syn-word';
+      const lbl=document.createElement('span');lbl.textContent=w;
+      const del=document.createElement('button');del.textContent='×';
+      del.onclick=()=>synDelWord(g.id,w);
+      chip.appendChild(lbl);chip.appendChild(del);ww.appendChild(chip);
+    });
+    if(!g.words.length){const ph=document.createElement('span');ph.style.cssText='font-size:12px;color:#504840';ph.textContent='Aucun mot — ajoutez-en ci-dessous';ww.appendChild(ph);}
+    wrap.appendChild(ww);
+    // add word row
+    const row=document.createElement('div');row.className='syn-add-row';
+    const inp=document.createElement('input');inp.placeholder='Ajouter un mot…';inp.maxLength=60;
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){synAddWord(g.id,inp.value);inp.value='';}});
+    const addBtn=document.createElement('button');addBtn.className='btn bsm bgr';addBtn.textContent='+';
+    addBtn.onclick=()=>{synAddWord(g.id,inp.value);inp.value='';};
+    row.appendChild(inp);row.appendChild(addBtn);
+    wrap.appendChild(row);
+    // delete group
+    const delG=document.createElement('button');delG.className='syn-del-group';delG.textContent='🗑 Supprimer ce groupe';
+    delG.onclick=()=>synDelGroup(g.id);
+    wrap.appendChild(delG);
+    el.appendChild(wrap);
+  });
+}
 function closeSettings(){scr(prevScr||'home');}
 
 /* carnet header colors cycle for extra sections */
@@ -1040,6 +1113,19 @@ function saveNote(){
 }
 
 /* ══ RENDER VIEW WITH LINKED TERMS ══ */
+// Build synonym map: word → all words in same group (normed)
+function buildSynMap(){
+  const map={}; // normed word → Set of normed words in same group
+  (S.syn||[]).forEach(g=>{
+    const normed=g.words.map(w=>norm(w)).filter(Boolean);
+    normed.forEach(w=>{
+      if(!map[w])map[w]=new Set();
+      normed.forEach(w2=>{if(w2!==w)map[w].add(w2);});
+    });
+  });
+  return map;
+}
+
 function renderView(){
   const vw=document.getElementById('nview');
   if(!curFinalId){vw.innerHTML='';return;}
@@ -1048,14 +1134,13 @@ function renderView(){
   const text=ndata[mode]||'';
   if(!text.trim()){vw.innerHTML='';return;}
 
-  // gather all nodes except current, sorted longest-name first
   const nodes=allNodes().filter(n=>n.id!==curFinalId);
   nodes.sort((a,b)=>b.name.length-a.name.length);
-  if(!nodes.length){vw.textContent=text;return;}
+  if(!nodes.length){vw.innerHTML='';vw.textContent=text;return;}
 
-  // build regex patterns from node names, applied directly to original text (case-insensitive, accent-aware via norm)
-  // We match in original text using original names but case-insensitively
-  // Group by normed name so multiple nodes with same normed name share one pattern
+  const synMap=buildSynMap();
+
+  // Map normed node name → matching nodes list
   const byNormed={};
   nodes.forEach(n=>{
     const k=norm(n.name);
@@ -1063,26 +1148,50 @@ function renderView(){
     byNormed[k].push(n);
   });
 
-  // Build regex that matches original node names case-insensitively in original text
-  // For each unique normed name, we use the original name as pattern (longest first already)
-  const patterns=[];
-  nodes.forEach(n=>{
-    // escape the original name for regex
-    const escaped=n.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    patterns.push({re:escaped,nodes:byNormed[norm(n.name)],normed:norm(n.name)});
-  });
-  // deduplicate patterns by normed key
-  const seen=new Set();
-  const uniquePats=patterns.filter(p=>{if(seen.has(p.normed))return false;seen.add(p.normed);return true;});
-
-  const rx=new RegExp('('+uniquePats.map(p=>p.re).join('|')+')','gi');
-  const hits=[];let m;
-  while((m=rx.exec(text))!==null){
-    const start=m.index,end=m.index+m[0].length;
-    const matchedNorm=norm(m[0]);
-    const matchingNodes=byNormed[matchedNorm];
-    if(matchingNodes&&matchingNodes.length)hits.push({start,end,nodes:matchingNodes});
+  // For each pattern, also find nodes matching via synonyms
+  function getMatchingNodes(matchedNorm){
+    const direct=byNormed[matchedNorm]||[];
+    const syns=synMap[matchedNorm]||new Set();
+    const extra=[];
+    syns.forEach(sw=>{(byNormed[sw]||[]).forEach(n=>{if(!direct.includes(n))extra.push(n);});});
+    return [...direct,...extra];
   }
+
+  // Build patterns for all node names (word-boundary aware: allow punctuation around)
+  const seen=new Set();
+  const uniquePats=[];
+  nodes.forEach(n=>{
+    const k=norm(n.name);
+    if(seen.has(k))return;
+    seen.add(k);
+    const escaped=n.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    // boundary: start of string or non-letter, end of string or non-letter
+    uniquePats.push({re:'(?<![\\p{L}\\d])'+escaped+'(?![\\p{L}\\d])',normed:k});
+  });
+
+  let rx;
+  try{
+    rx=new RegExp('('+uniquePats.map(p=>p.re).join('|')+')','giu');
+  }catch(e){
+    // fallback without unicode property escapes
+    rx=new RegExp('('+uniquePats.map(p=>{
+      const escaped=p.normed.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      return '(?:^|(?<=[^a-zA-Z0-9]))'+escaped+'(?=[^a-zA-Z0-9]|$)';
+    }).join('|')+')','gi');
+  }
+
+  const hits=[];let m;
+  try{
+    while((m=rx.exec(text))!==null){
+      const start=m.index,end=m.index+m[0].length;
+      const matchedNorm=norm(m[0]);
+      const matchingNodes=getMatchingNodes(matchedNorm);
+      if(matchingNodes.length)hits.push({start,end,nodes:matchingNodes});
+    }
+  }catch(e){
+    vw.textContent=text;return;
+  }
+
   // remove overlapping hits (keep first)
   const clean=[];let lastEnd=-1;
   hits.forEach(h=>{if(h.start>=lastEnd){clean.push(h);lastEnd=h.end;}});
@@ -1316,6 +1425,7 @@ function mmOpen(){
   // Double RAF — first frame shows the screen, second frame has real layout
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     mmResize();
+    mmTx=0;mmTy=0;mmScale=1;
     mmLayout();
     mmDraw();
     if(!mmEventsAttached){mmAttachEvents();mmEventsAttached=true;}
@@ -1398,7 +1508,6 @@ function mmAssignPos(node,depth,cx,cy,color,parent){
 
 function mmLayout(){
   mmNodes=[];mmEdges=[];
-  mmTx=0;mmTy=0;mmScale=1;
   const rootKids=S.tree.children||[];
   const topPad=60;
   const startX=40;
@@ -1723,7 +1832,7 @@ function mmContextMenu(n,sx,sy){
   },200);
 }
 
-/* After any tree mutation, if mind map visible → re-layout + redraw */
+/* After any tree mutation, if mind map visible → re-layout (preserve pan/zoom) + redraw */
 function mmMaybeRefresh(){
   if(document.getElementById('sh-mindmap')?.classList.contains('active')){
     mmLayout();mmDraw();
