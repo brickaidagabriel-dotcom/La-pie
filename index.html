@@ -803,7 +803,7 @@ function mkCard(child){
   }
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(child.id,child.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(child.id);closeSlide();};sa.appendChild(bd);
-  const ba=mkSlb('sl-a','＋','Ajouter\nsynonymes');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
+  const ba=mkSlb('sl-a','','Ajouter\nsynonymes');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
   w.appendChild(sa);
 
   const card=document.createElement('div');card.className='nc';
@@ -941,7 +941,7 @@ function mkCarnetCard(node){
   const buj=mkSlb('sl-uj','📋','Retirer\nCarnet');buj.onclick=e=>{e.stopPropagation();SFX.click();rmCarnet(node.id);closeSlide();};sa.appendChild(buj);
   const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(node.id,node.name);closeSlide();};sa.appendChild(br);
   const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(node.id);closeSlide();};sa.appendChild(bd);
-  const bas=mkSlb('sl-a','＋','Ajouter\nsynonymes');bas.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(node.id);closeSlide();};sa.appendChild(bas);
+  const bas=mkSlb('sl-a','','Ajouter\nsynonymes');bas.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(node.id);closeSlide();};sa.appendChild(bas);
   w.appendChild(sa);
 
   const card=document.createElement('div');
@@ -1671,6 +1671,10 @@ function mmScreenToWorld(sx,sy){
   const pw=window.innerWidth,ph=window.innerHeight;
   return{x:(sx-(pw/2+mmTx))/mmScale+pw/2,y:(sy-(ph/2+mmTy))/mmScale+ph/2};
 }
+function mmWorldToScreen(wx,wy){
+  const pw=window.innerWidth,ph=window.innerHeight;
+  return{x:(wx-pw/2)*mmScale+pw/2+mmTx,y:(wy-ph/2)*mmScale+ph/2+mmTy};
+}
 
 // Hit-test + buttons (world coords)
 function mmHitTestPlus(wx,wy){
@@ -1698,12 +1702,60 @@ function mmHitTestNode(wx,wy){
 }
 
 let mmTouchMoved=false,mmLpTimer=null,mmPt1=null,mmPt2=null,mmLongPressed=false;
+let mmSwipeNode=null; // node being swiped
+let mmSlideEl=null;   // current slide panel DOM element
+
+function mmCloseSlide(){
+  if(mmSlideEl){mmSlideEl.remove();mmSlideEl=null;}
+  mmSwipeNode=null;
+}
+
+function mmShowSlide(n){
+  mmCloseSlide();
+  SFX.click();
+  const inC=nd(n.node.id).inCarnet;
+  const slide=document.createElement('div');
+  slide.style.cssText='position:fixed;z-index:3000;display:flex;flex-direction:row;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.8);';
+  // position near node center
+  const scr=mmWorldToScreen(n.x+n.hitW/2,n.y+n.hitH/2);
+  const pw=window.innerWidth,ph=window.innerHeight;
+  const btnW=80,btnH=72;
+  const btns=[];
+  if(inC) btns.push({cls:'sl-uj',icon:'📋',lbl:'Retirer\nCarnet',fn:()=>{nd(n.node.id).inCarnet=false;saveS();renderCarnet();renderBiblio();mmCloseSlide();}});
+  else     btns.push({cls:'sl-j', icon:'📋',lbl:'Ajouter\nCarnet',fn:()=>{nd(n.node.id).inCarnet=true;saveS();renderCarnet();renderBiblio();mmCloseSlide();}});
+  btns.push({cls:'sl-r',icon:'✏️',lbl:'Renommer',fn:()=>{mmCloseSlide();openRN(n.node.id,n.node.name);}});
+  btns.push({cls:'sl-d',icon:'🗑',lbl:'Suppr',fn:()=>{mmCloseSlide();confirmDel(n.node.id);}});
+  btns.push({cls:'sl-a',icon:'',lbl:'Ajouter\nsynonymes',fn:()=>{mmCloseSlide();openAliasModal(n.node.id);}});
+
+  btns.forEach(b=>{
+    const el=mkSlb(b.cls,b.icon,b.lbl);
+    el.style.width=btnW+'px';el.style.height=btnH+'px';
+    el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();b.fn();},{passive:false});
+    el.onclick=e=>{e.stopPropagation();b.fn();};
+    slide.appendChild(el);
+  });
+
+  const totalW=btnW*btns.length;
+  let left=Math.round(scr.x-totalW/2);
+  if(left<8)left=8;if(left+totalW>pw-8)left=pw-8-totalW;
+  let top=Math.round(scr.y-btnH/2);
+  if(top<70)top=70;if(top+btnH>ph-80)top=ph-80-btnH;
+  slide.style.left=left+'px';slide.style.top=top+'px';
+  document.body.appendChild(slide);
+  mmSlideEl=slide;
+
+  // close on outside tap
+  setTimeout(()=>{
+    document.addEventListener('touchstart',function x(ev){if(!slide.contains(ev.target)){mmCloseSlide();}document.removeEventListener('touchstart',x);},{once:true,passive:true});
+    document.addEventListener('click',function x(ev){if(!slide.contains(ev.target)){mmCloseSlide();}document.removeEventListener('click',x);},{once:true});
+  },200);
+}
 
 function mmAttachEvents(){
-  // Attach directly — no clone needed since we use mmEventsAttached flag
   mmCanvas.addEventListener('touchstart',e=>{
     e.preventDefault();
     if(e.touches.length===2){
+      mmCloseSlide();
       mmPinching=true;
       mmPt1={x:e.touches[0].clientX,y:e.touches[0].clientY};
       mmPt2={x:e.touches[1].clientX,y:e.touches[1].clientY};
@@ -1714,13 +1766,9 @@ function mmAttachEvents(){
       mmDragStart={x:t.clientX,y:t.clientY,tx:mmTx,ty:mmTy};
       mmTouchMoved=false;
       mmLongPressed=false;
-      mmLpTimer=setTimeout(()=>{
-        if(!mmTouchMoved){
-          const w=mmScreenToWorld(t.clientX,t.clientY);
-          const hit=mmHitTestNode(w.x,w.y);
-          if(hit){mmLongPressed=true;mmContextMenu(hit,t.clientX,t.clientY);}
-        }
-      },500);
+      // detect swipe start on a node
+      const w=mmScreenToWorld(t.clientX,t.clientY);
+      mmSwipeNode=mmHitTestNode(w.x,w.y)||null;
     }
   },{passive:false});
 
@@ -1731,17 +1779,13 @@ function mmAttachEvents(){
       const p2={x:e.touches[1].clientX,y:e.touches[1].clientY};
       const newDist=Math.hypot(p2.x-p1.x,p2.y-p1.y);
       const ratio=newDist/mmPinchDist;
-      // zoom around midpoint of fingers
       const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
       const pw=window.innerWidth,ph=window.innerHeight;
-      // world coords of midpoint before scale
       const wx=(mx-(pw/2+mmTx))/mmScale+pw/2;
       const wy=(my-(ph/2+mmTy))/mmScale+ph/2;
       mmScale=Math.max(0.15,Math.min(5,mmScale*ratio));
-      // adjust tx/ty so same world point stays under midpoint
       mmTx=mx-(wx-pw/2)*mmScale-pw/2;
       mmTy=my-(wy-ph/2)*mmScale-ph/2;
-      // also pan for finger movement
       const omx=(mmPt1.x+mmPt2.x)/2,omy=(mmPt1.y+mmPt2.y)/2;
       mmTx+=mx-omx;mmTy+=my-omy;
       mmPinchDist=newDist;mmPt1=p1;mmPt2=p2;
@@ -1749,14 +1793,19 @@ function mmAttachEvents(){
     } else if(e.touches.length===1&&!mmPinching){
       const t=e.touches[0];
       const dx=t.clientX-mmDragStart.x,dy=t.clientY-mmDragStart.y;
-      if(Math.abs(dx)>5||Math.abs(dy)>5){mmTouchMoved=true;clearTimeout(mmLpTimer);}
+      if(Math.abs(dx)>5||Math.abs(dy)>5){mmTouchMoved=true;}
+      // if swiping left on a node, show slide (don't pan)
+      if(mmSwipeNode&&Math.abs(dx)>28&&Math.abs(dy)<40&&dx<0){
+        // swipe left on node → show slide, block pan
+        return;
+      }
+      mmCloseSlide();
       mmTx=mmDragStart.tx+dx;mmTy=mmDragStart.ty+dy;
       mmDraw();
     }
   },{passive:false});
 
   mmCanvas.addEventListener('touchend',e=>{
-    clearTimeout(mmLpTimer);
     if(mmPinching&&e.touches.length<2){
       if(e.touches.length===1){
         const t=e.touches[0];
@@ -1764,15 +1813,25 @@ function mmAttachEvents(){
       }
       mmPinching=false;return;
     }
-    if(!mmTouchMoved&&!mmLongPressed&&e.changedTouches.length===1){
-      const t=e.changedTouches[0];
+    const t=e.changedTouches[0];
+    const dx=t.clientX-mmDragStart.x,dy=t.clientY-mmDragStart.y;
+    // swipe left on node → show slide
+    if(mmSwipeNode&&Math.abs(dx)>28&&Math.abs(dy)<40&&dx<0){
+      mmShowSlide(mmSwipeNode);
+      mmSwipeNode=null;return;
+    }
+    if(!mmTouchMoved&&e.changedTouches.length===1){
       const w=mmScreenToWorld(t.clientX,t.clientY);
       if(mmHitTestRootPlus(w.x,w.y)){SFX.click();mmAddRootChildModal();return;}
       const ph2=mmHitTestPlus(w.x,w.y);
       if(ph2){SFX.click();mmAddChildModal(ph2.node.id);return;}
       const hit=mmHitTestNode(w.x,w.y);
-      if(hit&&!hit.node.isFinal){SFX.nav();mmZoomTo(hit);}
+      if(hit){
+        if(hit.node.isFinal){pushHistory('mindmap');openFinal(hit.node.id,'mindmap');}
+        else{SFX.nav();mmZoomTo(hit);}
+      }
     }
+    mmSwipeNode=null;
   },{passive:true});
 
   // Mouse (desktop)
@@ -1799,11 +1858,6 @@ function mmAttachEvents(){
     e.preventDefault();
     mmScale=Math.max(0.15,Math.min(5,mmScale*(e.deltaY>0?0.9:1.1)));mmDraw();
   },{passive:false});
-  mmCanvas.addEventListener('dblclick',e=>{
-    const w=mmScreenToWorld(e.clientX,e.clientY);
-    const hit=mmHitTestNode(w.x,w.y);
-    if(hit)mmContextMenu(hit,e.clientX,e.clientY);
-  });
 }
 
 function mmZoomTo(n){
@@ -1828,56 +1882,6 @@ function mmAddChildModal(parentId){
   document.getElementById('ann').value='';
   openM('man');
   setTimeout(()=>document.getElementById('ann').focus(),120);
-}
-
-/* Long-press context menu */
-let mmCtxNode=null;
-function mmContextMenu(n,sx,sy){
-  SFX.click();mmCtxNode=n;
-  // Remove any existing popup
-  document.querySelectorAll('.mm-ctx-pop').forEach(p=>p.remove());
-  const pop=document.createElement('div');
-  pop.className='mm-ctx-pop';
-  // Position: fixed, anchored below the tap point but always fully visible
-  const pw=window.innerWidth;
-  const popW=220;
-  let tx=Math.round(sx-popW/2);
-  if(tx<10)tx=10;if(tx+popW>pw-10)tx=pw-10-popW;
-  let ty=Math.round(sy+18);
-  if(ty+280>window.innerHeight-80)ty=Math.round(sy-280);
-  if(ty<70)ty=70;
-  pop.style.cssText=`position:fixed;z-index:3000;background:#1a1917;border:1px solid #302e2c;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.8);width:${popW}px;overflow:hidden;left:${tx}px;top:${ty}px;`;
-  const inC=nd(n.node.id).inCarnet;
-  const acts=[];
-  // Lire = only for feuilles
-  if(n.node.isFinal) acts.push({lbl:'📖 Lire',fn:()=>{pop.remove();pushHistory('mindmap');openFinal(n.node.id,'mindmap');}});
-  // Carnet toggle
-  acts.push({lbl:inC?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{
-    pop.remove();
-    nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();
-  }});
-  // Renommer
-  acts.push({lbl:'✏️ Renommer',fn:()=>{pop.remove();openRN(n.node.id,n.node.name);}});
-  // Supprimer (all nodes)
-  acts.push({lbl:'🗑 Supprimer',fn:()=>{pop.remove();confirmDel(n.node.id);}});
-  // + alias
-  acts.push({lbl:'＋ Ajouter synonymes',fn:()=>{pop.remove();openAliasModal(n.node.id);}});
-
-  acts.forEach((a,idx)=>{
-    const d=document.createElement('div');
-    d.style.cssText=`padding:14px 18px;font-size:14px;font-weight:600;color:#e8e0d0;cursor:pointer;${idx<acts.length-1?'border-bottom:1px solid #252320;':''}`;
-    d.textContent=a.lbl;
-    d.addEventListener('touchend',e=>{e.preventDefault();a.fn();},{passive:false});
-    d.onclick=a.fn;
-    pop.appendChild(d);
-  });
-  document.body.appendChild(pop);
-  // Close on outside touch/click
-  const close=()=>{if(document.body.contains(pop))pop.remove();};
-  setTimeout(()=>{
-    document.addEventListener('touchstart',function x(ev){if(!pop.contains(ev.target)){close();}document.removeEventListener('touchstart',x);},{once:true,passive:true});
-    document.addEventListener('click',function x(ev){if(!pop.contains(ev.target)){close();}document.removeEventListener('click',x);},{once:true});
-  },200);
 }
 
 /* After any tree mutation, if mind map visible → re-layout (preserve pan/zoom) + redraw */
