@@ -125,19 +125,14 @@ transition:background .1s;position:relative;}
 .b-car{color:#7aaec8;border-color:#18263a;background:#0c1520;}
 .b-sub{color:#504840;border-color:#302e2c;}
 
-/* SLIDE ACTIONS */
-.sla{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;
-transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
-z-index:3;overflow:hidden;border-radius:0 var(–r) var(–r) 0;}
-.sla.vis{transform:translateX(0);}
-.slb{display:flex;flex-direction:column;align-items:center;justify-content:center;
-padding:0 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;
-gap:5px;min-width:68px;text-align:center;line-height:1.4;}
-.sl-j{background:#0d1820;color:#7aaec8;}
-.sl-uj{background:#1e1530;color:#b09ee0;}
-.sl-r{background:#201a0a;color:#c8a96e;}
-.sl-d{background:#200c0c;color:#c47a5a;}
-.sl-a{background:#0d1a15;color:#6dbb8a;}
+/* DOTS MENU */
+.dots-btn{background:none;border:none;cursor:pointer;padding:0 10px;font-size:20px;color:#504840;display:flex;align-items:center;flex-shrink:0;line-height:1;}
+.dots-btn:active{color:#a09880;}
+.dots-pop{position:fixed;z-index:3000;background:#1a1917;border:1px solid #302e2c;border-radius:14px;
+box-shadow:0 8px 32px rgba(0,0,0,.8);overflow:hidden;min-width:200px;animation:sIn .15s ease;}
+.dots-pop-item{padding:14px 18px;font-size:14px;font-weight:600;color:#e8e0d0;cursor:pointer;border-bottom:1px solid #252320;}
+.dots-pop-item:last-child{border-bottom:none;}
+.dots-pop-item:active{background:#252320;}
 .addb{margin-top:16px;}
 
 /* SEARCH BAR — hidden at top, revealed on scroll down */
@@ -759,7 +754,7 @@ function renderCarnet(){
     else ids.forEach(id=>{const node=fn(id);if(node)list.appendChild(mkCarnetCard(node));});
   });
 }
-let aSlide=null;
+
 
 function renderBiblio(){
   const cid=navStack[navStack.length-1];
@@ -795,16 +790,6 @@ function renderBiblio(){
 function mkCard(child){
   const w=document.createElement('div');w.className='ncw';w.dataset.id=child.id;
   const ndata=nd(child.id);
-  const sa=document.createElement('div');sa.className='sla';
-  if(ndata.inCarnet){
-    const b=mkSlb('sl-uj','📋','Retirer\nCarnet');b.onclick=e=>{e.stopPropagation();SFX.click();rmCarnet(child.id);closeSlide();};sa.appendChild(b);
-  } else {
-    const b=mkSlb('sl-j','📋','Ajouter\nCarnet');b.onclick=e=>{e.stopPropagation();SFX.click();addCarnet(child.id);closeSlide();};sa.appendChild(b);
-  }
-  const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(child.id,child.name);closeSlide();};sa.appendChild(br);
-  const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(child.id);closeSlide();};sa.appendChild(bd);
-  const ba=mkSlb('sl-a','','Ajouter\nsynonymes');ba.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(child.id);closeSlide();};sa.appendChild(ba);
-  w.appendChild(sa);
 
   const card=document.createElement('div');card.className='nc';
   const strip=document.createElement('div');strip.className='nstrip';
@@ -818,40 +803,75 @@ function mkCard(child){
   else if(child.children?.length){const s=document.createElement('span');s.className='badge b-sub';s.textContent=child.children.length+' livre'+(child.children.length>1?'s':'');meta.appendChild(s);}
   if(ndata.inCarnet){const b=document.createElement('span');b.className='badge b-car';b.textContent='📋 Carnet';meta.appendChild(b);}
   body.appendChild(meta);card.appendChild(body);
+
+  const dotsItems=()=>[
+    {lbl:nd(child.id).inCarnet?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
+    {lbl:'✏️ Modifier',fn:()=>openRN(child.id,child.name)},
+    {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
+    {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(child.id)},
+  ];
+  const dots=mkDotsBtn(dotsItems());
+  // refresh items on each open to reflect current carnet state
+  dots.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();openDotsMenu(dotsItems(),dots);},{passive:false});
+  dots.onclick=e=>{e.stopPropagation();openDotsMenu(dotsItems(),dots);};
+  card.appendChild(dots);
   card.appendChild(Object.assign(document.createElement('div'),{className:'narrow',textContent:'›'}));
   w.appendChild(card);
-  attachTouch(card,w,sa,child,false);
+  attachTouch(card,w,child,false);
   return w;
 }
 
-function attachTouch(card,w,sa,child,isCarnet){
-  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false,swLeft=false;
+function attachTouch(card,w,child,isCarnet){
+  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null;
   card.addEventListener('touchstart',e=>{
-    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;swLeft=false;
+    if(e.target.closest('.dots-btn'))return;
+    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;
     lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;w.classList.add('lp-active');SFX.click();
       startDrag(child.id,w,t,isCarnet?getRootChildId(child.id):null);
       setTimeout(()=>w.classList.remove('lp-active'),300);
     },500);
   },{passive:true});
-  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=t.clientX-t0x,dy=Math.abs(t.clientY-t0y);if(Math.abs(dx)>6||dy>6){moved=true;clearTimeout(lpTimer);}if(Math.abs(dx)>28&&dy<40){swOK=true;swLeft=dx<0;}},{passive:true});
+  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=Math.abs(t.clientX-t0x),dy=Math.abs(t.clientY-t0y);if(dx>6||dy>6){moved=true;clearTimeout(lpTimer);}},{passive:true});
   card.addEventListener('touchend',()=>{
     clearTimeout(lpTimer);w.classList.remove('lp-active');
     if(lpFired)return;
-    if(swOK){
-      if(!swLeft){closeSlide();return;}       // swipe right → close
-      if(aSlide===sa){closeSlide();return;}   // swipe left on open → close
-      closeSlide();sa.classList.add('vis');aSlide=sa;return;
-    }
     if(!moved)navTo(child);
   });
-  card.addEventListener('click',()=>{if(!moved&&!lpFired)navTo(child);});
+  card.addEventListener('click',e=>{if(e.target.closest('.dots-btn'))return;if(!moved&&!lpFired)navTo(child);});
 }
 
-function mkSlb(cls,icon,label){
-  const b=document.createElement('button');b.className='slb '+cls;
-  b.innerHTML=`<span style="font-size:20px">${icon}</span><span>${label.replace(/\n/g,'<br>')}</span>`;
-  return b;
+function openDotsMenu(items, anchorEl){
+  document.querySelectorAll('.dots-pop').forEach(p=>p.remove());
+  const pop=document.createElement('div');pop.className='dots-pop';
+  items.forEach(item=>{
+    const d=document.createElement('div');d.className='dots-pop-item';
+    d.textContent=item.lbl;
+    const fn=()=>{pop.remove();item.fn();};
+    d.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();fn();},{passive:false});
+    d.onclick=e=>{e.stopPropagation();fn();};
+    pop.appendChild(d);
+  });
+  document.body.appendChild(pop);
+  // Position near anchor
+  const r=anchorEl.getBoundingClientRect();
+  const pw=window.innerWidth,ph=window.innerHeight;
+  const popW=200;
+  let left=r.right-popW;if(left<8)left=8;
+  let top=r.bottom+4;if(top+items.length*48>ph-80)top=r.top-items.length*48-4;
+  if(top<70)top=70;
+  pop.style.left=left+'px';pop.style.top=top+'px';
+  setTimeout(()=>{
+    document.addEventListener('touchstart',function x(ev){if(!pop.contains(ev.target)){pop.remove();}document.removeEventListener('touchstart',x);},{once:true,passive:true});
+    document.addEventListener('click',function x(ev){if(!pop.contains(ev.target)){pop.remove();}document.removeEventListener('click',x);},{once:true});
+  },100);
 }
+function mkDotsBtn(items){
+  const btn=document.createElement('button');btn.className='dots-btn';btn.textContent='⋮';
+  btn.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();openDotsMenu(items,btn);},{passive:false});
+  btn.onclick=e=>{e.stopPropagation();openDotsMenu(items,btn);};
+  return btn;
+}
+
 function navTo(node){
   SFX.nav();
   if(node.isFinal){
@@ -863,8 +883,7 @@ function navTo(node){
     renderBiblio();
   }
 }
-function closeSlide(){if(aSlide){aSlide.classList.remove('vis');aSlide=null;}}
-document.addEventListener('touchstart',e=>{if(!e.target.closest('.nc')&&!e.target.closest('.rc')&&!e.target.closest('.sla')&&!e.target.closest('.ltp'))closeSlide();},{passive:true});
+
 
 /* ══ DRAG REORDER ══ */
 let dragId=null,dragOverId=null,dragGEl=null,dragOX=0,dragOY=0,dragCat=null,dragLockedScroll=null;
@@ -937,16 +956,9 @@ function addCarnet(id){nd(id).inCarnet=true;saveS();renderBiblio();renderCarnet(
 function rmCarnet(id){nd(id).inCarnet=false;saveS();renderBiblio();renderCarnet();}
 
 function mkCarnetCard(node){
-  const C={bg2:'#222120',bg3:'#2c2b29',b1:'#302e2c',t1:'#e8e0d0',t2:'#a09880',t3:'#504840',aon:'#6dbb8a',aal:'#c47a5a',afu:'#7aaec8',b2:'#252320',acc:'#c8a96e'};
+  const C={bg2:'#222120',b1:'#302e2c',t1:'#e8e0d0',t3:'#504840',aon:'#6dbb8a',aal:'#c47a5a',afu:'#7aaec8',b2:'#252320'};
   const w=document.createElement('div');w.className='ncw';w.dataset.id=node.id;
   w.style.cssText='position:relative;overflow:hidden;border-radius:14px;flex-shrink:0;';
-
-  const sa=document.createElement('div');sa.className='sla';
-  const buj=mkSlb('sl-uj','📋','Retirer\nCarnet');buj.onclick=e=>{e.stopPropagation();SFX.click();rmCarnet(node.id);closeSlide();};sa.appendChild(buj);
-  const br=mkSlb('sl-r','✏️','Modifier');br.onclick=e=>{e.stopPropagation();SFX.click();openRN(node.id,node.name);closeSlide();};sa.appendChild(br);
-  const bd=mkSlb('sl-d','🗑','Suppr');bd.onclick=e=>{e.stopPropagation();SFX.del();confirmDel(node.id);closeSlide();};sa.appendChild(bd);
-  const bas=mkSlb('sl-a','','Ajouter\nsynonymes');bas.onclick=e=>{e.stopPropagation();SFX.click();openAliasModal(node.id);closeSlide();};sa.appendChild(bas);
-  w.appendChild(sa);
 
   const card=document.createElement('div');
   card.style.cssText=`display:flex;align-items:stretch;background:${C.bg2};border:1px solid ${C.b1};border-radius:14px;min-height:72px;position:relative;cursor:pointer;`;
@@ -961,29 +973,33 @@ function mkCarnetCard(node){
   ttEl.style.cssText=`font-size:15px;font-weight:600;color:${C.t1};line-height:1.4;`;
   ttEl.textContent=node.name;body.appendChild(ttEl);
   card.appendChild(body);
+
+  const dotsItems=()=>[
+    {lbl:'📋 Retirer du Carnet',fn:()=>rmCarnet(node.id)},
+    {lbl:'✏️ Modifier',fn:()=>openRN(node.id,node.name)},
+    {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
+    {lbl:'＋ Ajouter synonymes',fn:()=>openAliasModal(node.id)},
+  ];
+  const dots=mkDotsBtn(dotsItems());
+  card.appendChild(dots);
   const arrow=document.createElement('div');
   arrow.style.cssText=`display:flex;align-items:center;padding:0 16px;font-size:20px;color:${C.t3};flex-shrink:0;`;
   arrow.textContent='›';card.appendChild(arrow);
   w.appendChild(card);
 
-  // touch: swipe for actions, tap to navigate, long press to reorder (within same category)
-  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null,swOK=false,swLeft=false;
+  let t0x=0,t0y=0,moved=false,lpFired=false,lpTimer=null;
   card.addEventListener('touchstart',e=>{
-    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;swOK=false;swLeft=false;
+    if(e.target.closest('.dots-btn'))return;
+    const t=e.touches[0];t0x=t.clientX;t0y=t.clientY;moved=false;lpFired=false;
     lpTimer=setTimeout(()=>{if(moved)return;lpFired=true;SFX.click();startDrag(node.id,w,t,getRootChildId(node.id));setTimeout(()=>w.classList.remove('lp-active'),300);},500);
   },{passive:true});
-  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=t.clientX-t0x,dy=Math.abs(t.clientY-t0y);if(Math.abs(dx)>6||dy>6){moved=true;clearTimeout(lpTimer);}if(Math.abs(dx)>28&&dy<40){swOK=true;swLeft=dx<0;}},{passive:true});
+  card.addEventListener('touchmove',e=>{const t=e.touches[0];const dx=Math.abs(t.clientX-t0x),dy=Math.abs(t.clientY-t0y);if(dx>6||dy>6){moved=true;clearTimeout(lpTimer);}},{passive:true});
   card.addEventListener('touchend',()=>{
     clearTimeout(lpTimer);
     if(lpFired)return;
-    if(swOK){
-      if(!swLeft){closeSlide();return;}
-      if(aSlide===sa){closeSlide();return;}
-      closeSlide();sa.classList.add('vis');aSlide=sa;return;
-    }
     if(!moved){SFX.nav();carnetNavTo(node);}
   });
-  card.addEventListener('click',()=>{if(!moved&&!lpFired)carnetNavTo(node);});
+  card.addEventListener('click',e=>{if(e.target.closest('.dots-btn'))return;if(!moved&&!lpFired)carnetNavTo(node);});
   return w;
 }
 
@@ -1639,19 +1655,11 @@ function mmDraw(){
     mmCtx.fillStyle=n.isFinal?'#c8a96e':(n.depth===1?'#e8e0d0':'#d0c8b8');
     mmCtx.textAlign='center';mmCtx.textBaseline='middle';
     mmCtx.fillText(n.node.name,n.x,n.y);
-    // slide handle: thick bar on right edge of node
-    const hbW=6/mmScale; // handle width in world coords (constant screen size)
-    const hbR=4; // border-radius
-    mmCtx.fillStyle='#3a3830';
-    mmCtx.beginPath();mmCtx.roundRect(nx+nw-hbW-2/mmScale,ny+2/mmScale,hbW,nh-4/mmScale,hbR/mmScale);mmCtx.fill();
-    mmCtx.strokeStyle='#605850';
-    mmCtx.lineWidth=0.5/mmScale;
-    mmCtx.beginPath();mmCtx.roundRect(nx+nw-hbW-2/mmScale,ny+2/mmScale,hbW,nh-4/mmScale,hbR/mmScale);mmCtx.stroke();
-    // draw 3 dots on the handle
-    const hbCx=nx+nw-hbW/2-2/mmScale;
-    const dotR=0.8/mmScale;
-    mmCtx.fillStyle='#807060';
-    [-3,0,3].forEach(dy=>{mmCtx.beginPath();mmCtx.arc(hbCx,n.y+dy/mmScale,dotR,0,Math.PI*2);mmCtx.fill();});
+    // dots menu indicator (3 dots on right edge)
+    const dotsCx=nx+nw-7/mmScale;
+    const dotR=1.5/mmScale;
+    mmCtx.fillStyle='#605850';
+    [-4,0,4].forEach(dy=>{mmCtx.beginPath();mmCtx.arc(dotsCx,n.y+dy/mmScale,dotR,0,Math.PI*2);mmCtx.fill();});
     // + button only for non-final nodes
     if(n.plusX!==null)mmDrawPlusBtn(n.plusX,n.plusY,n.color);
   });
@@ -1721,72 +1729,40 @@ function mmHitTestNode(wx,wy){
   }
   return null;
 }
-// Hit-test the slide handle bar (right edge of node, 14px screen width)
-function mmHitTestHandle(wx,wy){
-  const handleScreenW=14;
-  const handleW=handleScreenW/mmScale;
+// Hit-test the dots zone (right 16px screen-space of node)
+function mmHitTestDots(wx,wy){
+  const dotsW=16/mmScale;
   for(let i=mmNodes.length-1;i>=0;i--){
     const n=mmNodes[i];
-    if(wx>=n.hitX+n.hitW-handleW&&wx<=n.hitX+n.hitW&&wy>=n.hitY&&wy<=n.hitY+n.hitH)return n;
+    if(wx>=n.hitX+n.hitW-dotsW&&wx<=n.hitX+n.hitW&&wy>=n.hitY&&wy<=n.hitY+n.hitH)return n;
   }
   return null;
 }
 
 let mmTouchMoved=false,mmLpTimer=null,mmPt1=null,mmPt2=null,mmLongPressed=false;
-let mmSwipeNode=null; // node being swiped
-let mmSlideEl=null;   // current slide panel DOM element
+let mmSwipeNode=null;
 
-function mmCloseSlide(){
-  if(mmSlideEl){mmSlideEl.remove();mmSlideEl=null;}
-  mmSwipeNode=null;
-}
-
-function mmShowSlide(n){
-  mmCloseSlide();
+function mmShowDotsMenu(n,sx,sy){
   SFX.click();
   const inC=nd(n.node.id).inCarnet;
-  const slide=document.createElement('div');
-  slide.style.cssText='position:fixed;z-index:3000;display:flex;flex-direction:row;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.8);';
-  // position near node center
-  const scr=mmWorldToScreen(n.x+n.hitW/2,n.y+n.hitH/2);
-  const pw=window.innerWidth,ph=window.innerHeight;
-  const btnW=80,btnH=72;
-  const btns=[];
-  if(inC) btns.push({cls:'sl-uj',icon:'📋',lbl:'Retirer\nCarnet',fn:()=>{nd(n.node.id).inCarnet=false;saveS();renderCarnet();renderBiblio();mmCloseSlide();}});
-  else     btns.push({cls:'sl-j', icon:'📋',lbl:'Ajouter\nCarnet',fn:()=>{nd(n.node.id).inCarnet=true;saveS();renderCarnet();renderBiblio();mmCloseSlide();}});
-  btns.push({cls:'sl-r',icon:'✏️',lbl:'Renommer',fn:()=>{mmCloseSlide();openRN(n.node.id,n.node.name);}});
-  btns.push({cls:'sl-d',icon:'🗑',lbl:'Suppr',fn:()=>{mmCloseSlide();confirmDel(n.node.id);}});
-  btns.push({cls:'sl-a',icon:'',lbl:'Ajouter\nsynonymes',fn:()=>{mmCloseSlide();openAliasModal(n.node.id);}});
-
-  btns.forEach(b=>{
-    const el=mkSlb(b.cls,b.icon,b.lbl);
-    el.style.width=btnW+'px';el.style.height=btnH+'px';
-    el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();b.fn();},{passive:false});
-    el.onclick=e=>{e.stopPropagation();b.fn();};
-    slide.appendChild(el);
-  });
-
-  const totalW=btnW*btns.length;
-  let left=Math.round(scr.x-totalW/2);
-  if(left<8)left=8;if(left+totalW>pw-8)left=pw-8-totalW;
-  let top=Math.round(scr.y-btnH/2);
-  if(top<70)top=70;if(top+btnH>ph-80)top=ph-80-btnH;
-  slide.style.left=left+'px';slide.style.top=top+'px';
-  document.body.appendChild(slide);
-  mmSlideEl=slide;
-
-  // close on outside tap
-  setTimeout(()=>{
-    document.addEventListener('touchstart',function x(ev){if(!slide.contains(ev.target)){mmCloseSlide();}document.removeEventListener('touchstart',x);},{once:true,passive:true});
-    document.addEventListener('click',function x(ev){if(!slide.contains(ev.target)){mmCloseSlide();}document.removeEventListener('click',x);},{once:true});
-  },200);
+  // Create a temporary anchor at tap position
+  const anchor=document.createElement('div');
+  anchor.style.cssText=`position:fixed;left:${sx}px;top:${sy}px;width:1px;height:1px;`;
+  document.body.appendChild(anchor);
+  const items=[
+    {lbl:inC?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
+    {lbl:'✏️ Renommer',fn:()=>{anchor.remove();openRN(n.node.id,n.node.name);}},
+    {lbl:'🗑 Supprimer',fn:()=>{anchor.remove();confirmDel(n.node.id);}},
+    {lbl:'＋ Ajouter synonymes',fn:()=>{anchor.remove();openAliasModal(n.node.id);}},
+  ];
+  openDotsMenu(items,anchor);
 }
 
 function mmAttachEvents(){
   mmCanvas.addEventListener('touchstart',e=>{
     e.preventDefault();
     if(e.touches.length===2){
-      mmCloseSlide();
+      document.querySelectorAll(".dots-pop").forEach(p=>p.remove());
       mmPinching=true;
       mmPt1={x:e.touches[0].clientX,y:e.touches[0].clientY};
       mmPt2={x:e.touches[1].clientX,y:e.touches[1].clientY};
@@ -1797,9 +1773,9 @@ function mmAttachEvents(){
       mmDragStart={x:t.clientX,y:t.clientY,tx:mmTx,ty:mmTy};
       mmTouchMoved=false;
       mmLongPressed=false;
-      // detect if touch starts on a handle
+      // detect if touch starts on dots zone
       const w=mmScreenToWorld(t.clientX,t.clientY);
-      mmSwipeNode=mmHitTestHandle(w.x,w.y)||null;
+      mmSwipeNode=mmHitTestDots(w.x,w.y)||null;
     }
   },{passive:false});
 
@@ -1825,7 +1801,7 @@ function mmAttachEvents(){
       const t=e.touches[0];
       const dx=t.clientX-mmDragStart.x,dy=t.clientY-mmDragStart.y;
       if(Math.abs(dx)>5||Math.abs(dy)>5){mmTouchMoved=true;mmSwipeNode=null;}
-      mmCloseSlide();
+      document.querySelectorAll(".dots-pop").forEach(p=>p.remove());
       mmTx=mmDragStart.tx+dx;mmTy=mmDragStart.ty+dy;
       mmDraw();
     }
@@ -1840,9 +1816,9 @@ function mmAttachEvents(){
       mmPinching=false;return;
     }
     const t=e.changedTouches[0];
-    // tap on handle → show slide
+    // tap on dots zone → show menu
     if(mmSwipeNode&&!mmTouchMoved){
-      mmShowSlide(mmSwipeNode);
+      mmShowDotsMenu(mmSwipeNode,t.clientX,t.clientY);
       mmSwipeNode=null;return;
     }
     if(!mmTouchMoved&&e.changedTouches.length===1){
