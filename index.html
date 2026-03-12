@@ -758,8 +758,9 @@ function topBack(){
     renderVids();
   }
   else if(s==='journal'){loadJourEntry(jourDateKey||dateToKey(new Date()));showJourView();}
-  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
-  document.getElementById('sh-'+s).classList.add('active');
+  const target=document.getElementById('sh-'+s);
+  target.classList.add('active');
+  document.querySelectorAll('.screen').forEach(x=>{if(x!==target)x.classList.remove('active');});
   setTopbar(s);
 }
 
@@ -1523,6 +1524,7 @@ function showLinkPopup(matches,term,e){
   pop.classList.add('show');
 }
 function hideLtp(){const p=document.getElementById('ltp');p.classList.remove('show');p.style.display='none';}
+let _ltpNavigating=false;
 function showLinkPopupJour(matches,term,e){
   const pop=document.getElementById('ltp');
   document.getElementById('ltp-hdr').textContent='« '+term+' »';
@@ -1530,8 +1532,16 @@ function showLinkPopupJour(matches,term,e){
   matches.forEach(m=>{
     const d=document.createElement('div');d.className='ltp-item';
     d.innerHTML=`<div>${m.name}</div><div class="ltp-path">${m.path}</div>`;
-    d.addEventListener('click',()=>{hideLtp();saveJourEntry();if(m.isFinal){pushHistory('journal');openFinal(m.id,'journal');}else{pushHistory('journal');buildNav(m.id);renderBiblio();scr('biblio');}});
-    d.addEventListener('touchend',ev=>{ev.preventDefault();ev.stopPropagation();hideLtp();saveJourEntry();if(m.isFinal){pushHistory('journal');openFinal(m.id,'journal');}else{pushHistory('journal');buildNav(m.id);renderBiblio();scr('biblio');}});
+    const nav=()=>{
+      _ltpNavigating=true;
+      hideLtp();
+      saveJourEntry();
+      if(m.isFinal){pushHistory('journal');openFinal(m.id,'journal');}
+      else{pushHistory('journal');buildNav(m.id);renderBiblio();scr('biblio');}
+      setTimeout(()=>{_ltpNavigating=false;},300);
+    };
+    d.addEventListener('touchend',ev=>{ev.preventDefault();ev.stopPropagation();nav();},{passive:false});
+    d.addEventListener('click',ev=>{ev.stopPropagation();nav();});
     items.appendChild(d);
   });
   pop.style.display='block';
@@ -1541,8 +1551,8 @@ function showLinkPopupJour(matches,term,e){
   pop.style.left=x+'px';pop.style.top=y+'px';
   pop.classList.add('show');
 }
-document.addEventListener('touchstart',e=>{if(!e.target.closest('.ltp')&&!e.target.closest('.lt'))hideLtp();},{passive:true});
-document.addEventListener('click',e=>{if(!e.target.closest('.ltp')&&!e.target.closest('.lt'))hideLtp();});
+document.addEventListener('touchstart',e=>{if(_ltpNavigating)return;if(!e.target.closest('.ltp')&&!e.target.closest('.lt'))hideLtp();},{passive:true});
+document.addEventListener('click',e=>{if(_ltpNavigating)return;if(!e.target.closest('.ltp')&&!e.target.closest('.lt'))hideLtp();});
 
 /* ══ VIDEOS ══ */
 let cvt='video',tch_=0,tcm_=0,tcs_=0;
@@ -1844,8 +1854,8 @@ function mmAssignPos(node,depth,cx,cy,color,parent){
   const nn={id:node.id,x:nx+sz.w/2,y:ny+sz.h/2,node,depth,color:c,isFinal:node.isFinal,
             hitX:nx,hitY:ny,hitW:sz.w,hitH:sz.h,
             // + button only for non-final nodes
-            plusX:node.isFinal?null:nx+sz.w/2,
-            plusY:node.isFinal?null:ny+sz.h+MM_GAP_Y*0.4};
+            plusX:node.isFinal?null:nx+MM_PLUS_SZ/2,
+            plusY:node.isFinal?null:ny+sz.h+MM_PLUS_SZ/2};
   mmNodes.push(nn);
   if(parent){
     // edge from right-center of parent to left-center of child
@@ -1896,7 +1906,7 @@ function mmLayout(){
   }
 }
 
-const MM_PLUS_SZ=16; // world-unit size of + button (scales with zoom)
+const MM_PLUS_SZ=32; // world-unit size of + button (scales with zoom)
 
 function mmDraw(){
   if(!mmCtx||!mmCanvas)return;
@@ -2378,6 +2388,7 @@ function toggleVoice(){
 }
 
 function _startSR(SR){
+  if(voiceRecog){try{voiceRecog.stop();}catch(e){}voiceRecog=null;}
   voiceStopRequested=false;
   const mic=document.getElementById('jour-mic');
   const ta=document.getElementById('jour-area');
@@ -2388,23 +2399,26 @@ function _startSR(SR){
   recog.interimResults=true;
   recog.onstart=()=>{voiceActive=true;confirmed=ta.value;mic.classList.add('active');showJourTA();};
   recog.onresult=e=>{
-    let finals='',interim='';
-    for(let i=0;i<e.results.length;i++){
-      if(e.results[i].isFinal)finals+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
+    // Utiliser e.resultIndex pour ne lire que les nouveaux résultats
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){
+        const t=e.results[i][0].transcript;
+        const sep=(confirmed&&!confirmed.endsWith(' ')&&!confirmed.endsWith('\n'))?' ':'';
+        confirmed+=sep+t;
+      }
     }
-    if(finals){const sep=(confirmed&&!confirmed.endsWith(' ')&&!confirmed.endsWith('\n'))?' ':'';confirmed+=sep+finals;}
+    // Afficher interim séparément
+    let interim='';
+    for(let i=0;i<e.results.length;i++){if(!e.results[i].isFinal)interim+=e.results[i][0].transcript;}
     const sep2=(confirmed&&!confirmed.endsWith(' ')&&!confirmed.endsWith('\n')&&interim)?' ':'';
     ta.value=confirmed+(interim?sep2+interim:'');
   };
   recog.onend=()=>{
     if(voiceStopRequested){voiceRecog=null;return;}
-    // coupé par silence — relance automatique
+    // Silence détecté — relance avec un nouvel objet pour éviter les doublons
     ta.value=confirmed;
-    try{recog.start();}catch(ex){
-      voiceActive=false;mic.classList.remove('active');voiceRecog=null;
-      saveJourEntry();showJourView();
-    }
+    voiceRecog=null;
+    setTimeout(()=>{if(!voiceStopRequested&&voiceActive)_startSR(SR);},200);
   };
   recog.onerror=ev=>{
     if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){alert('Microphone non autorisé.');}
