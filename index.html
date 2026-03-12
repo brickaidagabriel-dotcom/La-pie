@@ -28,7 +28,8 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;
   z-index:1;}
 .screen.active{display:flex;animation:sIn .18s ease;}
 @keyframes sIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-#sh-home{padding:0;padding-top:var(--th);}
+#sh-home{padding:0;display:flex;align-items:center;justify-content:center;}
+.hm-block{display:flex;flex-direction:column;align-items:center;gap:28px;width:calc(100% - 56px);}
 
 /* TOPBAR */
 #gt{position:fixed;top:0;left:0;right:0;height:var(–th);display:none;
@@ -75,17 +76,54 @@ border-bottom:1px solid #302e2c;
 background:linear-gradient(180deg,#222120 0%,#111110 100%);}
 .hm-logo{font-size:26px;font-weight:800;letter-spacing:5px;color:#c8a96e;}
 .hm-sub{font-size:13px;color:#504840;margin-top:7px;letter-spacing:1.5px;text-transform:uppercase;}
-.hm-panels{flex:1;display:flex;flex-direction:column;gap:14px;padding:18px 14px;overflow:hidden;}
-.hm-panel{flex:1;cursor:pointer;border-radius:var(–r);background:#222120;
+.hm-logo-wrap{display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.hm-logo-title{
+font-size:64px;font-weight:900;letter-spacing:8px;
+background:linear-gradient(180deg,#f5e07a 0%,#c8a96e 40%,#8a5e1a 70%,#c8a96e 100%);
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+filter:drop-shadow(0 0 8px rgba(200,169,110,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.8));
+}
+.hm-panels{display:flex;flex-direction:column;gap:8px;padding:0;width:100%;}
+.hm-row{display:flex;gap:8px;height:56px;width:100%;}
+.hm-panel{width:100%;cursor:pointer;border-radius:var(–r);background:#222120;
 border:1px solid #302e2c;display:flex;flex-direction:column;align-items:center;
-justify-content:center;gap:10px;padding:20px;position:relative;overflow:hidden;
+justify-content:center;gap:6px;padding:0 8px;position:relative;overflow:hidden;
 transition:background .12s,transform .1s;box-shadow:0 2px 12px rgba(0,0,0,.45);}
 .hm-panel:active{transform:scale(.975);background:#2c2b29;}
 .hm-panel::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 var(–r) var(–r);}
-.hp-c::after{background:#c8a96e;}
+.hp-c::after,.hp-b::after,.hp-j::after,.hp-bib::after,.hp-mm::after,.hp-set::after{background:#c8a96e;}
+.hp-set{height:48px;}
+.hp-lbl{font-size:18px;font-weight:800;letter-spacing:3px;white-space:nowrap;}
+.hp-lbl-sm{font-size:12px;letter-spacing:1.5px;}
+
+/* JOURNAL */
+.jour-header{padding:0;flex-shrink:0;border-bottom:1px solid #302e2c;display:flex;align-items:stretch;}
+.jour-nav{background:none;border:none;color:#a09880;font-size:30px;padding:14px 22px;cursor:pointer;line-height:1;min-width:64px;display:flex;align-items:center;justify-content:center;}
+.jour-nav:active{background:#222120;}
+.jour-nav-row{display:flex;justify-content:space-between;flex-shrink:0;}
+.jour-date{font-size:15px;font-weight:700;color:#e8e0d0;padding:0 0 8px;flex-shrink:0;pointer-events:none;user-select:none;}
+.jour-search-btn{background:none;border:none;color:#a09880;font-size:14px;padding:16px;cursor:pointer;font-weight:600;font-family:inherit;flex:1;text-align:center;}
+.jour-search-btn:active{background:#222120;}
+.jour-body{flex:1;overflow-y:auto;padding:16px 14px 0;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;}
+.jour-area{flex:1;width:100%;background:transparent;border:none;color:#e8e0d0;font-family:inherit;font-size:15px;line-height:1.7;resize:none;outline:none;min-height:200px;caret-color:#c8a96e;}
+.jour-area::placeholder{color:#504840;}
+/* Calendar picker */
+.jour-cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:2000;display:flex;align-items:center;justify-content:center;}
+.jour-cal{background:#1a1917;border:1px solid #302e2c;border-radius:20px;padding:20px;width:calc(100% - 48px);max-width:340px;}
+.jour-cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.jour-cal-title{font-size:15px;font-weight:700;color:#e8e0d0;}
+.jour-cal-nav{background:none;border:none;color:#a09880;font-size:22px;cursor:pointer;padding:4px 10px;border-radius:8px;}
+.jour-cal-nav:active{background:#222120;}
+.jour-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.jour-cal-day{text-align:center;padding:8px 2px;font-size:13px;font-weight:600;color:#a09880;border-radius:8px;cursor:pointer;}
+.jour-cal-day.active{background:#211c12;color:#c8a96e;border:1px solid #c8a96e;}
+.jour-cal-day.today{color:#6dbb8a;}
+.jour-cal-day.has-entry{position:relative;}
+.jour-cal-day.has-entry::after{content:’’;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#c8a96e;border-radius:50%;}
+.jour-cal-day.empty{pointer-events:none;color:#2c2b29;}
+.jour-cal-close{width:100%;margin-top:14px;}
 .hp-b::after{background:#6dbb8a;}
 .hp-icon{font-size:38px;line-height:1;}
-.hp-lbl{font-size:18px;font-weight:800;letter-spacing:3px;}
 .hp-desc{font-size:13px;color:#a09880;text-align:center;}
 .hp-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
 .hp-tag{font-size:11px;font-weight:600;padding:4px 12px;border:1px solid;border-radius:20px;}
@@ -297,30 +335,62 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
 </head>
 <body>
 
-<div id="gt" class="on">
+<div id="gt">
   <button class="bbk" id="tbk" onclick="topBack()" style="visibility:hidden">‹</button>
   <div id="tt"></div>
-  <button class="bic" onclick="SFX.click();openSettings()">⚙</button>
+  <div style="width:42px"></div>
 </div>
 <div id="gh"><button class="btn bhm" onclick="SFX.back();goHome()">⌂  Pièce principale</button></div>
 
 <!-- HOME -->
 
 <div id="sh-home" class="screen active">
-  <div class="hm-panels">
-    <button class="hm-panel hp-c" onclick="SFX.click();goCarnet()">
+  <div class="hm-block">
+    <div class="hm-logo-wrap">
+      <div class="hm-logo-title">La Pie</div>
+    </div>
+    <div class="hm-panels">
+    <button class="hm-panel hp-j" style="height:56px" onclick="SFX.click();goJournal()">
       <div class="hp-lbl" style="color:#c8a96e">CARNET</div>
     </button>
-    <button class="hm-panel hp-b" id="home-btn-b" onclick="SFX.click();homeBtnB()">
-      <div class="hp-lbl" id="home-lbl-b" style="color:#6dbb8a">BIBLIOTHÈQUE</div>
+    <button class="hm-panel hp-c" style="height:56px" onclick="SFX.click();goCarnet()">
+      <div class="hp-lbl" style="color:#c8a96e">MEMENTO</div>
     </button>
+    <div class="hm-row">
+      <button class="hm-panel hp-bib" onclick="SFX.click();goBiblio()">
+        <div class="hp-lbl hp-lbl-sm" style="color:#c8a96e">BIBLIOTHÈQUE</div>
+      </button>
+      <button class="hm-panel hp-mm" onclick="SFX.click();pushHistory('home');mmOpen();">
+        <div class="hp-lbl hp-lbl-sm" style="color:#c8a96e">CARTE</div>
+      </button>
+    </div>
+    <button class="hm-panel hp-set" onclick="SFX.click();openSettings()">
+      <div class="hp-lbl" style="color:#c8a96e">RÉGLAGES</div>
+    </button>
+  </div>
   </div>
 </div>
 
-<!-- CARNET -->
+<!-- CARNET (ex-Memento) -->
 
 <div id="sh-carnet" class="screen">
   <div class="jsplit" id="carnet-split"></div>
+</div>
+
+<!-- JOURNAL (nouveau Carnet) -->
+
+<div id="sh-journal" class="screen">
+  <div class="jour-header">
+    <button class="jour-search-btn" onclick="openJourCal()">Recherche de date</button>
+  </div>
+  <div class="jour-body">
+    <div class="jour-date" id="jour-date-lbl"></div>
+    <textarea class="jour-area" id="jour-area" placeholder="..." spellcheck="true" autocorrect="on" autocapitalize="sentences"></textarea>
+  </div>
+  <div class="jour-nav-row">
+    <button class="jour-nav" onclick="jouNav(-1)">‹</button>
+    <button class="jour-nav" onclick="jouNav(1)">›</button>
+  </div>
 </div>
 
 <!-- BIBLIOTHÈQUE -->
@@ -364,19 +434,6 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
 
 <div id="sh-settings" class="screen">
   <div class="slist">
-    <div class="scard">
-      <div class="slbl">🗺  Mode d'affichage</div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button id="btn-disp-biblio" onclick="setDispMode('biblio')"
-          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #6dbb8a;background:#0e1f14;color:#6dbb8a;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
-          Bibliothèque
-        </button>
-        <button id="btn-disp-carte" onclick="setDispMode('carte')"
-          style="flex:1;padding:12px 8px;border-radius:10px;border:1px solid #302e2c;background:#222120;color:#a09880;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">
-          Mind map
-        </button>
-      </div>
-    </div>
     <div class="scard">
       <div class="slbl">🧠  Mode</div>
       <div style="display:flex;gap:10px;margin-top:10px;">
@@ -430,8 +487,8 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
     <div class="mbody">
       <div class="mfield"><div class="mlbl">Type</div>
         <div class="type-btns">
-          <button class="type-btn" id="tb-sub" onclick="selType('sub')"><span style="font-size:22px">📁</span><span style="font-size:12px">Livre</span></button>
-          <button class="type-btn sel" id="tb-fin" onclick="selType('fin')"><span style="font-size:22px">★</span><span style="font-size:12px">Feuille</span></button>
+          <button class="type-btn sel" id="tb-sub" onclick="selType('sub')"><span style="font-size:22px">📖</span><span style="font-size:12px">Livre</span></button>
+          <button class="type-btn" id="tb-fin" onclick="selType('fin')"><span style="font-size:22px">🔖</span><span style="font-size:12px">Marque-page</span></button>
         </div>
       </div>
       <div class="mfield"><div class="mlbl">Nom</div><input class="min" id="ann" type="text" placeholder="Ex: Americana..." maxlength="60"></div>
@@ -628,16 +685,14 @@ function pushHistory(screen){
 
 function setTopbar(id){
   const isHome=id==='home';
-  // topbar always visible (settings gear always top-right)
-  // homebar visible on all non-home screens
+  document.getElementById('gt').classList.toggle('on',!isHome);
   document.getElementById('gh').classList.toggle('on',!isHome);
-  // title and back
   if(isHome){
     document.getElementById('tt').textContent='';
     document.getElementById('tbk').style.visibility='hidden';
     return;
   }
-  const titles={carnet:'Carnet',settings:'Réglages',mindmap:'Mind Map'};
+  const titles={carnet:'Memento',settings:'Réglages',mindmap:'Carte',journal:'Carnet'};
   if(id==='final'){document.getElementById('tt').textContent=fn(curFinalId)?.name||'Technique';}
   else if(id==='biblio'){
     const node=navStack.length>1?fn(navStack[navStack.length-1]):null;
@@ -650,6 +705,7 @@ function setTopbar(id){
 }
 
 function scr(id){
+  if(jourDateKey)saveJourEntry();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('sh-'+id).classList.add('active');
   setTopbar(id);
@@ -685,6 +741,7 @@ function topBack(){
 
 function goHome(){historyStack=[];navStack=[];scr('home');}
 function goCarnet(){pushHistory('home');renderCarnet();scr('carnet');}
+function goBiblio(){pushHistory('home');navStack=['root'];renderBiblio();scr('biblio');}
 function goBiblio(){pushHistory('home');navStack=['root'];renderBiblio();scr('biblio');}
 function openSettings(){prevScr=document.querySelector('.screen.active')?.id?.replace('sh-','')||'home';scr('settings');}
 
@@ -804,13 +861,13 @@ function mkCard(child){
   const body=document.createElement('div');body.className='nbody';
   const ttEl=document.createElement('div');ttEl.className='ntitle';ttEl.textContent=child.name;body.appendChild(ttEl);
   const meta=document.createElement('div');meta.className='nmeta';
-  if(child.isFinal){const b=document.createElement('span');b.className='badge b-fin';b.textContent='★ Feuille';meta.appendChild(b);}
+  if(child.isFinal){const b=document.createElement('span');b.className='badge b-fin';b.textContent='🔖 Marque-page';meta.appendChild(b);}
   else if(child.children?.length){const s=document.createElement('span');s.className='badge b-sub';s.textContent=child.children.length+' livre'+(child.children.length>1?'s':'');meta.appendChild(s);}
-  if(ndata.inCarnet){const b=document.createElement('span');b.className='badge b-car';b.textContent='📋 Carnet';meta.appendChild(b);}
+  if(ndata.inCarnet){const b=document.createElement('span');b.className='badge b-car';b.textContent='📋 Memento';meta.appendChild(b);}
   body.appendChild(meta);card.appendChild(body);
 
   const dotsItems=()=>[
-    {lbl:nd(child.id).inCarnet?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
+    {lbl:nd(child.id).inCarnet?'📋 Retirer du Memento':'📋 Ajouter au Memento',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
     {lbl:'✏️ Renommer',fn:()=>openRN(child.id,child.name)},
     {lbl:'Ajouter synonymes',fn:()=>openAliasModal(child.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
@@ -1106,7 +1163,7 @@ function mkCarnetCard(node){
   card.appendChild(body);
 
   const dotsItems=()=>[
-    {lbl:'📋 Retirer du Carnet',fn:()=>rmCarnet(node.id)},
+    {lbl:'📋 Retirer du Memento',fn:()=>rmCarnet(node.id)},
     {lbl:'✏️ Renommer',fn:()=>openRN(node.id,node.name)},
     {lbl:'Ajouter synonymes',fn:()=>openAliasModal(node.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
@@ -1150,7 +1207,7 @@ function buildNav(id){const path=[];function dfs(n){path.push(n.id);if(n.id===id
 /* ══ ADD / RENAME / DELETE ══ */
 let anPid=null,anIsFinal=true;
 function selType(t){anIsFinal=t==='fin';document.getElementById('tb-fin').classList.toggle('sel',anIsFinal);document.getElementById('tb-sub').classList.toggle('sel',!anIsFinal);}
-function openAN(pid){anPid=pid;selType('fin');document.getElementById('ann').value='';openM('man');setTimeout(()=>document.getElementById('ann').focus(),120);}
+function openAN(pid){anPid=pid;selType('sub');document.getElementById('ann').value='';openM('man');setTimeout(()=>document.getElementById('ann').focus(),120);}
 function confirmAN(){
   const name=document.getElementById('ann').value.trim();if(!name)return;
   const p=fn(anPid);if(!p)return;
@@ -1631,7 +1688,7 @@ const MM_COLORS=['#c8a96e','#c47a5a','#7aaec8','#6dbb8a','#b09ee0','#a09880'];
 
 function mmOpen(){
   scr('mindmap');
-  document.getElementById('tt').textContent='Mind Map';
+  document.getElementById('tt').textContent='Carte';
   document.getElementById('tbk').style.visibility='visible';
   mmCanvas=document.getElementById('mm-canvas');
   mmCtx=mmCanvas.getContext('2d');
@@ -1893,7 +1950,7 @@ function mmShowDotsMenu(n,sx,sy){
   anchor.style.cssText=`position:fixed;left:${sx}px;top:${sy}px;width:1px;height:1px;`;
   document.body.appendChild(anchor);
   const items=[
-    {lbl:inC?'📋 Retirer du Carnet':'📋 Ajouter au Carnet',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
+    {lbl:inC?'📋 Retirer du Memento':'📋 Ajouter au Memento',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
     {lbl:'✏️ Renommer',fn:()=>{anchor.remove();openRN(n.node.id,n.node.name);}},
     {lbl:'Ajouter synonymes',fn:()=>{anchor.remove();openAliasModal(n.node.id);}},
     {lbl:'🗑 Supprimer',fn:()=>{anchor.remove();confirmDel(n.node.id);}},
@@ -2022,7 +2079,7 @@ function mmAddRootChildModal(){
 
 /* Add child via + button below node */
 function mmAddChildModal(parentId){
-  anPid=parentId;selType('fin');
+  anPid=parentId;selType('sub');
   document.getElementById('ann').value='';
   openM('man');
   setTimeout(()=>document.getElementById('ann').focus(),120);
@@ -2034,6 +2091,99 @@ function mmMaybeRefresh(){
     mmLayout();mmDraw();
   }
 }
+
+/* ══ JOURNAL ══ */
+let jourDateKey=null; // 'YYYY-MM-DD'
+
+function dateToKey(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function keyToDate(k){
+  const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);
+}
+function jourDayLabel(d){
+  const days=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  const months=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+}
+function saveJourEntry(){
+  if(!jourDateKey)return;
+  const txt=document.getElementById('jour-area').value;
+  if(!S.journal)S.journal={};
+  if(txt.trim())S.journal[jourDateKey]=txt;
+  else delete S.journal[jourDateKey];
+  saveS();
+}
+function loadJourEntry(key){
+  saveJourEntry();
+  jourDateKey=key;
+  const d=keyToDate(key);
+  document.getElementById('jour-date-lbl').textContent=jourDayLabel(d);
+  document.getElementById('jour-area').value=(S.journal&&S.journal[key])||'';
+}
+function jouNav(dir){
+  const d=keyToDate(jourDateKey);
+  d.setDate(d.getDate()+dir);
+  loadJourEntry(dateToKey(d));
+}
+function goJournal(){
+  pushHistory('home');
+  if(!S.journal)S.journal={};
+  loadJourEntry(dateToKey(new Date()));
+  scr('journal');
+}
+document.addEventListener('DOMContentLoaded',()=>{},false);
+
+function openJourCal(){
+  document.querySelectorAll('.jour-cal-overlay').forEach(e=>e.remove());
+  const cur=keyToDate(jourDateKey);
+  let calYear=cur.getFullYear(),calMonth=cur.getMonth();
+  const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const overlay=document.createElement('div');overlay.className='jour-cal-overlay';
+
+  function renderCal(){
+    overlay.innerHTML='';
+    const cal=document.createElement('div');cal.className='jour-cal';
+
+    // Month selector (no label)
+    const mRow=document.createElement('div');mRow.style.cssText='display:flex;margin-bottom:8px;';
+    const mSel=document.createElement('select');mSel.style.cssText='flex:1;background:#222120;border:1px solid #302e2c;color:#e8e0d0;font-family:inherit;font-size:14px;font-weight:600;padding:10px 12px;border-radius:10px;outline:none;';
+    MONTHS.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m;if(i===calMonth)o.selected=true;mSel.appendChild(o);});
+    mSel.onchange=()=>{calMonth=parseInt(mSel.value);renderCal();};
+    mRow.appendChild(mSel);cal.appendChild(mRow);
+
+    // Year selector (no label)
+    const yRow=document.createElement('div');yRow.style.cssText='display:flex;margin-bottom:14px;';
+    const ySel=document.createElement('select');ySel.style.cssText='flex:1;background:#222120;border:1px solid #302e2c;color:#e8e0d0;font-family:inherit;font-size:14px;font-weight:600;padding:10px 12px;border-radius:10px;outline:none;';
+    for(let y=2020;y<=2035;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===calYear)o.selected=true;ySel.appendChild(o);}
+    ySel.onchange=()=>{calYear=parseInt(ySel.value);renderCal();};
+    yRow.appendChild(ySel);cal.appendChild(yRow);
+
+    // Grid
+    const grid=document.createElement('div');grid.className='jour-cal-grid';
+    const firstDay=new Date(calYear,calMonth,1).getDay();
+    const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+    const todayKey=dateToKey(new Date());
+    for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='jour-cal-day empty';grid.appendChild(e);}
+    for(let d=1;d<=daysInMonth;d++){
+      const key=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const el=document.createElement('div');el.className='jour-cal-day';el.textContent=d;
+      if(key===jourDateKey)el.classList.add('active');
+      if(key===todayKey)el.classList.add('today');
+      if(S.journal&&S.journal[key])el.classList.add('has-entry');
+      el.onclick=()=>{overlay.remove();loadJourEntry(key);};
+      grid.appendChild(el);
+    }
+    cal.appendChild(grid);
+    const closeBtn=document.createElement('button');closeBtn.className='btn bgr jour-cal-close';closeBtn.textContent='Valider';
+    closeBtn.onclick=()=>overlay.remove();cal.appendChild(closeBtn);
+    overlay.appendChild(cal);
+  }
+  renderCal();
+  document.body.appendChild(overlay);
+}
+// Auto-save journal on blur
+document.addEventListener('focusout',e=>{if(e.target.id==='jour-area')saveJourEntry();});
 
 /* ══ INIT ══ */
 loadS();
