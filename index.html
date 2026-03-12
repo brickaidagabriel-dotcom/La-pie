@@ -852,9 +852,11 @@ function renderCarnet(){
 function renderBiblio(){
   const cid=navStack[navStack.length-1];
   const node=fn(cid);
-  // Update topbar title
+  // Update topbar title only if biblio is the active screen
   document.getElementById('tbk').style.visibility=historyStack.length>0?'visible':'hidden';
-  document.getElementById('tt').textContent=cid==='root'?'Bibliothèque':(node?.name||'Bibliothèque');
+  if(document.getElementById('sh-biblio').classList.contains('active')){
+    document.getElementById('tt').textContent=cid==='root'?'Bibliothèque':(node?.name||'Bibliothèque');
+  }
   // Reset search
   document.getElementById('bsrch').style.display='none';
   document.getElementById('bcont').style.display='';
@@ -1837,9 +1839,11 @@ function mmNodeSize(node,depth){
 function mmSubtreeH(node,depth){
   const sz=mmNodeSize(node,depth);
   const kids=node.children||[];
-  if(!kids.length)return sz.h+MM_GAP_Y;
+  // non-final nodes have a + button below — reserve its space
+  const plusExtra=(!node.isFinal)?MM_PLUS_SZ+4:0;
+  if(!kids.length)return sz.h+plusExtra+MM_GAP_Y;
   const childH=kids.reduce((s,c)=>s+mmSubtreeH(c,depth+1),0);
-  return Math.max(sz.h+MM_GAP_Y, childH);
+  return Math.max(sz.h+plusExtra+MM_GAP_Y, childH);
 }
 
 // Assign x,y positions recursively
@@ -2395,6 +2399,14 @@ function _startSR(SR){
   let confirmed=ta.value;
   const recog=new SR();
   recog.lang='fr-FR';
+  // Améliore la reconnaissance des termes anglais du JJB
+  if(window.SpeechGrammarList||window.webkitSpeechGrammarList){
+    const GL=window.SpeechGrammarList||window.webkitSpeechGrammarList;
+    const gl=new GL();
+    const jjbTerms='underhook overhook saddle inside heel hook outside heel hook kneebar toehold kimura armbar guillotine darce anaconda D\'arce rear naked choke triangle omoplata mount guard half guard turtle sprawl takedown single leg double leg shot level change duck under snap down collar tie two on one wrist control cross body arm drag hip escape shrimp elbow knee escape technical standup butterfly guard de la riva berimbolo x guard spider guard lasso sweep pass stack pass torreando knee slice leg drag';
+    gl.addFromString('#JSGF V1.0; grammar jjb; public <jjb> = '+jjbTerms.split(' ').join(' | ')+';',1);
+    recog.grammars=gl;
+  }
   recog.continuous=true;
   recog.interimResults=true;
   recog.onstart=()=>{voiceActive=true;confirmed=ta.value;mic.classList.add('active');showJourTA();};
