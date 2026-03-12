@@ -354,7 +354,7 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
       <div class="hp-lbl" style="color:#c8a96e">CARNET</div>
     </button>
     <button class="hm-panel hp-c" style="height:56px" onclick="SFX.click();goCarnet()">
-      <div class="hp-lbl" style="color:#c8a96e">MEMENTO</div>
+      <div class="hp-lbl" style="color:#c8a96e;letter-spacing:1.5px">MON ÉTAGÈRE</div>
     </button>
     <div class="hm-row">
       <button class="hm-panel hp-bib" onclick="SFX.click();goBiblio()">
@@ -450,7 +450,6 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
     <div class="scard"><div class="slbl">🔊  Son</div><div class="trow"><div class="sdesc">Effets sonores</div><div class="tog on" id="stog" onclick="toggleSnd()"></div></div></div>
     <div class="scard"><div class="slbl">⬇  Exporter</div><div class="sdesc">Sauvegarde en JSON.</div><button class="btn bsm" onclick="SFX.click();exportD()" style="margin-top:4px">Exporter JSON</button></div>
     <div class="scard"><div class="slbl">⬆  Importer</div><div class="sdesc">Restaurer depuis JSON.</div><button class="btn bsm" onclick="SFX.click();importClick()" style="margin-top:4px">Importer JSON</button><input type="file" id="ifile" accept=".json" style="display:none" onchange="importD(event)"></div>
-    <div class="scard"><div class="slbl">🔄  Reset arbre</div><div class="sdesc">Remet l'arbre par défaut. Notes conservées.</div><button class="btn bsm brd" onclick="SFX.click();resetTree()" style="margin-top:4px">Reset</button></div>
   </div>
 </div>
 
@@ -693,7 +692,7 @@ function setTopbar(id){
     document.getElementById('tbk').style.visibility='hidden';
     return;
   }
-  const titles={carnet:'Memento',settings:'Réglages',mindmap:'Carte',journal:'Carnet'};
+  const titles={carnet:'Mon étagère',settings:'Réglages',mindmap:'Carte',journal:'Carnet'};
   if(id==='final'){document.getElementById('tt').textContent=fn(curFinalId)?.name||'Technique';}
   else if(id==='biblio'){
     const node=navStack.length>1?fn(navStack[navStack.length-1]):null;
@@ -701,8 +700,7 @@ function setTopbar(id){
   } else {
     document.getElementById('tt').textContent=titles[id]||id;
   }
-  const hasHistory=historyStack.length>0;
-  document.getElementById('tbk').style.visibility=hasHistory?'visible':'hidden';
+  document.getElementById('tbk').style.visibility='visible';
 }
 
 function scr(id){
@@ -864,11 +862,11 @@ function mkCard(child){
   const meta=document.createElement('div');meta.className='nmeta';
   if(child.isFinal){const b=document.createElement('span');b.className='badge b-fin';b.textContent='🔖 Marque-page';meta.appendChild(b);}
   else if(child.children?.length){const s=document.createElement('span');s.className='badge b-sub';s.textContent=child.children.length+' livre'+(child.children.length>1?'s':'');meta.appendChild(s);}
-  if(ndata.inCarnet){const b=document.createElement('span');b.className='badge b-car';b.textContent='📋 Memento';meta.appendChild(b);}
+  if(ndata.inCarnet){const b=document.createElement('span');b.className='badge b-car';b.textContent='📋 Mon étagère';meta.appendChild(b);}
   body.appendChild(meta);card.appendChild(body);
 
   const dotsItems=()=>[
-    {lbl:nd(child.id).inCarnet?'📋 Retirer du Memento':'📋 Ajouter au Memento',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
+    {lbl:nd(child.id).inCarnet?'📋 Retirer de Mon étagère':'📋 Ranger dans Mon étagère',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
     {lbl:'✏️ Renommer',fn:()=>openRN(child.id,child.name)},
     {lbl:'Ajouter synonymes',fn:()=>openAliasModal(child.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
@@ -1164,7 +1162,7 @@ function mkCarnetCard(node){
   card.appendChild(body);
 
   const dotsItems=()=>[
-    {lbl:'📋 Retirer du Memento',fn:()=>rmCarnet(node.id)},
+    {lbl:'📋 Retirer de Mon étagère',fn:()=>rmCarnet(node.id)},
     {lbl:'✏️ Renommer',fn:()=>openRN(node.id,node.name)},
     {lbl:'Ajouter synonymes',fn:()=>openAliasModal(node.id)},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
@@ -1951,7 +1949,7 @@ function mmShowDotsMenu(n,sx,sy){
   anchor.style.cssText=`position:fixed;left:${sx}px;top:${sy}px;width:1px;height:1px;`;
   document.body.appendChild(anchor);
   const items=[
-    {lbl:inC?'📋 Retirer du Memento':'📋 Ajouter au Memento',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
+    {lbl:inC?'📋 Retirer de Mon étagère':'📋 Ranger dans Mon étagère',fn:()=>{nd(n.node.id).inCarnet=!inC;saveS();renderCarnet();renderBiblio();anchor.remove();}},
     {lbl:'✏️ Renommer',fn:()=>{anchor.remove();openRN(n.node.id,n.node.name);}},
     {lbl:'Ajouter synonymes',fn:()=>{anchor.remove();openAliasModal(n.node.id);}},
     {lbl:'🗑 Supprimer',fn:()=>{anchor.remove();confirmDel(n.node.id);}},
