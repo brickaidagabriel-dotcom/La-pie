@@ -637,7 +637,8 @@ function loadS(){
     if(d){S=JSON.parse(d);if(!S.tree)S.tree=cl(DT);if(!S.notes)S.notes={};if(!S.jourOrder)S.jourOrder={};}
     else S.tree=cl(DT);
   }catch(e){S.tree=cl(DT);S.notes={};}
-  if(!S.syn)S.syn=[]; // synonym groups: [{id, words:[str,...]}]
+  if(!S.syn)S.syn=[];
+  if(!S.journal)S.journal={};
   SFX.set(S.snd!==false);updSndUI();
 }
 function saveS(){try{localStorage.setItem('jjb_v9',JSON.stringify(S));}catch(e){}}
@@ -2169,7 +2170,7 @@ function openJourCal(){
       const el=document.createElement('div');el.className='jour-cal-day';el.textContent=d;
       if(key===jourDateKey)el.classList.add('active');
       if(key===todayKey)el.classList.add('today');
-      if(S.journal&&S.journal[key])el.classList.add('has-entry');
+      if(S.journal && S.journal[key] && S.journal[key].trim())el.classList.add('has-entry');
       el.onclick=()=>{overlay.remove();loadJourEntry(key);};
       grid.appendChild(el);
     }
