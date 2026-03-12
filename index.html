@@ -115,11 +115,10 @@ transition:background .12s,transform .1s;box-shadow:0 2px 12px rgba(0,0,0,.45);}
 .jour-cal-nav{background:none;border:none;color:#a09880;font-size:22px;cursor:pointer;padding:4px 10px;border-radius:8px;}
 .jour-cal-nav:active{background:#222120;}
 .jour-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-.jour-cal-day{text-align:center;padding:8px 2px;font-size:13px;font-weight:600;color:#a09880;border-radius:8px;cursor:pointer;}
+.jour-cal-day{text-align:center;padding:8px 2px 14px;font-size:13px;font-weight:600;color:#a09880;border-radius:8px;cursor:pointer;position:relative;}
+.jour-cal-day.has-entry::after{content:’’;position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:5px;height:5px;background:#c8a96e;border-radius:50%;}
 .jour-cal-day.active{background:#211c12;color:#c8a96e;border:1px solid #c8a96e;}
 .jour-cal-day.today{color:#6dbb8a;}
-.jour-cal-day.has-entry{position:relative;}
-.jour-cal-day.has-entry::after{content:’’;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#c8a96e;border-radius:50%;}
 .jour-cal-day.empty{pointer-events:none;color:#2c2b29;}
 .jour-cal-close{width:100%;margin-top:14px;}
 .hp-b::after{background:#6dbb8a;}
