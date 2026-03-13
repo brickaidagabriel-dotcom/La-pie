@@ -98,6 +98,7 @@ transition:background .12s,transform .1s;box-shadow:0 2px 12px rgba(0,0,0,.45);}
 
 /* JOURNAL */
 .jour-header{padding:0;flex-shrink:0;border-bottom:1px solid #302e2c;display:flex;align-items:stretch;}
+.jour-header-sep{width:1px;background:#302e2c;flex-shrink:0;}
 .jour-nav{background:none;border:none;color:#a09880;font-size:30px;padding:14px 22px;cursor:pointer;line-height:1;min-width:64px;display:flex;align-items:center;justify-content:center;}
 .jour-nav:active{background:#222120;}
 .jour-nav-row{display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
@@ -260,6 +261,11 @@ border-bottom:1px solid #302e2c;background:#1a1917;flex-shrink:0;}
 border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.7);
 min-width:220px;max-width:300px;overflow:hidden;display:none;}
 .ltp.show{display:block;animation:sIn .14s ease;}
+/* ── selection popup in journal ── */
+#jour-sel-bar{display:none;padding:8px 14px 10px;border-top:1px solid #302e2c;gap:8px;justify-content:center;align-items:center;flex-shrink:0;flex-wrap:wrap;}
+#jour-sel-bar.show{display:flex;}
+.jsel-btn{background:#222120;border:1px solid #302e2c;color:#c8a96e;font-family:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap;}
+.jsel-btn:active{background:#2c2b29;}
 .ltp-hdr{padding:10px 14px;font-size:11px;font-weight:700;color:#a09880;
 letter-spacing:1px;border-bottom:1px solid #302e2c;text-transform:uppercase;}
 .ltp-item{padding:12px 14px;font-size:14px;font-weight:600;color:#e8e0d0;
@@ -344,7 +350,7 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
   <div id="tt"></div>
   <div style="width:42px"></div>
 </div>
-<div id="gh"><button class="btn bhm" onclick="SFX.back();goHome()">⌂  Pièce principale</button></div>
+<div id="gh"><button class="btn bhm" onclick="SFX.back();goHome()">Pièce principale</button></div>
 
 <!-- HOME -->
 
@@ -386,6 +392,8 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
 <div id="sh-journal" class="screen">
   <div class="jour-header">
     <button class="jour-search-btn" onclick="openJourCal()">Recherche de date</button>
+    <div class="jour-header-sep"></div>
+    <button class="jour-search-btn" onclick="openJourCreate()">Déplacer une page du carnet</button>
   </div>
   <div class="jour-body">
     <div class="jour-date" id="jour-date-lbl"></div>
@@ -484,6 +492,22 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
     <div class="mhdr"><span id="mc-t"></span><button class="mhdr-x" onclick="closeM('mc')">×</button></div>
     <div class="mbody"><p id="mc-m" style="font-size:15px;line-height:1.8"></p></div>
     <div class="mfoot"><button class="btn" onclick="closeM('mc')">Annuler</button><button class="btn brd" id="mc-ok">Confirmer</button></div>
+  </div>
+</div>
+<div class="mov" id="mjcr">
+  <div class="mbox">
+    <div class="mhdr"><span>Créer depuis le Carnet</span><button class="mhdr-x" onclick="closeM('mjcr')">×</button></div>
+    <div class="mbody">
+      <div class="mfield"><div class="mlbl">Type</div>
+        <div class="type-btns">
+          <button class="type-btn sel" id="jcr-tb-sub" onclick="jcrSelType('sub')"><span style="font-size:22px">📖</span><span style="font-size:12px">Livre</span></button>
+          <button class="type-btn" id="jcr-tb-fin" onclick="jcrSelType('fin')"><span style="font-size:22px">🔖</span><span style="font-size:12px">Marque-page</span></button>
+        </div>
+      </div>
+      <div class="mfield" id="jcr-name-row" style="display:none"><div class="mlbl">Titre du marque-page</div><input class="min" id="jcr-name" type="text" placeholder="Ex: Americana..." maxlength="60"></div>
+      <div class="mfield"><div class="mlbl">Texte</div><textarea class="min" id="jcr-text" rows="5" style="resize:none;line-height:1.5;font-family:inherit;font-size:14px;" placeholder="Colle ou tape le texte ici..."></textarea></div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeM('mjcr')">Annuler</button><button class="btn bgr" onclick="confirmJCR()">Créer</button></div>
   </div>
 </div>
 <div class="mov" id="man">
@@ -1235,22 +1259,25 @@ function carnetNavTo(node){
 function buildNav(id){const path=[];function dfs(n){path.push(n.id);if(n.id===id)return true;for(const c of(n.children||[])){if(dfs(c))return true;}path.pop();return false;}dfs(S.tree);navStack=path;}
 
 /* ══ ADD / RENAME / DELETE ══ */
-let anPid=null,anIsFinal=true;
+let anPid=null,anIsFinal=true,anInitialText='';
 function selType(t){anIsFinal=t==='fin';document.getElementById('tb-fin').classList.toggle('sel',anIsFinal);document.getElementById('tb-sub').classList.toggle('sel',!anIsFinal);}
-function openAN(pid){anPid=pid;selType('sub');document.getElementById('ann').value='';openM('man');setTimeout(()=>document.getElementById('ann').focus(),120);}
+function openAN(pid){anPid=pid;anInitialText='';selType('sub');document.getElementById('ann').value='';openM('man');setTimeout(()=>document.getElementById('ann').focus(),120);}
 function confirmAN(){
   const name=document.getElementById('ann').value.trim();if(!name)return;
   const p=fn(anPid);if(!p)return;
-  let cat;
+  let cat,newNodeId=gid();
   if(anPid==='root'){
-    const newId=gid();
-    p.children.push({id:newId,name,isFinal:anIsFinal,category:newId,children:[]});
-    saveS();closeM('man');renderBiblio();renderCarnet();mmMaybeRefresh();return;
+    p.children.push({id:newNodeId,name,isFinal:anIsFinal,category:newNodeId,children:[]});
   } else {
     cat=p.category||getCat(anPid);
+    p.children.push({id:newNodeId,name,isFinal:anIsFinal,category:cat,children:[]});
   }
-  p.children.push({id:gid(),name,isFinal:anIsFinal,category:cat,children:[]});
-  saveS();closeM('man');renderBiblio();mmMaybeRefresh();
+  // Pre-fill note text if provided (marque-page from journal selection)
+  if(anIsFinal&&anInitialText){
+    nd(newNodeId).on=anInitialText;
+  }
+  saveS();closeM('man');renderBiblio();renderCarnet();mmMaybeRefresh();
+  anInitialText='';
 }
 let rnId=null;
 function openRN(id,cur){rnId=id;document.getElementById('rni').value=cur;openM('mrn');setTimeout(()=>document.getElementById('rni').focus(),120);}
@@ -2497,7 +2524,42 @@ function _startSR(SR){
   recog.start();
 }
 
-/* ══ INIT ══ */
+/* ══ JOURNAL CREATE FROM TEXT ══ */
+function openJourCreate(){
+  const ta=document.getElementById('jour-area');
+  const txt=ta?ta.value:'';
+  document.getElementById('jcr-text').value=txt;
+  document.getElementById('jcr-name').value='';
+  jcrSelType('sub');
+  openM('mjcr');
+  setTimeout(()=>document.getElementById('jcr-text').focus(),120);
+}
+let jcrType='sub';
+function jcrSelType(t){
+  jcrType=t;
+  document.getElementById('jcr-tb-sub').classList.toggle('sel',t==='sub');
+  document.getElementById('jcr-tb-fin').classList.toggle('sel',t==='fin');
+  document.getElementById('jcr-name-row').style.display=t==='fin'?'':'none';
+}
+function confirmJCR(){
+  const txt=document.getElementById('jcr-text').value.trim();
+  if(!txt)return;
+  const isFinal=jcrType==='fin';
+  let name='';
+  if(isFinal){
+    name=document.getElementById('jcr-name').value.trim();
+    if(!name)return;
+  } else {
+    name=txt.slice(0,60);
+  }
+  // Créer à la racine
+  const p=S.tree;
+  const newId=gid();
+  p.children.push({id:newId,name,isFinal,category:newId,children:[]});
+  if(isFinal){nd(newId).on=txt;}
+  saveS();closeM('mjcr');renderBiblio();renderCarnet();mmMaybeRefresh();
+  SFX.add();
+}
 loadS();
 renderCarnet();
 if(S.mapMode==='carte')setDispMode('carte');
