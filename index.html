@@ -27,8 +27,8 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;
   padding-bottom:calc(var(--hh) + env(safe-area-inset-bottom,0px));
   z-index:1;}
 .screen.active{display:flex;animation:sIn .18s ease;}
-@keyframes sIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-#sh-home{padding:0;display:flex;align-items:center;justify-content:center;}
+#sh-home{padding:0;display:flex;align-items:center;justify-content:center;z-index:0;}
+@keyframes sIn{from{transform:translateY(6px)}to{transform:none}}
 .hm-block{display:flex;flex-direction:column;align-items:center;gap:28px;width:calc(100% - 56px);}
 
 /* TOPBAR */
@@ -407,6 +407,19 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
   </div>
 </div>
 
+<!-- PLACEMENT JCR -->
+
+<div id="sh-jcrplace" class="screen">
+  <div class="biblio-toolbar" style="justify-content:space-between;align-items:center;">
+    <button class="btn bsm" id="jcrplace-back" onclick="jcrPlaceBack()">‹</button>
+    <span id="jcrplace-title" style="font-size:15px;font-weight:700;color:#e8e0d0;flex:1;text-align:center;">Bibliothèque</span>
+    <button class="btn bsm bgr" id="jcrplace-btn" onclick="confirmJcrPlace()" style="opacity:0.4;pointer-events:none;">Déplacer ici</button>
+  </div>
+  <div class="scr" id="jcrplace-scroll">
+    <div id="jcrplace-cont"></div>
+  </div>
+</div>
+
 <!-- BIBLIOTHÈQUE -->
 
 <div id="sh-biblio" class="screen">
@@ -496,7 +509,7 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
 </div>
 <div class="mov" id="mjcr">
   <div class="mbox">
-    <div class="mhdr"><span>Créer depuis le Carnet</span><button class="mhdr-x" onclick="closeM('mjcr')">×</button></div>
+    <div class="mhdr"><span>Déplacer une page du carnet</span><button class="mhdr-x" onclick="closeM('mjcr')">×</button></div>
     <div class="mbody">
       <div class="mfield"><div class="mlbl">Type</div>
         <div class="type-btns">
@@ -507,7 +520,7 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
       <div class="mfield" id="jcr-name-row" style="display:none"><div class="mlbl">Titre du marque-page</div><input class="min" id="jcr-name" type="text" placeholder="Ex: Americana..." maxlength="60"></div>
       <div class="mfield"><div class="mlbl">Texte</div><textarea class="min" id="jcr-text" rows="5" style="resize:none;line-height:1.5;font-family:inherit;font-size:14px;" placeholder="Colle ou tape le texte ici..."></textarea></div>
     </div>
-    <div class="mfoot"><button class="btn" onclick="closeM('mjcr')">Annuler</button><button class="btn bgr" onclick="confirmJCR()">Créer</button></div>
+    <div class="mfoot"><button class="btn" onclick="closeM('mjcr')">Annuler</button><button class="btn bgr" onclick="jcrNext()">Suivant →</button></div>
   </div>
 </div>
 <div class="mov" id="man">
@@ -1348,20 +1361,20 @@ document.getElementById('sinput').addEventListener('keydown',e=>{if(e.key==='Ent
 function openFinal(id,origin){
   curFinalId=id;
   finalOrigin=origin||'biblio';
+  // Activer l'écran EN PREMIER pour éviter le flash de l'accueil
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sh-final').classList.add('active');
   const ndata=nd(id);
   document.getElementById('tt').textContent=fn(id)?.name||'Technique';
   document.getElementById('tbk').style.visibility='visible';
-  // load mode and text into textarea (hidden)
   const mode=ndata.mode||'on';
   ndata.mode=mode;
   document.getElementById('ntarea').value=ndata[mode]||'';
-  // activate tab
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
   document.getElementById('tab-'+mode).classList.add('act');
   renderVids();
-  // show nview (rich/highlighted) by default
   showView();
-  scr('final');
+  setTopbar('final');
 }
 
 function showTA(){
@@ -2525,6 +2538,8 @@ function _startSR(SR){
 }
 
 /* ══ JOURNAL CREATE FROM TEXT ══ */
+let jcrType='sub', jcrPendingName='', jcrPendingText='', jcrNavStack=['root'];
+
 function openJourCreate(){
   const ta=document.getElementById('jour-area');
   const txt=ta?ta.value:'';
@@ -2534,14 +2549,13 @@ function openJourCreate(){
   openM('mjcr');
   setTimeout(()=>document.getElementById('jcr-text').focus(),120);
 }
-let jcrType='sub';
 function jcrSelType(t){
   jcrType=t;
   document.getElementById('jcr-tb-sub').classList.toggle('sel',t==='sub');
   document.getElementById('jcr-tb-fin').classList.toggle('sel',t==='fin');
   document.getElementById('jcr-name-row').style.display=t==='fin'?'':'none';
 }
-function confirmJCR(){
+function jcrNext(){
   const txt=document.getElementById('jcr-text').value.trim();
   if(!txt)return;
   const isFinal=jcrType==='fin';
@@ -2552,13 +2566,101 @@ function confirmJCR(){
   } else {
     name=txt.slice(0,60);
   }
-  // Créer à la racine
-  const p=S.tree;
+  jcrPendingName=name;
+  jcrPendingText=txt;
+  jcrNavStack=['root'];
+  closeM('mjcr');
+  renderJcrBiblio();
+  // Activer l'écran directement sans passer par scr() pour éviter saveJourEntry
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sh-jcrplace').classList.add('active');
+  setTopbar('jcrplace');
+}
+
+function renderJcrBiblio(){
+  const cid=jcrNavStack[jcrNavStack.length-1];
+  const node=cid==='root'?S.tree:fn(cid);
+  const title=document.getElementById('jcrplace-title');
+  const backBtn=document.getElementById('jcrplace-back');
+  const deployBtn=document.getElementById('jcrplace-btn');
+
+  title.textContent=cid==='root'?'Bibliothèque':(node?.name||'Bibliothèque');
+  backBtn.style.visibility=jcrNavStack.length>1?'visible':'hidden';
+
+  // Déplacer ici toujours actif (on place dans le niveau courant)
+  deployBtn.style.opacity='1';
+  deployBtn.style.pointerEvents='auto';
+
+  const cont=document.getElementById('jcrplace-cont');
+  cont.innerHTML='';
+  document.getElementById('jcrplace-scroll').scrollTop=0;
+
+  if(!node)return;
+  const children=node.children||[];
+  if(!children.length){
+    const empty=document.createElement('div');
+    empty.style.cssText='padding:32px 16px;text-align:center;color:#504840;font-size:14px;';
+    empty.textContent='Dossier vide';
+    cont.appendChild(empty);
+    return;
+  }
+  children.forEach(child=>{
+    const w=document.createElement('div');w.className='ncw';
+    const card=document.createElement('div');card.className='nc';
+    // Strip couleur
+    const strip=document.createElement('div');strip.className='nstrip';
+    if(child.isFinal){const m=(S.notes[child.id]?.mode)||'on';strip.classList.add(m==='on'?'s-on':m==='already'?'s-al':'s-fu');}
+    else strip.classList.add('s-no');
+    card.appendChild(strip);
+    // Body
+    const body=document.createElement('div');body.className='nbody';
+    const ttEl=document.createElement('div');ttEl.className='ntitle';ttEl.textContent=child.name;body.appendChild(ttEl);
+    const meta=document.createElement('div');meta.className='nmeta';
+    if(child.isFinal){const b=document.createElement('span');b.className='badge b-fin';b.textContent='🔖 Marque-page';meta.appendChild(b);}
+    else if(child.children?.length){const s=document.createElement('span');s.className='badge b-sub';s.textContent=child.children.length+' livre'+(child.children.length>1?'s':'');meta.appendChild(s);}
+    body.appendChild(meta);card.appendChild(body);
+    // Flèche si non-final (navigable)
+    if(!child.isFinal){card.appendChild(Object.assign(document.createElement('div'),{className:'narrow',textContent:'›'}));}
+    w.appendChild(card);
+    // Click : si livre → naviguer dedans; si marque-page → pas navigable
+    card.addEventListener('click',()=>{
+      if(!child.isFinal){
+        jcrNavStack.push(child.id);
+        renderJcrBiblio();
+      }
+    });
+    card.addEventListener('touchend',e=>{
+      if(!child.isFinal){e.preventDefault();jcrNavStack.push(child.id);renderJcrBiblio();}
+    },{passive:false});
+    cont.appendChild(w);
+  });
+}
+
+function jcrPlaceBack(){
+  if(jcrNavStack.length>1){jcrNavStack.pop();renderJcrBiblio();}
+  else{scr('journal');}
+}
+
+function confirmJcrPlace(){
+  const isFinal=jcrType==='fin';
+  const cid=jcrNavStack[jcrNavStack.length-1];
+  const p=cid==='root'?S.tree:fn(cid);
+  if(!p)return;
   const newId=gid();
-  p.children.push({id:newId,name,isFinal,category:newId,children:[]});
-  if(isFinal){nd(newId).on=txt;}
-  saveS();closeM('mjcr');renderBiblio();renderCarnet();mmMaybeRefresh();
+  const cat=cid==='root'?newId:(p.category||getCat(cid));
+  p.children.push({id:newId,name:jcrPendingName,isFinal,category:cat,children:[]});
+  if(isFinal){nd(newId).on=jcrPendingText;}
+  saveS();renderBiblio();renderCarnet();mmMaybeRefresh();
   SFX.add();
+  // Retour journal direct sans flash
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sh-journal').classList.add('active');
+  setTopbar('journal');
+}
+function closeJcrPlace(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sh-journal').classList.add('active');
+  setTopbar('journal');
 }
 loadS();
 renderCarnet();
