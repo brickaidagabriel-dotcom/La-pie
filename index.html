@@ -2403,8 +2403,64 @@ function _startSR(SR){
   if(window.SpeechGrammarList||window.webkitSpeechGrammarList){
     const GL=window.SpeechGrammarList||window.webkitSpeechGrammarList;
     const gl=new GL();
-    const jjbTerms='underhook overhook saddle inside heel hook outside heel hook kneebar toehold kimura armbar guillotine darce anaconda D\'arce rear naked choke triangle omoplata mount guard half guard turtle sprawl takedown single leg double leg shot level change duck under snap down collar tie two on one wrist control cross body arm drag hip escape shrimp elbow knee escape technical standup butterfly guard de la riva berimbolo x guard spider guard lasso sweep pass stack pass torreando knee slice leg drag';
-    gl.addFromString('#JSGF V1.0; grammar jjb; public <jjb> = '+jjbTerms.split(' ').join(' | ')+';',1);
+    const jjbTerms=[
+      // Wrestling / lutte
+      'wrestling','underhook','overhook','double underhook','single underhook',
+      'collar tie','two on one','wrist control','arm drag','duck under','snap down',
+      'single leg','double leg','high crotch','low single','ankle pick',
+      'level change','shot','sprawl','whizzer','wizzer','limp arm',
+      'front headlock','go behind','body lock','suplex','hip toss','foot sweep',
+      'inside trip','outside trip','fireman carry','slide by',
+      // Positions garde
+      'guard','half guard','deep half guard','butterfly guard','x guard','single leg x',
+      'spider guard','lasso guard','de la riva','reverse de la riva','berimbolo',
+      'worm guard','lapel guard','rubber guard','mission control',
+      'closed guard','open guard','seated guard','z guard','k guard',
+      '50 50','50-50','truck','truck position',
+      // Back
+      'back take','back mount','rear mount','seatbelt','body triangle',
+      'hooks in','back control',
+      // Mount / side control
+      'mount','full mount','technical mount','s mount','high mount',
+      'side control','side mount','north south','knee on belly','knee on stomach',
+      // Passages de garde
+      'guard pass','torreando','knee slice','leg drag','stack pass','over under',
+      'x pass','headquarters','smash pass','long step pass','bull pass',
+      // Soumissions membres inférieurs
+      'heel hook','inside heel hook','outside heel hook','saddle','ashi garami',
+      'kneebar','toehold','calf slicer','calf crush','ankle lock','straight ankle lock',
+      'estima lock','knee reap',
+      // Soumissions membres supérieurs
+      'armbar','triangle','rear naked choke','guillotine','arm in guillotine',
+      'kimura','americana','omoplata','wrist lock','bicep slicer',
+      'darce','D arce','anaconda','arm triangle','ezekiel','ezekiel choke',
+      // Étranglements gi
+      'bow and arrow','baseball choke','loop choke','clock choke',
+      'brabo','paper cutter','breadcutter','cross collar','collar choke',
+      // Soumissions spéciales
+      'buggy choke','buggy','peruvian necktie','japanese necktie',
+      'twister','truck roll','banana split','electric chair',
+      'crucifix','mir lock','gogoplata','rubber arm',
+      // Sweeps
+      'sweep','scissor sweep','hip bump sweep','flower sweep','waiter sweep',
+      'sickle sweep','overhead sweep','tripod sweep','balloon sweep',
+      // Mouvements
+      'shrimp','hip escape','bridge','upa','granby roll','technical standup',
+      'sit up','sit out','switch','stand in base','invert','inversion',
+      'reguard','recover guard','regain guard',
+      // Termes généraux
+      'submission','position','transition','chain','combination',
+      'attack','defense','counter','setup','finish','entry',
+      'grip','grips','grip break','grip fighting',
+      'pressure','base','posture','weight','timing',
+      'roll','rolling','live roll','drilling','drill',
+      'gi','no gi','nogi','spats',
+      // Noms courants
+      'Gordon Ryan','Lachlan Giles','Craig Jones','Marcelo Garcia',
+      'Danaher','John Danaher','Mikey Musumeci','Andre Galvao',
+      'leg lock','leg locks','leg entanglement'
+    ].join(' | ');
+    gl.addFromString('#JSGF V1.0; grammar jjb; public <jjb> = '+jjbTerms+';',1);
     recog.grammars=gl;
   }
   recog.continuous=true;
