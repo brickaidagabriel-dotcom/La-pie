@@ -756,6 +756,12 @@ function setTopbar(id){
   else if(id==='biblio'){
     const node=navStack.length>1?fn(navStack[navStack.length-1]):null;
     document.getElementById('tt').textContent=navStack.length>1?(node?.name||'Bibliothèque'):'Bibliothèque';
+  } else if(id==='jcrplace'){
+    // Titre = parent courant ou "Carnet" si racine
+    const cid=jcrNavStack&&jcrNavStack.length>1?jcrNavStack[jcrNavStack.length-1]:null;
+    document.getElementById('tt').textContent=cid?fn(cid)?.name||'Bibliothèque':'Bibliothèque';
+    document.getElementById('tbk').style.visibility='visible';
+    return;
   } else {
     document.getElementById('tt').textContent=titles[id]||id;
   }
@@ -773,6 +779,10 @@ function scr(id){
 function topBack(){
   SFX.back();
   if(voiceActive)stopVoice();
+  // Si on est sur l'écran jcrplace, déléguer à jcrPlaceBack
+  if(document.getElementById('sh-jcrplace').classList.contains('active')){
+    jcrPlaceBack();return;
+  }
   if(historyStack.length===0){goHome();return;}
   const prev=historyStack.pop();
   // restore state
@@ -1280,15 +1290,12 @@ function confirmAN(){
   const p=fn(anPid);if(!p)return;
   let cat,newNodeId=gid();
   if(anPid==='root'){
-    p.children.push({id:newNodeId,name,isFinal:anIsFinal,category:newNodeId,children:[]});
+    p.children.unshift({id:newNodeId,name,isFinal:anIsFinal,category:newNodeId,children:[]});
   } else {
     cat=p.category||getCat(anPid);
-    p.children.push({id:newNodeId,name,isFinal:anIsFinal,category:cat,children:[]});
+    p.children.unshift({id:newNodeId,name,isFinal:anIsFinal,category:cat,children:[]});
   }
-  // Pre-fill note text if provided (marque-page from journal selection)
-  if(anIsFinal&&anInitialText){
-    nd(newNodeId).on=anInitialText;
-  }
+  if(anIsFinal&&anInitialText){nd(newNodeId).on=anInitialText;}
   saveS();closeM('man');renderBiblio();renderCarnet();mmMaybeRefresh();
   anInitialText='';
 }
@@ -1356,6 +1363,11 @@ function doSearch(){
   sr.appendChild(bk);
 }
 document.getElementById('sinput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doSearch();}});
+document.getElementById('sinput').addEventListener('input',()=>{
+  const v=document.getElementById('sinput').value.trim();
+  if(v.length>=1)doSearch();
+  else{document.getElementById('bsrch').style.display='none';document.getElementById('bcont').style.display='';}
+});
 
 /* ══ FINAL NODE ══ */
 function openFinal(id,origin){
@@ -1829,6 +1841,39 @@ let mmEdges=[];   // {x1,y1,x2,y2,color,midX,midY,parentId,childId}
 let mmCanvas=null,mmCtx=null,mmEventsAttached=false;
 const MM_COLORS=['#c8a96e','#c47a5a','#7aaec8','#6dbb8a','#b09ee0','#a09880'];
 
+function mmFitAll(){
+  if(!mmNodes||!mmNodes.length)return;
+  const pw=window.innerWidth,ph=window.innerHeight;
+  const xs=mmNodes.map(n=>n.hitX);
+  const xe=mmNodes.map(n=>n.hitX+n.hitW);
+  const ys=mmNodes.map(n=>n.hitY);
+  const ye=mmNodes.map(n=>n.hitY+n.hitH);
+  const minX=Math.min(...xs)-20;
+  const maxX=Math.max(...xe)+20;
+  const minY=Math.min(...ys)-20;
+  const maxY=Math.max(...ye)+20;
+  const contentW=maxX-minX;
+  const contentH=maxY-minY;
+  const scaleX=pw/contentW;
+  const scaleY=ph/contentH;
+  mmScale=Math.min(scaleX,scaleY,1)*0.9;
+  // Centre : le contenu est dessiné avec translate(pw/2+mmTx, ph/2+mmTy) puis translate(-pw/2,-ph/2)
+  // Donc world center = (pw/2 - mmTx, ph/2 - mmTy) en coords monde
+  const cx=(minX+maxX)/2;
+  const cy=(minY+maxY)/2;
+  mmTx=pw/2-cx*mmScale-(pw/2)*mmScale+pw/2;
+  mmTy=ph/2-cy*mmScale-(ph/2)*mmScale+ph/2;
+  // Simplification : centrer en annulant le décalage du contenu
+  mmTx=(pw/2-cx)*mmScale-(pw/2)*(mmScale-1)+pw/2-pw/2*mmScale;
+  mmTy=(ph/2-cy)*mmScale-(ph/2)*(mmScale-1)+ph/2-ph/2*mmScale;
+  // Recalcul direct : on veut que le point (cx,cy) soit au centre de l'écran
+  // mmDraw fait: ctx.translate(pw/2+mmTx, ph/2+mmTy); ctx.scale(mmScale); ctx.translate(-pw/2,-ph/2)
+  // Donc screen_x = (world_x - pw/2)*mmScale + pw/2 + mmTx
+  // Pour que cx → pw/2 : (cx - pw/2)*mmScale + pw/2 + mmTx = pw/2
+  mmTx=-(cx-pw/2)*mmScale;
+  mmTy=-(cy-ph/2)*mmScale;
+}
+
 function mmOpen(){
   scr('mindmap');
   document.getElementById('tt').textContent='Carte';
@@ -1840,6 +1885,7 @@ function mmOpen(){
     mmResize();
     mmTx=0;mmTy=0;mmScale=1;
     mmLayout();
+    mmFitAll();
     mmDraw();
     if(!mmEventsAttached){mmAttachEvents();mmEventsAttached=true;}
   }));
@@ -2436,7 +2482,6 @@ function _startSR(SR){
   voiceStopRequested=false;
   const mic=document.getElementById('jour-mic');
   const ta=document.getElementById('jour-area');
-  let confirmed=ta.value;
   const recog=new SR();
   recog.lang='fr-FR';
   // Améliore la reconnaissance des termes anglais du JJB
@@ -2503,11 +2548,15 @@ function _startSR(SR){
     gl.addFromString('#JSGF V1.0; grammar jjb; public <jjb> = '+jjbTerms+';',1);
     recog.grammars=gl;
   }
+  let cursorStart=ta.selectionStart||ta.value.length;
+  let cursorEnd=ta.selectionEnd||ta.value.length;
+  let textBefore=ta.value.slice(0,cursorStart);
+  let textAfter=ta.value.slice(cursorEnd);
+  let confirmed=textBefore;
   recog.continuous=true;
   recog.interimResults=true;
-  recog.onstart=()=>{voiceActive=true;confirmed=ta.value;mic.classList.add('active');showJourTA();};
+  recog.onstart=()=>{voiceActive=true;mic.classList.add('active');showJourTA();};
   recog.onresult=e=>{
-    // Utiliser e.resultIndex pour ne lire que les nouveaux résultats
     for(let i=e.resultIndex;i<e.results.length;i++){
       if(e.results[i].isFinal){
         const t=e.results[i][0].transcript;
@@ -2515,16 +2564,14 @@ function _startSR(SR){
         confirmed+=sep+t;
       }
     }
-    // Afficher interim séparément
     let interim='';
     for(let i=0;i<e.results.length;i++){if(!e.results[i].isFinal)interim+=e.results[i][0].transcript;}
     const sep2=(confirmed&&!confirmed.endsWith(' ')&&!confirmed.endsWith('\n')&&interim)?' ':'';
-    ta.value=confirmed+(interim?sep2+interim:'');
+    ta.value=confirmed+(interim?sep2+interim:'')+textAfter;
   };
   recog.onend=()=>{
     if(voiceStopRequested){voiceRecog=null;return;}
-    // Silence détecté — relance avec un nouvel objet pour éviter les doublons
-    ta.value=confirmed;
+    ta.value=confirmed+textAfter;
     voiceRecog=null;
     setTimeout(()=>{if(!voiceStopRequested&&voiceActive)_startSR(SR);},200);
   };
@@ -2553,7 +2600,8 @@ function jcrSelType(t){
   jcrType=t;
   document.getElementById('jcr-tb-sub').classList.toggle('sel',t==='sub');
   document.getElementById('jcr-tb-fin').classList.toggle('sel',t==='fin');
-  document.getElementById('jcr-name-row').style.display=t==='fin'?'':'none';
+  const nameRow=document.getElementById('jcr-name-row');
+  nameRow.style.display=t==='fin'?'flex':'none';
 }
 function jcrNext(){
   const txt=document.getElementById('jcr-text').value.trim();
@@ -2580,16 +2628,13 @@ function jcrNext(){
 function renderJcrBiblio(){
   const cid=jcrNavStack[jcrNavStack.length-1];
   const node=cid==='root'?S.tree:fn(cid);
-  const title=document.getElementById('jcrplace-title');
-  const backBtn=document.getElementById('jcrplace-back');
-  const deployBtn=document.getElementById('jcrplace-btn');
 
-  title.textContent=cid==='root'?'Bibliothèque':(node?.name||'Bibliothèque');
-  backBtn.style.visibility=jcrNavStack.length>1?'visible':'hidden';
-
-  // Déplacer ici toujours actif (on place dans le niveau courant)
-  deployBtn.style.opacity='1';
-  deployBtn.style.pointerEvents='auto';
+  // Topbar : "Carnet" si racine, sinon nom du parent
+  const tt=document.getElementById('tt');
+  const tbk=document.getElementById('tbk');
+  if(cid==='root'){tt.textContent='Carnet';}
+  else{tt.textContent=fn(jcrNavStack[jcrNavStack.length-1])?.name||'Bibliothèque';}
+  tbk.style.visibility='visible';
 
   const cont=document.getElementById('jcrplace-cont');
   cont.innerHTML='';
@@ -2600,45 +2645,41 @@ function renderJcrBiblio(){
   if(!children.length){
     const empty=document.createElement('div');
     empty.style.cssText='padding:32px 16px;text-align:center;color:#504840;font-size:14px;';
-    empty.textContent='Dossier vide';
+    empty.textContent='Dossier vide — déplacer ici ?';
     cont.appendChild(empty);
     return;
   }
   children.forEach(child=>{
     const w=document.createElement('div');w.className='ncw';
     const card=document.createElement('div');card.className='nc';
-    // Strip couleur
     const strip=document.createElement('div');strip.className='nstrip';
     if(child.isFinal){const m=(S.notes[child.id]?.mode)||'on';strip.classList.add(m==='on'?'s-on':m==='already'?'s-al':'s-fu');}
     else strip.classList.add('s-no');
     card.appendChild(strip);
-    // Body
     const body=document.createElement('div');body.className='nbody';
     const ttEl=document.createElement('div');ttEl.className='ntitle';ttEl.textContent=child.name;body.appendChild(ttEl);
     const meta=document.createElement('div');meta.className='nmeta';
     if(child.isFinal){const b=document.createElement('span');b.className='badge b-fin';b.textContent='🔖 Marque-page';meta.appendChild(b);}
     else if(child.children?.length){const s=document.createElement('span');s.className='badge b-sub';s.textContent=child.children.length+' livre'+(child.children.length>1?'s':'');meta.appendChild(s);}
     body.appendChild(meta);card.appendChild(body);
-    // Flèche si non-final (navigable)
     if(!child.isFinal){card.appendChild(Object.assign(document.createElement('div'),{className:'narrow',textContent:'›'}));}
     w.appendChild(card);
-    // Click : si livre → naviguer dedans; si marque-page → pas navigable
-    card.addEventListener('click',()=>{
-      if(!child.isFinal){
-        jcrNavStack.push(child.id);
-        renderJcrBiblio();
-      }
-    });
-    card.addEventListener('touchend',e=>{
-      if(!child.isFinal){e.preventDefault();jcrNavStack.push(child.id);renderJcrBiblio();}
-    },{passive:false});
+    card.addEventListener('click',()=>{if(!child.isFinal){jcrNavStack.push(child.id);renderJcrBiblio();}});
+    card.addEventListener('touchend',e=>{if(!child.isFinal){e.preventDefault();jcrNavStack.push(child.id);renderJcrBiblio();}},{passive:false});
     cont.appendChild(w);
   });
 }
 
 function jcrPlaceBack(){
-  if(jcrNavStack.length>1){jcrNavStack.pop();renderJcrBiblio();}
-  else{scr('journal');}
+  if(jcrNavStack.length>1){
+    jcrNavStack.pop();
+    renderJcrBiblio();
+  } else {
+    // Retour au Carnet sans flash
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('sh-journal').classList.add('active');
+    setTopbar('journal');
+  }
 }
 
 function confirmJcrPlace(){
@@ -2648,7 +2689,7 @@ function confirmJcrPlace(){
   if(!p)return;
   const newId=gid();
   const cat=cid==='root'?newId:(p.category||getCat(cid));
-  p.children.push({id:newId,name:jcrPendingName,isFinal,category:cat,children:[]});
+  p.children.unshift({id:newId,name:jcrPendingName,isFinal,category:cat,children:[]});
   if(isFinal){nd(newId).on=jcrPendingText;}
   saveS();renderBiblio();renderCarnet();mmMaybeRefresh();
   SFX.add();
