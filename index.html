@@ -168,6 +168,11 @@ justify-content:center;font-size:11px;font-weight:700;color:#4db8a0;letter-spaci
 background:rgba(10,30,26,.6);border-radius:inherit;pointer-events:none;}
 .nstrip{width:4px;align-self:stretch;flex-shrink:0;border-radius:var(–r) 0 0 var(–r);}
 .s-on{background:#6dbb8a;}.s-al{background:#c47a5a;}.s-fu{background:#7aaec8;}.s-no{background:#252320;}
+/* Vieilli / Neuf */
+#sh-final.age-old{box-shadow:inset 0 0 0 4px #3e3e36;}
+#sh-final.age-new{box-shadow:inset 0 0 0 4px #c8b97a;}
+.ncw.age-old .nc{box-shadow:inset 0 0 0 3px #3e3e36;}
+.ncw.age-new .nc{box-shadow:inset 0 0 0 3px #c8b97a;}
 .nbody{flex:1;padding:16px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;}
 .ntitle{font-size:16px;font-weight:600;color:#e8e0d0;line-height:1.4;}
 .nmeta{font-size:12px;color:#a09880;display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
@@ -413,7 +418,7 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
   <div class="biblio-toolbar" style="justify-content:space-between;align-items:center;">
     <button class="btn bsm" id="jcrplace-back" onclick="jcrPlaceBack()">‹</button>
     <span id="jcrplace-title" style="font-size:15px;font-weight:700;color:#e8e0d0;flex:1;text-align:center;">Bibliothèque</span>
-    <button class="btn bsm bgr" id="jcrplace-btn" onclick="confirmJcrPlace()" style="opacity:0.4;pointer-events:none;">Déplacer ici</button>
+    <button class="btn bsm bgr" id="jcrplace-btn" onclick="confirmJcrPlace()">Déplacer ici</button>
   </div>
   <div class="scr" id="jcrplace-scroll">
     <div id="jcrplace-cont"></div>
@@ -437,11 +442,6 @@ box-shadow:0 12px 48px rgba(0,0,0,.85),0 0 0 2px rgba(200,169,110,.4);display:no
 <!-- FINAL -->
 
 <div id="sh-final" class="screen">
-  <div class="mtabs">
-    <button class="mtab t-on" id="tab-on" onclick="SFX.tab();switchMode('on')">🟢  ON TEST</button>
-    <button class="mtab t-al" id="tab-already" onclick="SFX.tab();switchMode('already')">🟠  ALREADY</button>
-    <button class="mtab t-fu" id="tab-future" onclick="SFX.tab();switchMode('future')">🔵  FUTURE</button>
-  </div>
   <div class="fbody">
     <div class="narea">
       <textarea class="ntarea" id="ntarea" placeholder="Notes..." spellcheck="true" autocorrect="on" autocomplete="off" autocapitalize="sentences"></textarea>
@@ -703,9 +703,27 @@ function loadS(){
 function saveS(){try{localStorage.setItem('jjb_v9',JSON.stringify(S));}catch(e){}}
 function cl(o){return JSON.parse(JSON.stringify(o));}
 function nd(id){
-  if(!S.notes[id])S.notes[id]={on:'',already:'',future:'',mode:'on',videos:{on:[],already:[],future:[]},inCarnet:false};
+  if(!S.notes[id])S.notes[id]={text:'',videos:[],inCarnet:false};
   const n=S.notes[id];
-  if(!n.videos||Array.isArray(n.videos))n.videos={on:[],already:[],future:[]};
+  // Migration : anciennes données avec on/already/future → text+videos plats
+  if(n.on!==undefined||n.already!==undefined||n.future!==undefined){
+    const parts=[];
+    if(n.on&&n.on.trim())parts.push(n.on.trim());
+    if(n.already&&n.already.trim())parts.push(n.already.trim());
+    if(n.future&&n.future.trim())parts.push(n.future.trim());
+    n.text=parts.join('\n\n');
+    // Vieilles vidéos : fusionner les 3 listes
+    const oldVids=n.videos;
+    if(oldVids&&!Array.isArray(oldVids)){
+      n.videos=[...(oldVids.on||[]),...(oldVids.already||[]),...(oldVids.future||[])];
+    } else if(!Array.isArray(n.videos)){
+      n.videos=[];
+    }
+    delete n.on;delete n.already;delete n.future;delete n.mode;
+    saveS();
+  }
+  if(!Array.isArray(n.videos))n.videos=[];
+  if(n.text===undefined)n.text='';
   if(n.inJournalier!==undefined&&n.inCarnet===undefined){n.inCarnet=n.inJournalier;delete n.inJournalier;}
   return n;
 }
@@ -715,6 +733,66 @@ function fn(id,n){if(!n)n=S.tree;if(n.id===id)return n;for(const c of(n.children
 function fp(id,n,p){if(!n)n=S.tree;if(n.id===id)return p;for(const c of(n.children||[])){const r=fp(id,c,n);if(r)return r;}return null;}
 function gid(){return 'n'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
 function getCat(id){function g(n){if(n.id===id)return n.category;for(const c of(n.children||[])){const r=g(c);if(r)return r;}return null;}return g(S.tree)||'grappling';}
+
+/* ══ VIEILLI / NEUF ══ */
+function getNodeAge(id){
+  // Cherche l'âge sur le nœud lui-même, puis remonte les ancêtres
+  function walk(n,target){
+    if(n.id===target)return n.age||null;
+    for(const c of(n.children||[])){
+      const r=walk(c,target);
+      if(r!==undefined)return r;
+    }
+    return undefined;
+  }
+  // Cherche dans tous les ancêtres en remontant
+  function findWithAncestor(node,targetId){
+    if(node.id===targetId)return node.age||null;
+    for(const c of(node.children||[])){
+      const r=findWithAncestor(c,targetId);
+      if(r!==undefined){
+        // Si le nœud lui-même a un âge, il prime sur l'héritage
+        return r;
+      }
+    }
+    return undefined;
+  }
+  // Parcours avec héritage : on collecte la chaîne d'ancêtres
+  function getChain(n,targetId,chain){
+    if(n.id===targetId)return [...chain,n];
+    for(const c of(n.children||[])){
+      const r=getChain(c,targetId,[...chain,n]);
+      if(r)return r;
+    }
+    return null;
+  }
+  const chain=getChain(S.tree,id,[]);
+  if(!chain)return null;
+  // Le nœud lui-même prime, sinon on remonte
+  for(let i=chain.length-1;i>=0;i--){
+    if(chain[i].age)return chain[i].age;
+  }
+  return null;
+}
+function setAge(id,age){
+  const node=fn(id);
+  if(!node)return;
+  // Toggle : si déjà cet âge, on retire ; sinon on set
+  node.age=(node.age===age)?null:age;
+  saveS();
+  renderBiblio();
+  renderCarnet();
+  mmMaybeRefresh();
+  // Mettre à jour sh-final si ouvert
+  if(curFinalId)applyAgeStyle(curFinalId);
+}
+function applyAgeStyle(id){
+  const sf=document.getElementById('sh-final');
+  sf.classList.remove('age-old','age-new');
+  const age=getNodeAge(id);
+  if(age==='old')sf.classList.add('age-old');
+  else if(age==='new')sf.classList.add('age-new');
+}
 
 /* propagate category to children */
 function fixCats(node,cat){if(cat)node.category=cat;for(const c of(node.children||[]))fixCats(c,node.category);}
@@ -794,14 +872,11 @@ function topBack(){
   else if(s==='carnet'){renderCarnet();}
   else if(s==='mindmap'){mmCanvas=document.getElementById('mm-canvas');mmCtx=mmCanvas.getContext('2d');requestAnimationFrame(()=>requestAnimationFrame(()=>{mmResize();mmTx=0;mmTy=0;mmScale=1;mmLayout();mmDraw();}));}
   else if(s==='final'){
-    // re-open final with restored state
     const ndata=nd(curFinalId);
-    const mode=ndata.mode||'on';
     document.getElementById('tt').textContent=fn(curFinalId)?.name||'Technique';
+    applyAgeStyle(curFinalId);
     showTA();
-    document.getElementById('ntarea').value=ndata[mode]||'';
-    document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
-    document.getElementById('tab-'+mode).classList.add('act');
+    document.getElementById('ntarea').value=ndata.text||'';
     renderVids();
   }
   else if(s==='journal'){loadJourEntry(jourDateKey||dateToKey(new Date()));showJourView();}
@@ -925,10 +1000,14 @@ function renderBiblio(){
 function mkCard(child){
   const w=document.createElement('div');w.className='ncw';w.dataset.id=child.id;
   const ndata=nd(child.id);
+  // Héritage age : du nœud ou de son parent
+  const age=getNodeAge(child.id);
+  if(age==='old')w.classList.add('age-old');
+  else if(age==='new')w.classList.add('age-new');
 
   const card=document.createElement('div');card.className='nc';
   const strip=document.createElement('div');strip.className='nstrip';
-  if(child.isFinal){const m=ndata.mode||'on';strip.classList.add(m==='on'?'s-on':m==='already'?'s-al':'s-fu');}
+  if(child.isFinal){strip.classList.add('s-on');}
   else strip.classList.add('s-no');
   card.appendChild(strip);
 
@@ -936,6 +1015,8 @@ function mkCard(child){
     {lbl:nd(child.id).inCarnet?'📋 Retirer de Mon étagère':'📋 Ranger dans Mon étagère',fn:()=>{nd(child.id).inCarnet?rmCarnet(child.id):addCarnet(child.id);}},
     {lbl:'✏️ Renommer',fn:()=>openRN(child.id,child.name)},
     {lbl:'Ajouter synonymes',fn:()=>openAliasModal(child.id)},
+    {lbl:fn(child.id)?.age==='old'?'◻ Retirer vieilli':'▪ Vieillir le livre',fn:()=>setAge(child.id,'old')},
+    {lbl:fn(child.id)?.age==='new'?'◻ Retirer neuf':'✦ Livre neuf',fn:()=>setAge(child.id,'new')},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(child.id);}},
   ];
   const dots=mkDotsBtn(dotsItems());
@@ -1225,7 +1306,7 @@ function mkCarnetCard(node){
   card.style.cssText=`display:flex;align-items:stretch;background:${C.bg2};border:1px solid ${C.b1};border-radius:14px;min-height:72px;position:relative;cursor:pointer;`;
   const strip=document.createElement('div');
   let sc=C.b2;
-  if(node.isFinal){const m=nd(node.id).mode||'on';sc=m==='on'?C.aon:m==='already'?C.aal:C.afu;}
+  if(node.isFinal){sc=C.aon;}
   strip.style.cssText=`width:4px;align-self:stretch;flex-shrink:0;border-radius:14px 0 0 14px;background:${sc};`;
   card.appendChild(strip);
 
@@ -1233,6 +1314,8 @@ function mkCarnetCard(node){
     {lbl:'📋 Retirer de Mon étagère',fn:()=>rmCarnet(node.id)},
     {lbl:'✏️ Renommer',fn:()=>openRN(node.id,node.name)},
     {lbl:'Ajouter synonymes',fn:()=>openAliasModal(node.id)},
+    {lbl:fn(node.id)?.age==='old'?'◻ Retirer vieilli':'▪ Vieillir le livre',fn:()=>setAge(node.id,'old')},
+    {lbl:fn(node.id)?.age==='new'?'◻ Retirer neuf':'✦ Livre neuf',fn:()=>setAge(node.id,'new')},
     {lbl:'🗑 Supprimer',fn:()=>{SFX.del();confirmDel(node.id);}},
   ];
   const dotsC=mkDotsBtn(dotsItems());
@@ -1336,7 +1419,7 @@ function doSearch(){
     // Match notes content for final nodes
     if(n.isFinal){
       const ndata=nd(n.id);
-      if(norm(ndata.on+' '+ndata.already+' '+ndata.future).includes(q)&&!res.find(r=>r.node.id===n.id))
+      if(norm(ndata.text||'').includes(q)&&!res.find(r=>r.node.id===n.id))
         res.push({node:n,path:p+' [notes]'});
     }
     for(const c of(n.children||[]))srch(c,[...path,n.name]);
@@ -1373,17 +1456,15 @@ document.getElementById('sinput').addEventListener('input',()=>{
 function openFinal(id,origin){
   curFinalId=id;
   finalOrigin=origin||'biblio';
-  // Activer l'écran EN PREMIER pour éviter le flash de l'accueil
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('sh-final').classList.add('active');
   const ndata=nd(id);
-  document.getElementById('tt').textContent=fn(id)?.name||'Technique';
+  const node=fn(id);
+  document.getElementById('tt').textContent=node?.name||'Technique';
   document.getElementById('tbk').style.visibility='visible';
-  const mode=ndata.mode||'on';
-  ndata.mode=mode;
-  document.getElementById('ntarea').value=ndata[mode]||'';
-  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
-  document.getElementById('tab-'+mode).classList.add('act');
+  // Appliquer style vieilli/neuf selon le parent
+  applyAgeStyle(id);
+  document.getElementById('ntarea').value=ndata.text||'';
   renderVids();
   showView();
   setTopbar('final');
@@ -1409,21 +1490,10 @@ document.getElementById('ntarea').addEventListener('blur',()=>{saveNote();showVi
 document.getElementById('ntarea').addEventListener('focus',showTA);
 document.getElementById('nview').addEventListener('click',e=>{if(!e.target.classList.contains('lt')){showTA();document.getElementById('ntarea').focus();}});
 
-function switchMode(mode,skipSave){
-  if(!skipSave&&curFinalId)saveNote();
-  if(!curFinalId)return;
-  const ndata=nd(curFinalId);
-  ndata.mode=mode;saveS();
-  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
-  document.getElementById('tab-'+mode).classList.add('act');
-  document.getElementById('ntarea').value=ndata[mode]||'';
-  showTA();renderVids();
-}
-
 function saveNote(){
   if(!curFinalId)return;
   const ndata=nd(curFinalId);
-  ndata[ndata.mode||'on']=document.getElementById('ntarea').value;
+  ndata.text=document.getElementById('ntarea').value;
   saveS();
 }
 
@@ -1433,8 +1503,7 @@ function renderView(){
   const vw=document.getElementById('nview');
   if(!curFinalId){vw.innerHTML='';return;}
   const ndata=nd(curFinalId);
-  const mode=ndata.mode||'on';
-  const text=ndata[mode]||'';
+  const text=ndata.text||'';
   if(!text.trim()){vw.innerHTML='';return;}
 
   const nodes=allNodes().filter(n=>n.id!==curFinalId);
@@ -1644,54 +1713,50 @@ function getTTId(url){const m=url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);ret
 function getDMId(url){const m=url.match(/dailymotion\.com\/video\/([A-Za-z0-9]+)/)||url.match(/dai\.ly\/([A-Za-z0-9]+)/);return m?m[1]:null;}
 function confirmAV(){
   const ndata=nd(curFinalId);if(!curFinalId||!ndata)return;
-  const mode=ndata.mode||'on';
   if(cvt==='tc'){
     const nom=document.getElementById('dvd-nom').value.trim();
     const serie=document.getElementById('dvd-serie').value.trim();
     const num=document.getElementById('dvd-num').value.trim();
     if(!nom&&!serie&&!num&&!tdh_&&!tdm_&&!tds_)return;
-    ndata.videos[mode].push({type:'tc',nom,serie,num,h:tdh_,m:tdm_,s:tds_});
+    ndata.videos.push({type:'tc',nom,serie,num,h:tdh_,m:tdm_,s:tds_});
     saveS();renderVids();closeM('mav');return;
   }
   const url=document.getElementById('vurl').value.trim();if(!url)return;
   const sec=tch_*3600+tcm_*60+tcs_;
   if(cvt==='long'){
     const ytId=getYTId(url);
-    if(ytId){ndata.videos[mode].push({type:'youtube',ytId,sec,url});}
-    else{const dmId=getDMId(url);if(dmId){ndata.videos[mode].push({type:'dailymotion',dmId,sec,url});}
-    else{ndata.videos[mode].push({type:'long',sec,url});}}
+    if(ytId){ndata.videos.push({type:'youtube',ytId,sec,url});}
+    else{const dmId=getDMId(url);if(dmId){ndata.videos.push({type:'dailymotion',dmId,sec,url});}
+    else{ndata.videos.push({type:'long',sec,url});}}
   } else {
     const igId=getIGPostId(url);
-    if(igId){ndata.videos[mode].push({type:'instagram',igId,url});}
-    else{const ttId=getTTId(url);if(ttId){ndata.videos[mode].push({type:'tiktok',ttId,url});}
-    else{ndata.videos[mode].push({type:'court',url});}}
+    if(igId){ndata.videos.push({type:'instagram',igId,url});}
+    else{const ttId=getTTId(url);if(ttId){ndata.videos.push({type:'tiktok',ttId,url});}
+    else{ndata.videos.push({type:'court',url});}}
   }
   saveS();renderVids();closeM('mav');
 }
 function renderVids(){
   if(!curFinalId)return;
-  const ndata=nd(curFinalId),mode=ndata.mode||'on',list=document.getElementById('vlist');
+  const ndata=nd(curFinalId),list=document.getElementById('vlist');
   list.innerHTML='';
-  const vids=ndata.videos[mode]||[];
+  const vids=ndata.videos||[];
   if(!vids.length){list.innerHTML='<div class="vempty">Aucune ressource</div>';return;}
   vids.forEach((v,i)=>{
     const item=document.createElement('div');item.className='vitem';item.dataset.vidx=i;
     const hdr=document.createElement('div');hdr.className='vihdr';
-
-    // ▲▼ order buttons
     const arrows=document.createElement('div');
     arrows.style.cssText='display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-right:2px;';
     const btnUp=document.createElement('button');
     btnUp.style.cssText='background:none;border:none;color:'+(i===0?'#2c2b29':'#a09880')+';font-size:12px;line-height:1;cursor:'+(i===0?'default':'pointer')+';padding:3px 6px;font-family:inherit;';
     btnUp.textContent='▲';btnUp.disabled=(i===0);
-    btnUp.onclick=()=>{if(i===0)return;const vds=ndata.videos[mode];const[it]=vds.splice(i,1);vds.splice(i-1,0,it);saveS();renderVids();};
+    btnUp.onclick=()=>{if(i===0)return;const vds=ndata.videos;const[it]=vds.splice(i,1);vds.splice(i-1,0,it);saveS();renderVids();};
     const btnDn=document.createElement('button');
     btnDn.style.cssText='background:none;border:none;color:'+(i===vids.length-1?'#2c2b29':'#a09880')+';font-size:12px;line-height:1;cursor:'+(i===vids.length-1?'default':'pointer')+';padding:3px 6px;font-family:inherit;';
     btnDn.textContent='▼';btnDn.disabled=(i===vids.length-1);
-    btnDn.onclick=()=>{if(i===vids.length-1)return;const vds=ndata.videos[mode];const[it]=vds.splice(i,1);vds.splice(i+1,0,it);saveS();renderVids();};
+    btnDn.onclick=()=>{if(i===vids.length-1)return;const vds=ndata.videos;const[it]=vds.splice(i,1);vds.splice(i+1,0,it);saveS();renderVids();};
     arrows.appendChild(btnUp);arrows.appendChild(btnDn);
     hdr.appendChild(arrows);
-
     const del=document.createElement('button');del.className='btn bsm brd';del.style.padding='8px 12px';del.textContent='🗑';del.onclick=()=>{SFX.del();confirmDelVid(i);};
     hdr.appendChild(del);item.appendChild(hdr);
 
@@ -1762,7 +1827,7 @@ function renderVids(){
 }
 let dvIdx=null;
 function confirmDelVid(i){dvIdx=i;showConfirm('Supprimer ?','Supprimer cette vidéo ?',doDelVid);}
-function doDelVid(){if(!curFinalId)return;const ndata=nd(curFinalId);ndata.videos[ndata.mode||'on'].splice(dvIdx,1);saveS();renderVids();closeM('mc');}
+function doDelVid(){if(!curFinalId)return;const ndata=nd(curFinalId);ndata.videos.splice(dvIdx,1);saveS();renderVids();closeM('mc');}
 ['tch','tcm','tcs'].forEach(id=>{const el=document.getElementById(id);let sy=0;el.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});el.addEventListener('touchmove',e=>{const dy=sy-e.touches[0].clientY;if(Math.abs(dy)>14){aTC(id==='tch'?'h':id==='tcm'?'m':'s',dy>0?1:-1);sy=e.touches[0].clientY;}},{passive:true});});
 ['tdh','tdm','tds'].forEach(id=>{const el=document.getElementById(id);let sy=0;el.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});el.addEventListener('touchmove',e=>{const dy=sy-e.touches[0].clientY;if(Math.abs(dy)>14){aTC(id==='tdh'?'dh':id==='tdm'?'dm':'ds',dy>0?1:-1);sy=e.touches[0].clientY;}},{passive:true});});
 
@@ -2653,7 +2718,7 @@ function renderJcrBiblio(){
     const w=document.createElement('div');w.className='ncw';
     const card=document.createElement('div');card.className='nc';
     const strip=document.createElement('div');strip.className='nstrip';
-    if(child.isFinal){const m=(S.notes[child.id]?.mode)||'on';strip.classList.add(m==='on'?'s-on':m==='already'?'s-al':'s-fu');}
+    if(child.isFinal){strip.classList.add('s-on');}
     else strip.classList.add('s-no');
     card.appendChild(strip);
     const body=document.createElement('div');body.className='nbody';
